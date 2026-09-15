@@ -37,6 +37,7 @@ function selectView(view) {
   document.querySelectorAll('.nav-item').forEach((button) => button.classList.toggle('active', button.dataset.view === view));
   document.querySelectorAll('.apple-nav-link').forEach((button) => button.classList.toggle('active', button.dataset.view === view));
   document.querySelectorAll('.studio-tab-btn').forEach((button) => button.classList.toggle('active', button.dataset.view === view));
+  document.querySelectorAll('.nav-mode-btn').forEach((button) => button.classList.toggle('active', button.dataset.view === view));
   document.querySelectorAll('.glass-subnav-pill[data-view]').forEach((button) => button.classList.toggle('active', button.dataset.view === view));
 
   const titles = {
@@ -49,7 +50,7 @@ function selectView(view) {
     settings: 'Compute Resource & Hardware Controls.',
     about: 'About Mohammed Sheik & CloudNex Architecture.',
     terms: 'Terms of Service & License Agreement.',
-    installer: 'CloudNex Zero-Friction Installation Hub.',
+    installer: 'CloudNex Zero-Setup Installation.',
   };
   const sectionKick = {
     overview: 'LOCAL WORKSPACE',
@@ -74,7 +75,7 @@ function selectView(view) {
   const crumbName = document.querySelector('.crumb-name');
   if (crumbName) {
     const breadcrumbMap = {
-      overview: 'Customer sales project',
+      overview: 'Command Deck & Telemetry',
       data: 'Dataset Ingestion Pipeline',
       training: 'LoRA / DPO Training Run',
       models: 'Model Registry & Shelf',
@@ -83,38 +84,28 @@ function selectView(view) {
       settings: 'Compute & VRAM Controls',
       about: 'About Mohammed Sheik',
       terms: 'License & Legal Agreement',
-      installer: 'Installation Hub & Bootstrap',
+      installer: 'Installation Center',
     };
-    crumbName.textContent = breadcrumbMap[view] || 'Customer sales project';
+    crumbName.textContent = breadcrumbMap[view] || 'Installation Center';
   }
 
-  // Toggle hero section: only show hero on overview
-  const heroSection = document.querySelector('.apple-hero-section');
-  if (heroSection) heroSection.classList.toggle('hidden', view !== 'overview');
-
-  document.getElementById('overview-content').classList.toggle('hidden', view !== 'overview');
-  document.getElementById('data-content').classList.toggle('hidden', view !== 'data');
-  document.getElementById('training-content').classList.toggle('hidden', view !== 'training');
-  document.getElementById('models-content').classList.toggle('hidden', view !== 'models');
-  document.getElementById('chat-content').classList.toggle('hidden', view !== 'chat');
-  document.getElementById('evaluation-content').classList.toggle('hidden', view !== 'evaluation');
-  const settingsPanel = document.getElementById('settings-content');
-  if (settingsPanel) settingsPanel.classList.toggle('hidden', view !== 'settings');
-  const aboutPanel = document.getElementById('about-content');
-  if (aboutPanel) aboutPanel.classList.toggle('hidden', view !== 'about');
-  const termsPanel = document.getElementById('terms-content');
-  if (termsPanel) termsPanel.classList.toggle('hidden', view !== 'terms');
-  const installerPanel = document.getElementById('installer-content');
-  if (installerPanel) installerPanel.classList.toggle('hidden', view !== 'installer');
-
-  if (view !== 'overview') {
-    const workspaceWindow = document.getElementById('workspace-window');
-    if (workspaceWindow) {
-      workspaceWindow.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  } else {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  // Toggle studio tabs row: show when in studio modes or always
+  const studioTabsRow = document.getElementById('studio-tabs-row');
+  if (studioTabsRow) {
+    // keep tabs row visible so user can easily switch to any studio feature
+    studioTabsRow.style.display = 'flex';
   }
+
+  document.getElementById('overview-content')?.classList.toggle('hidden', view !== 'overview');
+  document.getElementById('data-content')?.classList.toggle('hidden', view !== 'data');
+  document.getElementById('training-content')?.classList.toggle('hidden', view !== 'training');
+  document.getElementById('models-content')?.classList.toggle('hidden', view !== 'models');
+  document.getElementById('chat-content')?.classList.toggle('hidden', view !== 'chat');
+  document.getElementById('evaluation-content')?.classList.toggle('hidden', view !== 'evaluation');
+  document.getElementById('settings-content')?.classList.toggle('hidden', view !== 'settings');
+  document.getElementById('about-content')?.classList.toggle('hidden', view !== 'about');
+  document.getElementById('terms-content')?.classList.toggle('hidden', view !== 'terms');
+  document.getElementById('installer-content')?.classList.toggle('hidden', view !== 'installer');
 
   if (view === 'training') loadTraining();
   if (view === 'data') loadDataFiles();
@@ -1083,6 +1074,62 @@ function initInstallerWizard() {
     });
   }
 
+  // Paged Installation Center Navigation Controller
+  function initPagedInstallationHub() {
+    const pages = [
+      document.getElementById('inst-page-1'),
+      document.getElementById('inst-page-2'),
+      document.getElementById('inst-page-3'),
+    ];
+    const pills = [
+      document.getElementById('tab-inst-page-1'),
+      document.getElementById('tab-inst-page-2'),
+      document.getElementById('tab-inst-page-3'),
+    ];
+
+    function setPage(pageNum) {
+      pages.forEach((page, idx) => {
+        if (!page) return;
+        const isActive = (idx + 1) === pageNum;
+        page.classList.toggle('active', isActive);
+        page.classList.toggle('hidden', !isActive);
+      });
+      pills.forEach((pill, idx) => {
+        if (!pill) return;
+        pill.classList.toggle('active', (idx + 1) === pageNum);
+      });
+    }
+
+    // Pill click handlers
+    pills.forEach((pill, idx) => {
+      if (pill) {
+        pill.addEventListener('click', () => setPage(idx + 1));
+      }
+    });
+
+    // Next / Previous button handlers
+    const btnNext2 = document.getElementById('btn-next-to-page-2');
+    if (btnNext2) btnNext2.addEventListener('click', () => setPage(2));
+
+    const btnBack1 = document.getElementById('btn-back-to-page-1');
+    if (btnBack1) btnBack1.addEventListener('click', () => setPage(1));
+
+    const btnNext3 = document.getElementById('btn-next-to-page-3');
+    if (btnNext3) btnNext3.addEventListener('click', () => setPage(3));
+
+    const btnBack2 = document.getElementById('btn-back-to-page-2');
+    if (btnBack2) btnBack2.addEventListener('click', () => setPage(2));
+
+    const btnFinishHub = document.getElementById('btn-finish-installation-hub');
+    if (btnFinishHub) {
+      btnFinishHub.addEventListener('click', () => {
+        const overviewBtn = document.querySelector('[data-view="overview"]');
+        if (overviewBtn) overviewBtn.click();
+      });
+    }
+  }
+  initPagedInstallationHub();
+
   // Installation Hub Sandbox Runner
   const hubRunBtn = document.getElementById('hub-run-diagnostic-btn');
   const hubTermBody = document.getElementById('hub-term-body');
@@ -1323,5 +1370,7 @@ function initAppleGlassSuite() {
 }
 
 initAppleGlassSuite();
+
+selectView('installer');
 
 connect();
