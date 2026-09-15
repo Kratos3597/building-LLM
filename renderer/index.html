@@ -42,14 +42,23 @@
 
     <!-- Center Segmented Mode Switcher -->
     <div class="nav-mode-switcher" role="tablist">
-      <button class="nav-mode-btn active nav-item" type="button" data-view="installer">
-        <span>📦 Installation Center</span>
-      </button>
-      <button class="nav-mode-btn nav-item" type="button" data-view="overview">
+      <button class="nav-mode-btn active nav-item" type="button" data-view="overview">
         <span>⚡ Studio Deck</span>
+      </button>
+      <button class="nav-mode-btn nav-item" type="button" data-view="training">
+        <span>🏋 Training</span>
+      </button>
+      <button class="nav-mode-btn nav-item" type="button" data-view="data">
+        <span>🗎 Datasets</span>
+      </button>
+      <button class="nav-mode-btn nav-item" type="button" data-view="models">
+        <span>💾 Models</span>
       </button>
       <button class="nav-mode-btn nav-item" type="button" data-view="chat">
         <span>💬 Local Chat</span>
+      </button>
+      <button class="nav-mode-btn nav-item" type="button" data-view="evaluation">
+        <span>📊 Benchmarks</span>
       </button>
       <button class="nav-mode-btn nav-item" type="button" data-view="settings">
         <span>⚙ Hardware</span>
@@ -67,9 +76,6 @@
         <span class="search-glass-icon">🔍</span>
         <span class="search-glass-placeholder">Commands</span>
         <kbd class="apple-kbd">⌘K</kbd>
-      </button>
-      <button class="apple-btn-wizard-trigger" type="button" id="open-installer-btn">
-        <span>⛶ Setup Wizard</span>
       </button>
     </div>
   </nav>
@@ -89,7 +95,7 @@
         </div>
 
         <div class="window-breadcrumbs">
-          <strong class="crumb-name">Installation Center</strong>
+          <strong class="crumb-name">Command Deck &amp; Telemetry</strong>
           <span class="crumb-flag" title="Active Workspace">⚑</span>
         </div>
 
@@ -104,8 +110,7 @@
 
       <!-- Studio View Switcher Tabs (Shown for Studio Navigation) -->
       <div class="apple-studio-tabs-row" id="studio-tabs-row" aria-label="Studio Modes">
-        <button class="studio-tab-btn nav-item studio-tab-install active" type="button" data-view="installer">📦 Installation Center</button>
-        <button class="studio-tab-btn nav-item" type="button" data-view="overview">⊞ Command Deck</button>
+        <button class="studio-tab-btn nav-item active" type="button" data-view="overview">⊞ Command Deck</button>
         <button class="studio-tab-btn nav-item" type="button" data-view="training">⚡ Training Studio</button>
         <button class="studio-tab-btn nav-item" type="button" data-view="data">🗎 Plain .TXT Ingestion</button>
         <button class="studio-tab-btn nav-item" type="button" data-view="models">💾 Checkpoints</button>
@@ -126,7 +131,7 @@
 
       <!-- WORKSPACE PANELS -->
       <section id="view-panel" class="workspace-panel apple-glass-inner-panel">
-        <div id="overview-content" class="overview-deck hidden">
+        <div id="overview-content" class="overview-deck">
           <!-- PRIMARY NEON GRAPH (MATCHING USER SCREENSHOT AT BOTTOM) -->
           <div class="apple-primary-graph-card">
             <div class="graph-top-row">
@@ -681,7 +686,7 @@
             </div>
 
             <div class="creator-cta-row">
-              <button class="primary" type="button" id="about-open-installer-btn">Preview Desktop Installer Experience <span>→</span></button>
+              <button class="primary" type="button" data-view="training">Launch Training Studio <span>→</span></button>
               <button class="secondary" type="button" data-view="terms">Review License &amp; Terms</button>
             </div>
           </div>
@@ -836,171 +841,6 @@ https://cloudnex.co.za
 Copyright (c) 2026 Mohammed Sheik. All rights reserved.</pre>
         </div>
       </div>
-
-      <!-- DEDICATED PAGED INSTALLATION CENTER -->
-      <div id="installer-content" class="training-content">
-        <!-- Paged Stepper Header -->
-        <div class="install-paged-header">
-          <div class="install-title-group">
-            <span class="panel-kicker">DEPLOYMENT &amp; RUNTIME</span>
-            <h2>CloudNex Zero-Setup Installation</h2>
-            <p>Choose your preferred installation method below. Simple, private, and 100% on-device.</p>
-          </div>
-
-          <!-- Page Tabs / Stepper -->
-          <div class="install-step-pills" role="tablist" aria-label="Installation Pages">
-            <button type="button" class="install-step-pill active" data-page="1" id="tab-inst-page-1">
-              <span class="pill-num">1</span>
-              <span class="pill-label">1-Click Fast Setup</span>
-            </button>
-            <div class="pill-divider"></div>
-            <button type="button" class="install-step-pill" data-page="2" id="tab-inst-page-2">
-              <span class="pill-num">2</span>
-              <span class="pill-label">Desktop Wizard</span>
-            </button>
-            <div class="pill-divider"></div>
-            <button type="button" class="install-step-pill" data-page="3" id="tab-inst-page-3">
-              <span class="pill-num">3</span>
-              <span class="pill-label">System Verification</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- PAGE CONTAINER -->
-        <div class="install-pages-wrapper">
-          
-          <!-- PAGE 1: 1-CLICK FAST SETUP (RECOMMENDED) -->
-          <div id="inst-page-1" class="install-page-pane active">
-            <div class="install-pane-card highlight-pane">
-              <div class="pane-badge">RECOMMENDED · FASTEST</div>
-              <h3>⚡ 1-Click Native Bootstrap</h3>
-              <p class="pane-lead">Download is under 5 MB. Run the script once and it automatically configures all Node.js, Electron, and Python PyTorch dependencies for your system.</p>
-
-              <div class="os-scripts-grid">
-                <!-- Windows -->
-                <div class="os-script-item">
-                  <div class="os-head">
-                    <span class="os-icon">🪟</span>
-                    <strong>Windows 10 / 11</strong>
-                  </div>
-                  <div class="script-command-row">
-                    <code>setup-and-run.bat</code>
-                    <button type="button" class="copy-cmd-btn" data-copy="setup-and-run.bat" title="Copy script command">📋 Copy</button>
-                  </div>
-                  <small>Double-click in extracted folder or run via Command Prompt.</small>
-                </div>
-
-                <!-- macOS / Linux -->
-                <div class="os-script-item">
-                  <div class="os-head">
-                    <span class="os-icon">🍎 / 🐧</span>
-                    <strong>macOS &amp; Linux</strong>
-                  </div>
-                  <div class="script-command-row">
-                    <code>./setup-and-run.sh</code>
-                    <button type="button" class="copy-cmd-btn" data-copy="./setup-and-run.sh" title="Copy script command">📋 Copy</button>
-                  </div>
-                  <small>Run in terminal: <code>chmod +x setup-and-run.sh &amp;&amp; ./setup-and-run.sh</code></small>
-                </div>
-              </div>
-
-              <div class="quick-facts-bar">
-                <div class="fact-chip">📦 <strong>Size:</strong> ~4.8 MB package</div>
-                <div class="fact-chip">⚡ <strong>Setup:</strong> Fully Automated</div>
-                <div class="fact-chip">🔒 <strong>Privacy:</strong> 100% Offline</div>
-              </div>
-            </div>
-
-            <!-- Page 1 Navigation Footer -->
-            <div class="install-page-footer">
-              <span class="page-indicator-text">Page 1 of 3: 1-Click Setup</span>
-              <button type="button" class="primary" id="btn-next-to-page-2">Next: Desktop Wizard <span>→</span></button>
-            </div>
-          </div>
-
-          <!-- PAGE 2: GRAPHICAL DESKTOP WIZARD -->
-          <div id="inst-page-2" class="install-page-pane hidden">
-            <div class="install-pane-card">
-              <div class="pane-badge badge-blue">GRAPHICAL SETUP</div>
-              <h3>🪟 Step-by-Step Desktop Installer</h3>
-              <p class="pane-lead">If you prefer an interactive GUI, launch the desktop installer window to configure custom paths, review license terms, and auto-generate shortcuts.</p>
-
-              <div class="wizard-preview-summary">
-                <div class="summary-item">
-                  <span class="sum-icon">✔</span>
-                  <div>
-                    <strong>Dependency Check</strong>
-                    <small>Verifies Node.js 18+ and Python 3.10+ environments</small>
-                  </div>
-                </div>
-                <div class="summary-item">
-                  <span class="sum-icon">✔</span>
-                  <div>
-                    <strong>Virtual Environment (venv)</strong>
-                    <small>Isolates PyTorch, ROCm, and CUDA packages cleanly</small>
-                  </div>
-                </div>
-                <div class="summary-item">
-                  <span class="sum-icon">✔</span>
-                  <div>
-                    <strong>Desktop &amp; Start Shortcuts</strong>
-                    <small>One-click launcher added to your system desktop</small>
-                  </div>
-                </div>
-              </div>
-
-              <div class="center-action-box">
-                <button type="button" class="primary large-btn" id="hub-trigger-wizard-btn">
-                  Launch Desktop Wizard Window <span>⛶</span>
-                </button>
-              </div>
-            </div>
-
-            <!-- Page 2 Navigation Footer -->
-            <div class="install-page-footer">
-              <button type="button" class="secondary" id="btn-back-to-page-1"><span>←</span> Previous</button>
-              <span class="page-indicator-text">Page 2 of 3: Desktop Wizard</span>
-              <button type="button" class="primary" id="btn-next-to-page-3">Next: System Verification <span>→</span></button>
-            </div>
-          </div>
-
-          <!-- PAGE 3: PRE-FLIGHT SYSTEM VERIFICATION -->
-          <div id="inst-page-3" class="install-page-pane hidden">
-            <div class="install-pane-card">
-              <div class="pane-badge badge-emerald">PRE-FLIGHT DIAGNOSTIC</div>
-              <div class="pane-flex-head">
-                <div>
-                  <h3>💻 In-Window Environment Check</h3>
-                  <p class="pane-lead">Verify that your runtime environment and local port 3000 are ready.</p>
-                </div>
-                <button type="button" class="btn-term-action" id="hub-run-diagnostic-btn">▶ Run Environment Check</button>
-              </div>
-
-              <!-- Compact Diagnostic Terminal -->
-              <div class="embedded-terminal-window compact-term">
-                <div class="terminal-bar">
-                  <span class="term-dot"></span><span class="term-dot"></span><span class="term-dot"></span>
-                  <span class="term-title">Environment Diagnostics</span>
-                  <span class="term-status-badge ready">READY</span>
-                </div>
-                <div class="terminal-body" id="hub-term-body">
-[CloudNex Diagnostics Ready]
-Target: Node.js runtime + Python AI backend + Port 3000
-Click "Run Environment Check" above to test your setup now.
-                </div>
-              </div>
-            </div>
-
-            <!-- Page 3 Navigation Footer -->
-            <div class="install-page-footer">
-              <button type="button" class="secondary" id="btn-back-to-page-2"><span>←</span> Previous</button>
-              <span class="page-indicator-text">Page 3 of 3: System Verification</span>
-              <button type="button" class="primary" id="btn-finish-installation-hub">Open Studio Deck <span>↗</span></button>
-            </div>
-          </div>
-
-        </div> <!-- /.install-pages-wrapper -->
-      </div>
     </section>
     </div> <!-- /#apple-workspace-window -->
   </div> <!-- /.apple-app-container -->
@@ -1127,260 +967,10 @@ Click "Run Environment Check" above to test your setup now.
           </div>
           <span class="item-shortcut">↵</span>
         </button>
-        <button class="spotlight-item" data-action-installer="true">
-          <span class="item-icon">⛶</span>
-          <div class="item-meta">
-            <strong>Launch Desktop Setup Wizard</strong>
-            <small>Open interactive NSIS/DMG installer preview</small>
-          </div>
-          <span class="item-shortcut">↵</span>
-        </button>
       </div>
     </div>
   </div>
 
-  <!-- INTERACTIVE INSTALLER SETUP WIZARD PREVIEW MODAL -->
-  <div id="installer-modal" class="installer-modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="installer-window-title">
-    <div class="installer-window-frame">
-      <div class="installer-window-header">
-        <div class="installer-window-brand">
-          <span class="nsis-icon">CN</span>
-          <span id="installer-window-title">CloudNex Local LLM Studio Setup — v0.1.0</span>
-        </div>
-        <button id="close-installer-modal" class="installer-close-x" type="button" aria-label="Close setup window">×</button>
-      </div>
-
-      <div class="installer-window-body">
-        <!-- Sidebar with Wizard Steps -->
-        <div class="installer-wizard-sidebar">
-          <div class="sidebar-brand-block">
-            <div class="wizard-logo">CloudNex</div>
-            <div class="wizard-subtitle">By Mohammed Sheik</div>
-          </div>
-          <ol class="wizard-steps-list">
-            <li id="wiz-step-1" class="wizard-step-item active">
-              <span class="step-circle">1</span>
-              <span class="step-label">Welcome &amp; Creator</span>
-            </li>
-            <li id="wiz-step-2" class="wizard-step-item">
-              <span class="step-circle">2</span>
-              <span class="step-label">1-Click Dependencies</span>
-            </li>
-            <li id="wiz-step-3" class="wizard-step-item">
-              <span class="step-circle">3</span>
-              <span class="step-label">Architecture &amp; Readme</span>
-            </li>
-            <li id="wiz-step-4" class="wizard-step-item">
-              <span class="step-circle">4</span>
-              <span class="step-label">Terms &amp; Conditions</span>
-            </li>
-            <li id="wiz-step-5" class="wizard-step-item">
-              <span class="step-circle">5</span>
-              <span class="step-label">Ready &amp; Finish</span>
-            </li>
-          </ol>
-          <div class="wizard-sidebar-foot">
-            <span class="foot-domain">cloudnex.co.za</span>
-          </div>
-        </div>
-
-        <!-- Main Content of Wizard -->
-        <div class="installer-wizard-content">
-          <!-- STEP 1: WELCOME & ABOUT -->
-          <div id="wizard-pane-1" class="wizard-pane active">
-            <div class="wizard-pane-header">
-              <h3>CloudNex Studio Setup</h3>
-              <p>Self-contained post-training &amp; inference suite for your workstation.</p>
-            </div>
-            <div class="wizard-welcome-card">
-              <div class="wizard-author-row">
-                <div class="wizard-avatar-box">
-                  <img src="./mohammed_sheik.svg" alt="Mohammed Sheik" class="wizard-author-img">
-                </div>
-                <div class="wizard-author-info">
-                  <strong>Mohammed Sheik</strong>
-                  <span>Founder, CloudNex · <a href="https://cloudnex.co.za" target="_blank" rel="noopener noreferrer">cloudnex.co.za</a></span>
-                  <small>Zero-pip runtime • Embedded PyTorch 2.4 • AMD ROCm, NVIDIA CUDA &amp; Apple MPS</small>
-                </div>
-              </div>
-
-              <div class="feature-bullets-grid">
-                <div class="wiz-feat-chip">
-                  <span class="chip-icon">⚡</span>
-                  <div>
-                    <strong>Zero-Pip Setup</strong>
-                    <small>Auto-bootstraps runtimes natively</small>
-                  </div>
-                </div>
-                <div class="wiz-feat-chip">
-                  <span class="chip-icon">🔒</span>
-                  <div>
-                    <strong>100% On-Device</strong>
-                    <small>Zero telemetry, complete privacy</small>
-                  </div>
-                </div>
-                <div class="wiz-feat-chip">
-                  <span class="chip-icon">🎮</span>
-                  <div>
-                    <strong>Hardware Acceleration</strong>
-                    <small>Auto-mounts AMD, NVIDIA &amp; Apple GPUs</small>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <p class="wizard-prompt-text">Click <strong>Next</strong> to configure dependencies.</p>
-          </div>
-
-          <!-- STEP 2: 1-CLICK AUTOMATED DEPENDENCY INSTALLER & RUNTIME -->
-          <div id="wizard-pane-2" class="wizard-pane hidden">
-            <div class="wizard-pane-header">
-              <h3>1-Click Dependencies</h3>
-              <p>Ultra-lightweight package (~4.8 MB) with automated on-device setup.</p>
-            </div>
-            
-            <div class="wizard-dep-options-container">
-              <div class="dep-choice-card active" id="card-choice-batch">
-                <div class="dep-choice-head">
-                  <span class="dep-badge-recom">DEFAULT</span>
-                  <h4>⚡ Native Automated Scripts</h4>
-                </div>
-                <p>Run <code>setup-and-run.bat</code> (Windows) or <code>setup-and-run.sh</code> (Mac/Linux) to configure Node.js and PyTorch environments automatically.</p>
-              </div>
-
-              <!-- Interactive Simulated Installer Runner in Window -->
-              <div class="embedded-terminal-window compact-term">
-                <div class="terminal-bar">
-                  <span class="term-dot"></span><span class="term-dot"></span><span class="term-dot"></span>
-                  <span class="term-title">Quick Test — setup-and-run.bat</span>
-                  <button type="button" id="btn-run-sim-installer" class="btn-term-action">▶ Test Run</button>
-                </div>
-                <div class="terminal-body" id="installer-term-body">
-[CloudNex Installer Ready]
-Click "Test Run" above to simulate automated package resolution.
-                </div>
-              </div>
-
-              <div class="dep-config-options">
-                <label class="check-row">
-                  <input type="checkbox" id="check-auto-pip" checked>
-                  Create isolated Python virtual environment (<code>venv</code>)
-                </label>
-                <label class="check-row">
-                  <input type="checkbox" id="check-auto-desktop-icon" checked>
-                  Add Desktop and Start Menu launcher shortcut
-                </label>
-              </div>
-            </div>
-
-            <p class="wizard-prompt-text">Click <strong>Next</strong> to review specifications.</p>
-          </div>
-
-          <!-- STEP 3: README & SYSTEM ARCHITECTURE -->
-          <div id="wizard-pane-3" class="wizard-pane hidden">
-            <div class="wizard-pane-header">
-              <h3>Architecture Overview</h3>
-              <p>Key technical specifications of CloudNex Local LLM Studio.</p>
-            </div>
-            <div class="arch-summary-cards">
-              <div class="arch-card">
-                <span class="arch-tag">ENGINE</span>
-                <strong>Python 3.12 + PyTorch 2.4</strong>
-                <p>Embedded tensor execution backend with zero external runtime dependencies.</p>
-              </div>
-              <div class="arch-card">
-                <span class="arch-tag">ACCELERATORS</span>
-                <strong>ROCm · CUDA · Metal (MPS)</strong>
-                <p>Native hardware binding for AMD Radeon, NVIDIA GeForce/RTX, and Apple Silicon.</p>
-              </div>
-              <div class="arch-card">
-                <span class="arch-tag">PIPELINE</span>
-                <strong>5-Stage Post-Training</strong>
-                <p>Pretraining corpus &rarr; SFT / LoRA &rarr; Reward &rarr; DPO &rarr; PPO / GRPO Reasoning.</p>
-              </div>
-              <div class="arch-card">
-                <span class="arch-tag">SOVEREIGNTY</span>
-                <strong>100% Offline by Design</strong>
-                <p>Created by Mohammed Sheik. No cloud reliance, tracking, or network leaks.</p>
-              </div>
-            </div>
-            <p class="wizard-prompt-text">Click <strong>Next</strong> to accept license terms.</p>
-          </div>
-
-          <!-- STEP 4: TERMS & CONDITIONS (EULA) -->
-          <div id="wizard-pane-4" class="wizard-pane hidden">
-            <div class="wizard-pane-header">
-              <h3>Terms &amp; Sovereignty Agreement</h3>
-              <p>Simple, clear terms protecting your privacy and hardware.</p>
-            </div>
-            <div class="terms-highlights-box">
-              <div class="term-point">
-                <span class="term-icon">🔒</span>
-                <div>
-                  <strong>Complete Offline Privacy</strong>
-                  <small>No analytics, telemetry, or remote prompts. All weights stay on your drive.</small>
-                </div>
-              </div>
-              <div class="term-point">
-                <span class="term-icon">⚖</span>
-                <div>
-                  <strong>Free for Personal, Academic &amp; Commercial Use</strong>
-                  <small>Full rights to execute, fine-tune, and deploy models on your own machines.</small>
-                </div>
-              </div>
-              <div class="term-point">
-                <span class="term-icon">⚙</span>
-                <div>
-                  <strong>Hardware Safety Controls</strong>
-                  <small>Configurable CPU core limits and GPU VRAM caps to protect against thermal stress.</small>
-                </div>
-              </div>
-            </div>
-            <div class="agreement-checkbox-row">
-              <input type="checkbox" id="wizard-agree-checkbox">
-              <label for="wizard-agree-checkbox">
-                <strong>I accept the Software License &amp; Privacy Agreement</strong>
-                <span class="sub-label">I agree to the offline compute terms created by Mohammed Sheik (<a href="https://cloudnex.co.za" target="_blank" rel="noopener noreferrer">cloudnex.co.za</a>).</span>
-              </label>
-            </div>
-          </div>
-
-          <!-- STEP 5: READY / FINISHED -->
-          <div id="wizard-pane-5" class="wizard-pane hidden">
-            <div class="wizard-pane-header">
-              <h3>Ready to Launch</h3>
-              <p>Setup configuration complete.</p>
-            </div>
-            <div class="wizard-finish-card">
-              <div class="success-glyph">✓</div>
-              <h4>CloudNex Local LLM Studio Ready</h4>
-              <p>Your local runtime and launcher scripts are set up and verified.</p>
-              <div class="finish-details-grid">
-                <div><span>Launcher:</span><strong>setup-and-run.bat / .sh</strong></div>
-                <div><span>Engine:</span><strong>Embedded PyTorch 2.4</strong></div>
-                <div><span>Data Policy:</span><strong>100% On-Device Sovereign</strong></div>
-                <div><span>Creator:</span><strong>Mohammed Sheik (cloudnex.co.za)</strong></div>
-              </div>
-            </div>
-            <div class="finish-checkbox-row">
-              <label class="check-row"><input type="checkbox" checked id="wizard-launch-check"> Launch CloudNex Studio now</label>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Installer Window Footer Actions -->
-      <div class="installer-window-footer">
-        <div class="installer-foot-left">
-          <span class="installer-version-badge">NSIS / DMG Packager · CloudNex v0.1.0</span>
-        </div>
-        <div class="installer-foot-actions">
-          <button type="button" id="wiz-back-btn" class="secondary" disabled>&lt; Back</button>
-          <button type="button" id="wiz-next-btn" class="primary">Next &gt;</button>
-          <button type="button" id="wiz-cancel-btn" class="secondary">Cancel</button>
-        </div>
-      </div>
-    </div>
-  </div>
   <script src="./app.js"></script>
 </body>
 </html>

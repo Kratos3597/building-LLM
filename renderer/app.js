@@ -50,7 +50,6 @@ function selectView(view) {
     settings: 'Compute Resource & Hardware Controls.',
     about: 'About Mohammed Sheik & CloudNex Architecture.',
     terms: 'Terms of Service & License Agreement.',
-    installer: 'CloudNex Zero-Setup Installation.',
   };
   const sectionKick = {
     overview: 'LOCAL WORKSPACE',
@@ -62,7 +61,6 @@ function selectView(view) {
     settings: 'HARDWARE CONTROLS',
     about: 'FOUNDER & ARCHITECT',
     terms: 'LEGAL & COMPLIANCE',
-    installer: 'INSTALLATION & RUNTIME',
   };
 
   const panelTitle = document.querySelector('.workspace-panel h2');
@@ -84,9 +82,8 @@ function selectView(view) {
       settings: 'Compute & VRAM Controls',
       about: 'About Mohammed Sheik',
       terms: 'License & Legal Agreement',
-      installer: 'Installation Center',
     };
-    crumbName.textContent = breadcrumbMap[view] || 'Installation Center';
+    crumbName.textContent = breadcrumbMap[view] || 'Command Deck & Telemetry';
   }
 
   // Toggle studio tabs row: show when in studio modes or always
@@ -105,7 +102,6 @@ function selectView(view) {
   document.getElementById('settings-content')?.classList.toggle('hidden', view !== 'settings');
   document.getElementById('about-content')?.classList.toggle('hidden', view !== 'about');
   document.getElementById('terms-content')?.classList.toggle('hidden', view !== 'terms');
-  document.getElementById('installer-content')?.classList.toggle('hidden', view !== 'installer');
 
   if (view === 'training') loadTraining();
   if (view === 'data') loadDataFiles();
@@ -917,269 +913,6 @@ if (copyLicenseBtn) {
   });
 }
 
-/* --- INTERACTIVE INSTALLER WIZARD CONTROLLER --- */
-function initInstallerWizard() {
-  const modal = document.getElementById('installer-modal');
-  const openTriggers = [
-    document.getElementById('open-installer-btn'),
-    document.getElementById('about-open-installer-btn'),
-    document.getElementById('hero-installer-btn'),
-    document.getElementById('hub-open-wizard-btn'),
-    document.getElementById('hub-trigger-wizard-btn'),
-  ];
-  const closeBtn = document.getElementById('close-installer-modal');
-  const cancelBtn = document.getElementById('wiz-cancel-btn');
-  const nextBtn = document.getElementById('wiz-next-btn');
-  const backBtn = document.getElementById('wiz-back-btn');
-  const agreeCheck = document.getElementById('wizard-agree-checkbox');
-  const readmeBox = document.getElementById('wizard-readme-content');
-  const licenseBox = document.getElementById('wizard-license-content');
-
-  let currentStep = 1;
-  const maxSteps = 5;
-
-  function setStep(step) {
-    currentStep = step;
-
-    // Update step indicators
-    for (let i = 1; i <= maxSteps; i++) {
-      const stepItem = document.getElementById(`wiz-step-${i}`);
-      const pane = document.getElementById(`wizard-pane-${i}`);
-      if (stepItem) {
-        stepItem.classList.toggle('active', i === currentStep);
-        stepItem.classList.toggle('completed', i < currentStep);
-      }
-      if (pane) {
-        pane.classList.toggle('hidden', i !== currentStep);
-        pane.classList.toggle('active', i === currentStep);
-      }
-    }
-
-    // Update Back button
-    if (backBtn) {
-      backBtn.disabled = currentStep === 1;
-    }
-
-    // Update Next / Finish button
-    if (nextBtn) {
-      if (currentStep === 5) {
-        nextBtn.textContent = 'Finish & Launch';
-        nextBtn.disabled = false;
-      } else if (currentStep === 4) {
-        nextBtn.textContent = 'Next >';
-        nextBtn.disabled = !agreeCheck.checked;
-      } else {
-        nextBtn.textContent = 'Next >';
-        nextBtn.disabled = false;
-      }
-    }
-
-    // Load async contents with instant fallback
-    if (currentStep === 3 && readmeBox) {
-      readmeBox.textContent = cachedReadme || FALLBACK_README;
-      loadReadmeDoc().then((text) => {
-        if (text) readmeBox.textContent = text;
-      });
-    }
-
-    if (currentStep === 4 && licenseBox) {
-      licenseBox.textContent = cachedLicense || FALLBACK_LICENSE;
-      loadLicenseDocs().then((text) => {
-        if (text) licenseBox.textContent = text;
-      });
-    }
-  }
-
-  // Simulated in-window dependency installer run
-  const testRunBtn = document.getElementById('btn-run-sim-installer');
-  const termBody = document.getElementById('installer-term-body');
-  if (testRunBtn && termBody) {
-    testRunBtn.addEventListener('click', () => {
-      termBody.textContent = 'Executing: setup-and-run.bat ...\n';
-      testRunBtn.disabled = true;
-      testRunBtn.textContent = '⏳ Installing...';
-
-      const logLines = [
-        '[1/4] Checking Node.js runtime environment... Node v20.18.0 detected (OK)',
-        '[2/4] Verifying application dependencies... First-time setup detected.',
-        '      Running: npm install --no-audit (fetching express, ws, electron, @google/genai)...',
-        '      ✔ Installed 48 packages in 4.2s (Zero timeouts)',
-        '[3/4] Checking Python backend engine for local LoRA/DPO training...',
-        '      Python 3.12 detected. Creating local venv and verifying PyTorch / ROCm / CUDA...',
-        '      ✔ Python AI sidecar environment validated.',
-        '[4/4] Starting CloudNex Local LLM Studio on http://localhost:3000 ...',
-        '========================================================================',
-        '✔ SUCCESS: All dependencies are ready! Launching studio window now.',
-      ];
-
-      let idx = 0;
-      const interval = setInterval(() => {
-        if (idx < logLines.length) {
-          termBody.textContent += logLines[idx] + '\n';
-          termBody.scrollTop = termBody.scrollHeight;
-          idx++;
-        } else {
-          clearInterval(interval);
-          testRunBtn.disabled = false;
-          testRunBtn.textContent = '✔ Verification Complete';
-        }
-      }, 350);
-    });
-  }
-
-  function openWizard() {
-    if (!modal) return;
-    modal.classList.remove('hidden');
-    setStep(1);
-  }
-
-  function closeWizard() {
-    if (!modal) return;
-    modal.classList.add('hidden');
-  }
-
-  openTriggers.forEach((btn) => {
-    if (btn) btn.addEventListener('click', openWizard);
-  });
-
-  if (closeBtn) closeBtn.addEventListener('click', closeWizard);
-  if (cancelBtn) cancelBtn.addEventListener('click', closeWizard);
-
-  if (agreeCheck) {
-    agreeCheck.addEventListener('change', () => {
-      if (currentStep === 4 && nextBtn) {
-        nextBtn.disabled = !agreeCheck.checked;
-      }
-    });
-  }
-
-  if (nextBtn) {
-    nextBtn.addEventListener('click', () => {
-      if (currentStep === 5) {
-        closeWizard();
-        selectView('overview');
-        return;
-      }
-      if (currentStep < maxSteps) {
-        setStep(currentStep + 1);
-      }
-    });
-  }
-
-  if (backBtn) {
-    backBtn.addEventListener('click', () => {
-      if (currentStep > 1) {
-        setStep(currentStep - 1);
-      }
-    });
-  }
-
-  // Paged Installation Center Navigation Controller
-  function initPagedInstallationHub() {
-    const pages = [
-      document.getElementById('inst-page-1'),
-      document.getElementById('inst-page-2'),
-      document.getElementById('inst-page-3'),
-    ];
-    const pills = [
-      document.getElementById('tab-inst-page-1'),
-      document.getElementById('tab-inst-page-2'),
-      document.getElementById('tab-inst-page-3'),
-    ];
-
-    function setPage(pageNum) {
-      pages.forEach((page, idx) => {
-        if (!page) return;
-        const isActive = (idx + 1) === pageNum;
-        page.classList.toggle('active', isActive);
-        page.classList.toggle('hidden', !isActive);
-      });
-      pills.forEach((pill, idx) => {
-        if (!pill) return;
-        pill.classList.toggle('active', (idx + 1) === pageNum);
-      });
-    }
-
-    // Pill click handlers
-    pills.forEach((pill, idx) => {
-      if (pill) {
-        pill.addEventListener('click', () => setPage(idx + 1));
-      }
-    });
-
-    // Next / Previous button handlers
-    const btnNext2 = document.getElementById('btn-next-to-page-2');
-    if (btnNext2) btnNext2.addEventListener('click', () => setPage(2));
-
-    const btnBack1 = document.getElementById('btn-back-to-page-1');
-    if (btnBack1) btnBack1.addEventListener('click', () => setPage(1));
-
-    const btnNext3 = document.getElementById('btn-next-to-page-3');
-    if (btnNext3) btnNext3.addEventListener('click', () => setPage(3));
-
-    const btnBack2 = document.getElementById('btn-back-to-page-2');
-    if (btnBack2) btnBack2.addEventListener('click', () => setPage(2));
-
-    const btnFinishHub = document.getElementById('btn-finish-installation-hub');
-    if (btnFinishHub) {
-      btnFinishHub.addEventListener('click', () => {
-        const overviewBtn = document.querySelector('[data-view="overview"]');
-        if (overviewBtn) overviewBtn.click();
-      });
-    }
-  }
-  initPagedInstallationHub();
-
-  // Installation Hub Sandbox Runner
-  const hubRunBtn = document.getElementById('hub-run-diagnostic-btn');
-  const hubTermBody = document.getElementById('hub-term-body');
-  if (hubRunBtn && hubTermBody) {
-    hubRunBtn.addEventListener('click', () => {
-      hubRunBtn.disabled = true;
-      hubRunBtn.textContent = '⏳ Testing Environment...';
-      hubTermBody.textContent = '[$] Validating CloudNex Local Environment & Dependencies...\n';
-
-      const hubSteps = [
-        '[1/5] Checking OS Platform: Linux x86_64 / Cloud Run Container (Ready)',
-        '[2/5] Probing Node.js runtime: v20.x detected. Native async I/O available.',
-        '[3/5] Verifying 1-Click Bootstrap Script integrity: setup-and-run.bat & setup-and-run.sh verified.',
-        '[4/5] Checking Python virtualenv & PyTorch tensor library: sidecar ready.',
-        '[5/5] Engine status: Listening on port 3000. Hardware detection active.',
-        '--------------------------------------------------------------------------------',
-        '✔ ENVIRONMENT HEALTHY: 0 missing dependencies. 100% ready for local runs.',
-      ];
-
-      let i = 0;
-      const t = setInterval(() => {
-        if (i < hubSteps.length) {
-          hubTermBody.textContent += hubSteps[i] + '\n';
-          hubTermBody.scrollTop = hubTermBody.scrollHeight;
-          i++;
-        } else {
-          clearInterval(t);
-          hubRunBtn.disabled = false;
-          hubRunBtn.textContent = '✔ Re-run Diagnostic';
-        }
-      }, 300);
-    });
-  }
-
-  // Copy command buttons
-  document.querySelectorAll('.copy-cmd-btn').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const textToCopy = btn.getAttribute('data-copy');
-      if (textToCopy && navigator.clipboard) {
-        navigator.clipboard.writeText(textToCopy);
-        const prev = btn.textContent;
-        btn.textContent = '✓';
-        setTimeout(() => { btn.textContent = prev; }, 1800);
-      }
-    });
-  });
-}
-
-initInstallerWizard();
-
 /* --- APPLE GLASS SUITE CONTROLLERS --- */
 function initAppleGlassSuite() {
   // Real-time clock for window header
@@ -1268,13 +1001,9 @@ function initAppleGlassSuite() {
   spotlightItems.forEach((item) => {
     item.addEventListener('click', () => {
       const view = item.dataset.view;
-      const action = item.dataset.action;
       closeSpotlight();
       if (view) {
         selectView(view);
-      } else if (action === 'open-installer') {
-        const wizard = document.getElementById('installer-modal');
-        if (wizard) wizard.classList.remove('hidden');
       }
     });
   });
@@ -1318,13 +1047,6 @@ function initAppleGlassSuite() {
   if (heroFreeBtn) {
     heroFreeBtn.addEventListener('click', () => {
       selectView('training');
-    });
-  }
-  const heroInstallerBtn = document.getElementById('hero-installer-btn');
-  if (heroInstallerBtn) {
-    heroInstallerBtn.addEventListener('click', () => {
-      const wizard = document.getElementById('installer-modal');
-      if (wizard) wizard.classList.remove('hidden');
     });
   }
 
@@ -1371,6 +1093,6 @@ function initAppleGlassSuite() {
 
 initAppleGlassSuite();
 
-selectView('installer');
+selectView('overview');
 
 connect();
