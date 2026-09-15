@@ -48,9 +48,9 @@ Build native installers for the current host with:
 npm run build
 ```
 
-Electron Builder is configured for macOS (`.dmg` and `.app` on arm64/x64), Windows (`nsis`), and Linux (`AppImage`). `npm run build` first compiles `backend/app.py` into a one-file PyInstaller executable, then embeds that executable inside the installer. The end user does not need Python, FastAPI, uvicorn, Node.js, or npm installed.
+Electron Builder is configured for macOS (`.dmg` and `.app`), Windows (`nsis`), and Linux (`AppImage`). `npm run build` first compiles `backend/app.py` into a one-file PyInstaller executable, then embeds that executable inside the installer. The end user does not need Python, FastAPI, uvicorn, Node.js, or npm installed.
 
-Build on the target operating system and architecture. A Windows executable must be built on Windows, a macOS arm64 app on an Apple Silicon Mac, and so on; PyInstaller does not produce portable binaries across operating systems. GPU acceleration still depends on the user's installed graphics drivers and compatible PyTorch build.
+Build on the target operating system and architecture. The repository includes a GitHub Actions workflow that builds Linux x64, Windows x64, macOS Intel, and macOS Apple Silicon artifacts. Download the completed artifact from the workflow run and install it on the matching operating system. GPU acceleration still depends on the user's installed graphics drivers and compatible PyTorch build.
 
 ## Python Engine
 
