@@ -3,8 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src http://127.0.0.1:8000; style-src 'self'; script-src 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' http://127.0.0.1:8000; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'">
   <title>CloudNex Local LLM Studio</title>
+  <meta name="description" content="Studio for local language model workflows, dataset preparation, training runs, checkpoint management, and inference evaluation.">
+  <meta property="og:title" content="CloudNex Local LLM Studio">
+  <meta property="og:description" content="Studio for local language model workflows, dataset preparation, training runs, checkpoint management, and inference evaluation.">
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>

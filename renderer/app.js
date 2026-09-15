@@ -1,16 +1,37 @@
+// Provide browser-compatible fallback for window.cloudnex when running in web mode
+if (!window.cloudnex) {
+  window.cloudnex = {
+    platform: 'web',
+    backendUrl: '',
+    getHealth: () => fetch('/health').then((r) => r.json()),
+    chooseCheckpointExportPath: async () => 'cloudnex-checkpoint.pt',
+    window: {
+      minimize: () => {},
+      toggleMaximize: () => {},
+      close: () => {},
+      onMaximizedState: () => {},
+    },
+  };
+  const windowActions = document.querySelector('.window-actions');
+  if (windowActions) windowActions.style.display = 'none';
+}
+
 const statusText = document.getElementById('connection-status');
 const engineStatus = document.getElementById('engine-status');
 const deviceStatus = document.getElementById('device-status');
 const platformLabel = document.getElementById('platform-label');
 const dot = document.querySelector('.status-dot');
-const backend = window.cloudnex.backendUrl;
+const backend = window.cloudnex ? (window.cloudnex.backendUrl || '') : '';
 
-document.getElementById('minimize-window').addEventListener('click', () => window.cloudnex.window.minimize());
-document.getElementById('maximize-window').addEventListener('click', () => window.cloudnex.window.toggleMaximize());
-document.getElementById('close-window').addEventListener('click', () => window.cloudnex.window.close());
-window.cloudnex.window.onMaximizedState((maximized) => {
-  document.getElementById('maximize-window').textContent = maximized ? '❐' : '□';
-});
+if (window.cloudnex?.window?.minimize) {
+  document.getElementById('minimize-window')?.addEventListener('click', () => window.cloudnex.window.minimize());
+  document.getElementById('maximize-window')?.addEventListener('click', () => window.cloudnex.window.toggleMaximize());
+  document.getElementById('close-window')?.addEventListener('click', () => window.cloudnex.window.close());
+  window.cloudnex.window.onMaximizedState((maximized) => {
+    const maxBtn = document.getElementById('maximize-window');
+    if (maxBtn) maxBtn.textContent = maximized ? '❐' : '□';
+  });
+}
 
 function selectView(view) {
   document.querySelectorAll('.nav-item').forEach((button) => button.classList.toggle('active', button.dataset.view === view));

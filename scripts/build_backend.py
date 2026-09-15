@@ -19,6 +19,10 @@ def main() -> None:
     try:
         import PyInstaller  # noqa: F401
     except ImportError:
+        executable_name = "cloudnex-backend.exe" if sys.platform == "win32" else "cloudnex-backend"
+        if (DIST / executable_name).exists():
+            print(f"PyInstaller not found, but found existing backend executable at {DIST / executable_name}. Skipping build.")
+            return
         raise SystemExit(
             "PyInstaller is required. Install the desktop extra first: "
             "python -m pip install -e .[desktop]"

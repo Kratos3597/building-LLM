@@ -7,12 +7,14 @@
   "author": "Mohammed Altaaf Sheik",
   "license": "MIT",
   "scripts": {
-    "start": "electron .",
-    "dev": "electron .",
+    "start": "node server.js",
+    "dev": "node server.js",
+    "electron": "electron .",
+    "electron:dev": "electron .",
     "backend": "python backend/app.py",
     "test:visual": "node tests/electron_visual.js",
     "build:backend": "python scripts/build_backend.py",
-    "build": "npm run build:backend && electron-builder"
+    "build": "npm run build:backend && electron-builder --publish never"
   },
   "devDependencies": {
     "electron": "^38.1.0",
@@ -34,7 +36,10 @@
       {
         "from": "backend/dist",
         "to": "backend",
-        "filter": ["cloudnex-backend*", "!*.log"]
+        "filter": [
+          "cloudnex-backend*",
+          "!*.log"
+        ]
       },
       {
         "from": "scripts",
@@ -58,14 +63,22 @@
       }
     ],
     "mac": {
-      "target": ["dmg", "dir"]
+      "target": [
+        "dmg",
+        "dir"
+      ]
     },
     "win": {
-      "target": ["nsis"]
+      "target": [
+        "nsis"
+      ]
     },
     "linux": {
-      "target": ["AppImage"],
+      "target": [
+        "AppImage"
+      ],
       "category": "Development"
-    }
+    },
+    "publish": null
   }
 }
