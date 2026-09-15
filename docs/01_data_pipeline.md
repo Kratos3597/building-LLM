@@ -49,7 +49,7 @@ Everything lands on the big `/ephemeral` disk and uses the OpenAI **`r50k_base`*
 
 ## 1 · Pretraining data (Pile → flat-token HDF5)
 
-[`scripts/prepare_pretrain_data.py`](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/scripts/prepare_pretrain_data.py) streams the compressed
+[`scripts/prepare_pretrain_data.py`](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/scripts/prepare_pretrain_data.py) streams the compressed
 Pile shards, batch-tokenizes with tiktoken, and writes one flat `int32` token array to HDF5 (far
 faster than the original per-document resize). Each document is terminated with `<|endoftext|>`:
 
@@ -66,13 +66,13 @@ PYTHONPATH=. python scripts/prepare_pretrain_data.py --split val   --out /epheme
 PYTHONPATH=. python scripts/prepare_pretrain_data.py --split train --num_shards 1 --out /ephemeral/data/pile_train.h5
 ```
 
-The base [`get_batch_iterator`](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/data_loader/data_loader.py) then slices random
+The base [`get_batch_iterator`](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/data_loader/data_loader.py) then slices random
 `context_length + 1` windows out of this flat array for next-token training.
 
 ## 2 · SFT data (instructions → packed tokens **+ loss mask**)
 
 This is the subtle one. We only want to train the model to produce the **assistant** tokens, not to
-parrot the prompt. The chat format ([`chat_template.py`](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/src/post_training/chat_template.py)) uses
+parrot the prompt. The chat format ([`chat_template.py`](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/src/post_training/chat_template.py)) uses
 plain-text role markers (since `r50k_base` has no spare special tokens) and `<|endoftext|>` as the
 turn terminator:
 
@@ -82,7 +82,7 @@ turn terminator:
 {answer}<|endoftext|>
 ```
 
-[`encode_chat`](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/src/post_training/chat_template.py#L95) builds the token ids **and** an aligned
+[`encode_chat`](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/src/post_training/chat_template.py#L95) builds the token ids **and** an aligned
 `loss_mask` that is `1` only over the assistant completion (and its terminating EOT):
 
 ```python
@@ -94,9 +94,9 @@ ids.append(EOT_ID)
 mask.append(1 if is_completion else 0)                        # ...and teach it to stop
 ```
 
-[`prepare_sft_data.py`](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/scripts/prepare_sft_data.py) renders Alpaca + Dolly + GSM8K through this,
+[`prepare_sft_data.py`](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/scripts/prepare_sft_data.py) renders Alpaca + Dolly + GSM8K through this,
 reformatting GSM8K into the `<think>…</think><answer>N</answer>` structure (so the model learns the
-exact shape the RL verifier later rewards), then [`pack_examples`](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/src/post_training/sft.py#L41)
+exact shape the RL verifier later rewards), then [`pack_examples`](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/src/post_training/sft.py#L41)
 concatenates everything and slices it into fixed `1024`-token rows, writing two aligned HDF5 datasets,
 `tokens` and `loss_mask`.
 
@@ -109,7 +109,7 @@ question — that alignment is what makes SFT work.
 
 ## 3 · Preference data (→ `{prompt, chosen, rejected}` JSONL)
 
-[`prepare_preference_data.py`](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/scripts/prepare_preference_data.py) pulls **Anthropic/hh-rlhf** and
+[`prepare_preference_data.py`](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/scripts/prepare_preference_data.py) pulls **Anthropic/hh-rlhf** and
 **HuggingFaceH4/ultrafeedback_binarized** and normalizes both to one schema. For HH-RLHF I split each
 dialogue at the last `Assistant:` turn so the chosen/rejected share a prompt and differ only in the
 final response:
@@ -121,7 +121,7 @@ def _split_hh(text):
 ```
 
 Output is `preferences.jsonl` (train) + `preferences_test.jsonl` (held-out, for measuring reward-model
-accuracy). [`preference_dataset.py`](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/data_loader/preference_dataset.py) tokenizes each side through
+accuracy). [`preference_dataset.py`](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/data_loader/preference_dataset.py) tokenizes each side through
 the same chat template and right-pads a batch — which is safe because the model's attention is
 **causal**, so the last real token never attends to padding after it (no attention mask needed).
 
@@ -131,7 +131,7 @@ PYTHONPATH=. python scripts/prepare_preference_data.py --source both --max_per_s
 
 ## 4 · RL prompt data (→ `{prompt, gold}` JSONL)
 
-[`prepare_rl_prompts.py`](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/scripts/prepare_rl_prompts.py) turns GSM8K into prompts with a **verifiable
+[`prepare_rl_prompts.py`](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/scripts/prepare_rl_prompts.py) turns GSM8K into prompts with a **verifiable
 numeric gold answer** (parsed from the dataset's `#### N`), plus a programmatic **arithmetic curriculum**
 that even a weak policy can partly solve — so RL has non-zero reward signal to bootstrap from:
 

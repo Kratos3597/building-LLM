@@ -3,7 +3,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "train-llm-from-scratch"
+name = "cloudnex-local-llm-studio"
 version = "0.1.0"
 description = "Train an LLM from scratch in pure PyTorch — pretraining through SFT, Reward Modeling, PPO, DPO and GRPO/RLVR."
 readme = "README.md"
@@ -20,6 +20,8 @@ dependencies = [
     "tiktoken",
     "zstandard",
     "requests",
+    "fastapi",
+    "uvicorn",
 ]
 
 [project.optional-dependencies]

@@ -41,7 +41,7 @@ class BaseModelConfig:
     ckpt_dir: str = CKPT_DIR
     log_dir: str = LOG_DIR
     use_wandb: bool = False
-    wandb_project: str = "train-llm-from-scratch-posttrain"
+    wandb_project: str = "cloudnex-local-llm-studio-posttrain"
 
 
 @dataclass

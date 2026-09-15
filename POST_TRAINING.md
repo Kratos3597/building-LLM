@@ -36,7 +36,7 @@ export HF_HOME=/ephemeral/hf_cache
 Run everything from the repo root with `PYTHONPATH=.`. Single GPU: `python scripts/X.py`.
 Both GPUs: `torchrun --standalone --nproc_per_node=2 scripts/X.py` (DDP + bf16, one code path).
 
-Config lives in [config/post_training_config.py](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/config/post_training_config.py) as
+Config lives in [config/post_training_config.py](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/config/post_training_config.py) as
 per-stage dataclasses; **any field is a CLI override**, e.g. `--lr 2e-5 --batch_size 16`.
 The default base model is ~400M (`n_embed=1024, n_head=16, n_blocks=24, context_length=1024`).
 
@@ -53,7 +53,7 @@ PYTHONPATH=. python scripts/prepare_pretrain_data.py --split train --num_shards 
 PYTHONPATH=. torchrun --standalone --nproc_per_node=2 scripts/pretrain_base.py
 ```
 
-[scripts/pretrain_base.py](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/scripts/pretrain_base.py) upgrades the original
+[scripts/pretrain_base.py](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/scripts/pretrain_base.py) upgrades the original
 `train_transformer.py` recipe with DDP, bf16 autocast, gradient accumulation, a cosine LR
 schedule with warmup, and periodic checkpointing — everything needed to train a mid-size
 model on 2×H100. The original training script is untouched.
@@ -68,10 +68,10 @@ PYTHONPATH=. torchrun --standalone --nproc_per_node=2 scripts/train_sft.py # -> 
 ```
 
 - **From-scratch loss:** prompt-masked next-token CE in
-  [src/post_training/sft.py](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/src/post_training/sft.py) (`sft_loss`). Only assistant tokens
+  [src/post_training/sft.py](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/src/post_training/sft.py) (`sft_loss`). Only assistant tokens
   are trained (mask from the chat template); sequence **packing** fills each row to the
   context length.
-- **Chat format:** [src/post_training/chat_template.py](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/src/post_training/chat_template.py).
+- **Chat format:** [src/post_training/chat_template.py](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/src/post_training/chat_template.py).
   The r50k_base tokenizer has only `<|endoftext|>` as a special token, so role markers
   (`<|user|>`, `<|assistant|>`, `<think>`, `<answer>`) are ordinary tokens the model learns.
   GSM8K is reformatted into `<think>…</think><answer>N</answer>` so the model learns the
@@ -86,9 +86,9 @@ PYTHONPATH=. torchrun --standalone --nproc_per_node=2 scripts/train_reward.py  #
 ```
 
 - **From-scratch:** a scalar reward head on the SFT backbone
-  ([src/post_training/reward_model.py](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/src/post_training/reward_model.py)), trained with the
+  ([src/post_training/reward_model.py](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/src/post_training/reward_model.py)), trained with the
   **Bradley-Terry** pairwise loss in
-  [src/post_training/reward_train.py](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/src/post_training/reward_train.py). The reward is read
+  [src/post_training/reward_train.py](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/src/post_training/reward_train.py). The reward is read
   off the last real token (causal attention makes right-padding safe — no attention mask
   needed). **Eval:** held-out preference accuracy (expect ~0.65–0.75 on noisy real data).
 
@@ -100,10 +100,10 @@ PYTHONPATH=. torchrun --standalone --nproc_per_node=2 scripts/train_dpo.py --los
 #   --loss_type kto    (unpaired, reference-KL baseline)
 ```
 
-- **From-scratch:** all three objectives in [src/post_training/dpo.py](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/src/post_training/dpo.py).
+- **From-scratch:** all three objectives in [src/post_training/dpo.py](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/src/post_training/dpo.py).
   Policy initialized from SFT; a frozen deep copy is the reference (ORPO needs none).
   Operates on summed response log-probs from
-  [src/post_training/rollout.py](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/src/post_training/rollout.py) (`sequence_logprobs`).
+  [src/post_training/rollout.py](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/src/post_training/rollout.py) (`sequence_logprobs`).
   **Eval:** implicit-reward accuracy/margins + GSM8K dev.
 
 ## 5. PPO (classic RLHF)
@@ -115,8 +115,8 @@ PYTHONPATH=. torchrun --standalone --nproc_per_node=2 scripts/train_ppo.py --rew
 ```
 
 - **From-scratch:** GAE, clipped policy/value losses in
-  [src/post_training/ppo.py](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/src/post_training/ppo.py); the actor-critic shares the backbone
-  via [src/post_training/value_head.py](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/src/post_training/value_head.py). Each iteration:
+  [src/post_training/ppo.py](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/src/post_training/ppo.py); the actor-critic shares the backbone
+  via [src/post_training/value_head.py](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/src/post_training/value_head.py). Each iteration:
   roll out → score (verifier or RM) → add per-token **KL-to-reference** penalty → GAE →
   several clipped-surrogate epochs. **Eval:** reward / KL / clip-fraction / value-loss curves
   and greedy GSM8K test accuracy.
@@ -128,7 +128,7 @@ PYTHONPATH=. torchrun --standalone --nproc_per_node=2 scripts/train_grpo.py --gr
 ```
 
 - **From-scratch:** group-relative advantages + token-level clipped surrogate with a k3 KL
-  penalty in [src/post_training/grpo.py](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/src/post_training/grpo.py). **No critic** — the
+  penalty in [src/post_training/grpo.py](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/src/post_training/grpo.py). **No critic** — the
   baseline is each prompt's own group of G samples. An **arithmetic curriculum** runs for
   the first `curriculum_iters` iterations so the policy has non-zero reward variance before
   full GSM8K. **Eval:** mean group reward, informative-group fraction, KL, GSM8K test accuracy.
@@ -137,7 +137,7 @@ PYTHONPATH=. torchrun --standalone --nproc_per_node=2 scripts/train_grpo.py --gr
 
 ## 7. Inference / chat (any stage checkpoint)
 
-[scripts/chat.py](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/scripts/chat.py) loads **any** checkpoint (base/sft/dpo/ppo/grpo) —
+[scripts/chat.py](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/scripts/chat.py) loads **any** checkpoint (base/sft/dpo/ppo/grpo) —
 reading the model dims from the checkpoint itself — and generates with the chat template
 (instruction models) or as raw continuation (the base model):
 
@@ -152,8 +152,8 @@ PYTHONPATH=. python scripts/chat.py --ckpt /ephemeral/ckpts/sft.pt
 ```
 
 Generation reuses the same tested core as training/eval
-([src/post_training/rollout.py](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/src/post_training/rollout.py),
-[src/post_training/inference.py](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/src/post_training/inference.py)).
+([src/post_training/rollout.py](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/src/post_training/rollout.py),
+[src/post_training/inference.py](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/src/post_training/inference.py)).
 
 ## 8. The across-stages results table
 

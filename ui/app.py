@@ -1,5 +1,5 @@
 """
-Train LLM From Scratch — control panel (Home).
+CloudNex Local LLM Studio — control panel (Home).
 
 Run with:  streamlit run ui/app.py
 """
@@ -14,7 +14,7 @@ from ui import jobs, theme
 from ui.stages import ABS_DOC, STAGES
 
 theme.setup_page("Control Panel", "🧠")
-theme.hero("🧠  Train LLM From Scratch — Control Panel",
+theme.hero("🧠  CloudNex Local LLM Studio — Control Panel",
            "Pretrain → SFT → Reward Model → DPO → PPO → GRPO · evaluate · chat — all from one place.")
 
 # Master pipeline diagram (the hand-drawn overview).

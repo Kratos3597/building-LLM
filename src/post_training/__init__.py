@@ -1,5 +1,5 @@
 """
-From-scratch post-training suite for ``train-llm-from-scratch``.
+Post-training suite for CloudNex Local LLM Studio.
 
 This package adds Supervised Fine-Tuning (SFT), reward modeling, PPO, DPO and
 GRPO/RLVR on top of the repo's own custom :class:`~src.models.transformer.Transformer`.

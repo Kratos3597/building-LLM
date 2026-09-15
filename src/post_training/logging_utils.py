@@ -22,7 +22,7 @@ class MetricsLogger:
         log_dir: str,
         *,
         use_wandb: bool = False,
-        wandb_project: str = "train-llm-from-scratch-posttrain",
+        wandb_project: str = "cloudnex-local-llm-studio-posttrain",
         config: dict | None = None,
         run_name: str | None = None,
     ) -> None:

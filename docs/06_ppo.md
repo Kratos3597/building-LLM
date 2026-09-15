@@ -39,7 +39,7 @@ flowchart LR
 ## The actor-critic
 
 PPO needs a per-token value estimate `V(s_t)` next to the policy logits. I get both from one backbone
-with [`TransformerWithValueHead`](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/src/post_training/value_head.py#L19) — it reuses
+with [`TransformerWithValueHead`](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/src/post_training/value_head.py#L19) — it reuses
 `forward_hidden` + `lm_head` for the policy and adds a small scalar value head (initialized to ~0 so the
 critic doesn't destabilize early training):
 
@@ -53,14 +53,14 @@ def forward(self, idx):
 
 ## Rollout + log-probs
 
-[`rollout_prompts`](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/src/post_training/rollout.py#L180) length-buckets the prompts and samples a
-completion for each, and [`generate_with_logprobs`](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/src/post_training/rollout.py#L94) records the
-sampling log-probs. Log-probs are always taken in **fp32** ([`compute_logprobs`](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/src/post_training/rollout.py#L233))
+[`rollout_prompts`](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/src/post_training/rollout.py#L180) length-buckets the prompts and samples a
+completion for each, and [`generate_with_logprobs`](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/src/post_training/rollout.py#L94) records the
+sampling log-probs. Log-probs are always taken in **fp32** ([`compute_logprobs`](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/src/post_training/rollout.py#L233))
 because PPO subtracts them and bf16 rounding there is harmful.
 
 ## GAE — Generalized Advantage Estimation
 
-[`compute_gae`](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/src/post_training/ppo.py#L24) works in the "action frame" (index `t` = producing
+[`compute_gae`](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/src/post_training/ppo.py#L24) works in the "action frame" (index `t` = producing
 token `t+1`), bootstrapping only while the next action is still a response token:
 
 ```python
@@ -74,12 +74,12 @@ returns = adv + values
 
 The per-token reward is the **KL-to-reference penalty** at every response token, plus the scalar task
 reward added at the **last** response token. Advantages are then normalized with
-[`whiten`](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/src/post_training/ppo.py#L60).
+[`whiten`](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/src/post_training/ppo.py#L60).
 
 ## The clipped objective
 
-[`ppo_policy_loss`](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/src/post_training/ppo.py#L68) is the standard clipped surrogate;
-[`ppo_value_loss`](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/src/post_training/ppo.py#L84) clips the value update too:
+[`ppo_policy_loss`](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/src/post_training/ppo.py#L68) is the standard clipped surrogate;
+[`ppo_value_loss`](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/src/post_training/ppo.py#L84) clips the value update too:
 
 ```python
 ratio = torch.exp(new_logp - old_logp)
@@ -88,7 +88,7 @@ surr2 = torch.clamp(ratio, 1.0 - clip, 1.0 + clip) * advantages
 loss  = -masked_mean(torch.min(surr1, surr2), mask)
 ```
 
-[`train_ppo.py`](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/scripts/train_ppo.py) ties it together: rollout once, compute old log-probs / ref
+[`train_ppo.py`](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/scripts/train_ppo.py) ties it together: rollout once, compute old log-probs / ref
 log-probs / values, build rewards, GAE, then run `ppo_epochs` of minibatched clipped updates.
 
 ## Run it

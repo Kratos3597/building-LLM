@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src http://127.0.0.1:8000; style-src 'self'; script-src 'self'">
+  <title>CloudNex Local LLM Studio</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand-mark">CN</div>
+    <div class="brand-copy"><strong>CloudNex</strong><span>Local LLM Studio</span></div>
+    <nav aria-label="Primary navigation">
+      <button class="nav-item active" type="button" data-view="overview">Overview</button>
+      <button class="nav-item" type="button" data-view="training">Training</button>
+      <button class="nav-item" type="button" data-view="models">Models</button>
+      <button class="nav-item" type="button" data-view="settings">Settings</button>
+    </nav>
+    <div class="sidebar-foot"><span class="status-dot"></span><span id="connection-status">Connecting to local engine</span></div>
+  </aside>
+  <main class="main-content">
+    <header class="topbar"><span class="eyebrow">LOCAL WORKSPACE</span><span id="platform-label">Desktop</span></header>
+    <section class="hero">
+      <p class="eyebrow">MODEL OPERATIONS</p>
+      <h1>Build intelligence<br><em>on your machine.</em></h1>
+      <p class="lede">A calm control surface for preparing data, running training stages, and evaluating local checkpoints.</p>
+      <div class="hero-actions"><button class="primary" type="button" data-view="training">Start a training run <span>→</span></button><button class="secondary" type="button" data-view="models">Browse models</button></div>
+    </section>
+    <section class="metrics" aria-label="Workspace metrics">
+      <article><span class="metric-label">ENGINE</span><strong id="engine-status">Starting</strong><small>FastAPI sidecar</small></article>
+      <article><span class="metric-label">DEVICE</span><strong id="device-status">Detecting</strong><small>Local compute</small></article>
+      <article><span class="metric-label">WORKSPACE</span><strong>Ready</strong><small>CloudNex Studio</small></article>
+    </section>
+    <section id="view-panel" class="workspace-panel"><div><span class="panel-kicker">PIPELINE</span><h2>Your next run starts here.</h2><p>Choose a stage to configure a focused experiment. Existing PyTorch scripts and checkpoints stay in the local workspace.</p></div><div class="pipeline"><span class="complete">01 Data</span><span>02 Train</span><span>03 Evaluate</span></div></section>
+  </main>
+  <script src="./app.js"></script>
+</body>
+</html>

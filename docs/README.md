@@ -80,8 +80,8 @@ flowchart TD
 
 ## The one design rule: *wrap, don't rewrite*
 
-Everything here sits on top of the original [`Transformer`](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/src/models/transformer.py). I changed the
-educational model in exactly **one** place — I added a [`forward_hidden`](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/src/models/transformer.py#L56)
+Everything here sits on top of the original [`Transformer`](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/src/models/transformer.py). I changed the
+educational model in exactly **one** place — I added a [`forward_hidden`](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/src/models/transformer.py#L56)
 method that returns the final hidden states the `lm_head` consumes. Every post-training head (a value
 head for PPO, a scalar reward head for the reward model) and every RL log-prob computation composes
 *around* that one method, so the from-scratch model you already understand stays intact.
@@ -105,4 +105,4 @@ Once the base model has pretrained ([02_pretraining.md](02_pretraining.md)), the
 bash scripts/run_posttraining.sh          # SFT -> RM -> DPO -> PPO -> GRPO -> eval table
 ```
 
-See [POST_TRAINING.md](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/POST_TRAINING.md) for the condensed command reference.
+See [POST_TRAINING.md](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/POST_TRAINING.md) for the condensed command reference.

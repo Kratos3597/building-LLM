@@ -34,7 +34,7 @@ flowchart LR
 
 ## The masked loss
 
-The whole stage hinges on [`sft_loss`](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/src/post_training/sft.py#L18). It's ordinary next-token
+The whole stage hinges on [`sft_loss`](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/src/post_training/sft.py#L18). It's ordinary next-token
 cross-entropy, except every target position is weighted by the mask so only completion tokens count:
 
 ```python
@@ -49,14 +49,14 @@ def sft_loss(logits, tokens, loss_mask):
 ```
 
 The mask itself was produced at data-prep time by
-[`encode_chat`](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/src/post_training/chat_template.py#L95) (see
+[`encode_chat`](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/src/post_training/chat_template.py#L95) (see
 [01_data_pipeline.md](01_data_pipeline.md)) and packed alongside the tokens. The `.float()` on the
 logits keeps the cross-entropy numerically clean under bf16.
 
 ## The trainer
 
-[`train_sft.py`](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/scripts/train_sft.py) loads the pretrained base with
-[`load_backbone_from_ckpt`](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/src/post_training/utils.py), then runs a compact loop — autocast forward,
+[`train_sft.py`](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/scripts/train_sft.py) loads the pretrained base with
+[`load_backbone_from_ckpt`](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/src/post_training/utils.py), then runs a compact loop — autocast forward,
 masked loss, clip, step, cosine LR — with periodic dev evaluation:
 
 ```python
@@ -69,7 +69,7 @@ torch.nn.utils.clip_grad_norm_(model.parameters(), cfg.grad_clip)
 optimizer.step()
 ```
 
-Batches come from [`get_sft_batch_iterator`](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/data_loader/sft_dataset.py), which shards the packed
+Batches come from [`get_sft_batch_iterator`](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/data_loader/sft_dataset.py), which shards the packed
 rows across DDP ranks and yields `(tokens, loss_mask, epoch)`.
 
 ## Run it

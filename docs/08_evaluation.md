@@ -30,12 +30,12 @@ flowchart LR
 ## Generation: length-bucketed, greedy
 
 The educational model has no padding-aware attention mask, so
-[`batched_generate`](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/src/post_training/evaluation.py#L24) groups prompts of equal length and decodes
+[`batched_generate`](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/src/post_training/evaluation.py#L24) groups prompts of equal length and decodes
 each bucket together; `greedy=True` forces argmax (`top_k=1`) for comparable, deterministic numbers.
 
 ## Scoring: a verifiable reward
 
-[`gsm8k_accuracy`](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/src/post_training/evaluation.py#L77) generates an answer per question and checks
+[`gsm8k_accuracy`](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/src/post_training/evaluation.py#L77) generates an answer per question and checks
 it with the verifier:
 
 ```python
@@ -44,9 +44,9 @@ responses = batched_generate(model, prompts, max_new_tokens, device=device, gree
 correct = sum(is_correct(resp, gsm8k_gold_answer(ans)) for (q, ans), resp in zip(qa_pairs, responses))
 ```
 
-The reward/checker lives in [`rewards/`](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/src/post_training/rewards/). `extract_answer` is tolerant —
+The reward/checker lives in [`rewards/`](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/src/post_training/rewards/). `extract_answer` is tolerant —
 it prefers an `<answer>…</answer>` tag, then a GSM8K-style `#### N`, then falls back to the last number
-in the text — and [`reward_gsm8k`](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/src/post_training/rewards/verifiers.py#L35) is
+in the text — and [`reward_gsm8k`](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/src/post_training/rewards/verifiers.py#L35) is
 **correctness-dominant** with only a small, bounded format bonus, to discourage reward hacking:
 
 ```python
@@ -61,7 +61,7 @@ and wrong answers **0/100** false positives, with gold cross-verified against th
 
 ## The across-stages table
 
-[`eval_post_training.py`](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/scripts/eval_post_training.py) loads any checkpoint (reading its dims from
+[`eval_post_training.py`](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/scripts/eval_post_training.py) loads any checkpoint (reading its dims from
 the stored `cfg`), scores it, and appends a row to a JSONL you can render as a table:
 
 ```bash
@@ -85,7 +85,7 @@ grpo                    ...      200
 ## In-training metrics
 
 Each trainer also writes a metrics JSONL under `/ephemeral/logs/` (via
-[`MetricsLogger`](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/src/post_training/logging_utils.py)) — train/dev loss for SFT, preference accuracy
+[`MetricsLogger`](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/src/post_training/logging_utils.py)) — train/dev loss for SFT, preference accuracy
 for the reward model, implicit-reward accuracy for DPO, and reward/KL/clip-fraction + GSM8K accuracy for
 PPO/GRPO. Pass `--use_wandb true` to also mirror to Weights & Biases; the JSONL is always written so you
 can plot offline.

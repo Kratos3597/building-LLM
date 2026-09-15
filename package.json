@@ -1,0 +1,51 @@
+{
+  "name": "cloudnex-local-llm-studio",
+  "version": "0.1.0",
+  "description": "Cross-platform desktop studio for local PyTorch language model workflows.",
+  "main": "main.js",
+  "private": true,
+  "author": "Mohammed Altaaf Sheik",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron .",
+    "backend": "python backend/app.py",
+    "build": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^38.1.0",
+    "electron-builder": "^26.0.12",
+    "wait-on": "^8.0.3"
+  },
+  "build": {
+    "appId": "com.cloudnex.local-llm-studio",
+    "productName": "CloudNex Local LLM Studio",
+    "asar": true,
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "backend",
+        "to": "backend",
+        "filter": ["**/*"]
+      }
+    ],
+    "mac": {
+      "target": [
+        { "target": "dmg", "arch": ["arm64", "x64"] },
+        { "target": "dir", "arch": ["arm64", "x64"] }
+      ]
+    },
+    "win": {
+      "target": [{ "target": "nsis", "arch": ["x64"] }]
+    },
+    "linux": {
+      "target": [{ "target": "AppImage", "arch": ["x64", "arm64"] }],
+      "category": "Development"
+    }
+  }
+}

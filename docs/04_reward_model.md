@@ -36,7 +36,7 @@ flowchart LR
 
 ## The model: a scalar head on the backbone
 
-[`RewardModel`](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/src/post_training/reward_model.py#L37) wraps a `Transformer`, drops the `lm_head`,
+[`RewardModel`](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/src/post_training/reward_model.py#L37) wraps a `Transformer`, drops the `lm_head`,
 and reads the reward off the **last real token's** hidden state (the InstructGPT convention). Because
 attention is causal, that last token has seen the whole sequence and never attends to the right-padding
 after it — so we need no attention mask:
@@ -52,11 +52,11 @@ class RewardModel(nn.Module):
         return gather_last(rewards, seq_lengths)   # reward at the last real token -> (B,)
 ```
 
-[`gather_last`](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/src/post_training/utils.py) just indexes `rewards[i, seq_lengths[i]-1]`.
+[`gather_last`](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/src/post_training/utils.py) just indexes `rewards[i, seq_lengths[i]-1]`.
 
 ## The objective: Bradley-Terry
 
-[`bradley_terry_loss`](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/src/post_training/reward_train.py#L18) pushes the chosen reward above the
+[`bradley_terry_loss`](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/src/post_training/reward_train.py#L18) pushes the chosen reward above the
 rejected one. That's the entire training signal:
 
 ```python
@@ -64,12 +64,12 @@ def bradley_terry_loss(chosen_rewards, rejected_rewards):
     return -F.logsigmoid(chosen_rewards - rejected_rewards).mean()
 ```
 
-[`preference_accuracy`](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/src/post_training/reward_train.py#L23) — the fraction of pairs where
+[`preference_accuracy`](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/src/post_training/reward_train.py#L23) — the fraction of pairs where
 `r_chosen > r_rejected` — is the metric I actually watch.
 
 ## The trainer
 
-[`train_reward.py`](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/scripts/train_reward.py) initializes the backbone from `sft.pt`, then for each
+[`train_reward.py`](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/scripts/train_reward.py) initializes the backbone from `sft.pt`, then for each
 batch runs the **chosen and rejected sequences through the model in a single forward** (concatenated to
 `2B`), splits the rewards, and applies the loss:
 
@@ -81,7 +81,7 @@ chosen_r, rejected_r = rewards[:B], rewards[B:]
 loss = bradley_terry_loss(chosen_r, rejected_r)
 ```
 
-Pairs come from [`get_preference_iterator`](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/data_loader/preference_dataset.py), which right-pads each
+Pairs come from [`get_preference_iterator`](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/data_loader/preference_dataset.py), which right-pads each
 batch (safe under causal attention) and tracks the true length of each side.
 
 ## Run it
@@ -100,6 +100,6 @@ PYTHONPATH=. torchrun --standalone --nproc_per_node=2 scripts/train_reward.py
 - **margin** — mean `r_chosen − r_rejected`; a useful "is it still separating them" signal.
 
 Saved to `/ephemeral/ckpts/reward.pt`; PPO loads it with
-[`load_reward_model`](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/src/post_training/reward_model.py) when `--reward_source rm`.
+[`load_reward_model`](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/src/post_training/reward_model.py) when `--reward_source rm`.
 
 ➡️ Next: [Stage 5 — PPO](06_ppo.md) (which consumes this), or the RM-free path: [DPO](05_dpo.md).

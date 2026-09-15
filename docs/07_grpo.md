@@ -36,7 +36,7 @@ flowchart LR
 
 ## Group-relative advantage
 
-[`group_advantages`](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/src/post_training/grpo.py#L17) is the whole idea — standardize rewards *within
+[`group_advantages`](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/src/post_training/grpo.py#L17) is the whole idea — standardize rewards *within
 each group*, so a good answer is one that beats its siblings on the same prompt:
 
 ```python
@@ -52,9 +52,9 @@ groups as a health metric.
 
 ## The loss: clipped surrogate + KL
 
-[`grpo_loss`](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/src/post_training/grpo.py#L37) applies the same PPO-style token-level clipped surrogate
+[`grpo_loss`](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/src/post_training/grpo.py#L37) applies the same PPO-style token-level clipped surrogate
 (advantage broadcast across a completion's tokens) plus a per-token KL penalty to the reference, using
-Schulman's non-negative **k3** estimator ([`k3_kl`](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/src/post_training/grpo.py#L31)):
+Schulman's non-negative **k3** estimator ([`k3_kl`](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/src/post_training/grpo.py#L31)):
 
 ```python
 ratio = torch.exp(new_logp - old_logp)
@@ -65,7 +65,7 @@ loss = -masked_mean(surrogate - kl_coef * kl, resp_mask)
 
 ## The trainer + curriculum
 
-[`train_grpo.py`](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/scripts/train_grpo.py) loads the policy from `sft.pt`, replicates each prompt `G`
+[`train_grpo.py`](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/scripts/train_grpo.py) loads the policy from `sft.pt`, replicates each prompt `G`
 times (group-contiguously), rolls them out, scores with the GSM8K verifier, and updates. It runs an
 **arithmetic curriculum** for the first `--curriculum_iters` iterations so the policy earns some reward
 *before* facing full GSM8K (otherwise every group is all-wrong and there's no signal):

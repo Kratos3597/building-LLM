@@ -11,5 +11,5 @@
   "ckpt_dir": "/ephemeral/ckpts",
   "log_dir": "/ephemeral/logs",
   "use_wandb": false,
-  "wandb_project": "train-llm-from-scratch-posttrain"
+  "wandb_project": "cloudnex-local-llm-studio-posttrain"
 }

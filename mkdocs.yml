@@ -1,8 +1,8 @@
-site_name: Train LLM From Scratch
-site_description: From pretraining to RLHF/GRPO — every algorithm hand-written in pure PyTorch.
-site_url: https://FareedKhan-dev.github.io/train-llm-from-scratch/
-repo_url: https://github.com/FareedKhan-dev/train-llm-from-scratch
-repo_name: FareedKhan-dev/train-llm-from-scratch
+site_name: CloudNex Local LLM Studio
+site_description: A local desktop studio for training and evaluating PyTorch language models.
+site_url: https://example.com/cloudnex-local-llm-studio/
+repo_url: https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio
+repo_name: Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio
 docs_dir: docs
 # Files present under docs/ but intentionally not page nodes in the nav.
 not_in_nav: |

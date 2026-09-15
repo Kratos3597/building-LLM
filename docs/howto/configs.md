@@ -1,7 +1,7 @@
 # Configure with JSON
 
 Every training stage is configured by a small, human-editable JSON file under
-[`configs/`](https://github.com/FareedKhan-dev/train-llm-from-scratch/tree/main/configs). You edit one
+[`configs/`](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/tree/main/configs). You edit one
 file and see only that stage's knobs — the model architecture and runtime live in the shared
 `configs/base.json`.
 
@@ -16,7 +16,7 @@ configs/
 
 ## How a config is resolved
 
-[`config/loader.py`](https://github.com/FareedKhan-dev/train-llm-from-scratch/blob/main/config/loader.py)
+[`config/loader.py`](https://github.com/Mohammed-Altaaf-Sheik/cloudnex-local-llm-studio/blob/main/config/loader.py)
 merges four layers, **lowest precedence first**:
 
 ```

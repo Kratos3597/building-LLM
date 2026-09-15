@@ -33,7 +33,7 @@ _BADGE = {"running": ("b-run", "running"), "finished": ("b-ok", "finished"),
 
 
 def setup_page(title: str, icon: str = "🧠") -> None:
-    st.set_page_config(page_title=f"{title} · Train LLM From Scratch", page_icon=icon, layout="wide")
+    st.set_page_config(page_title=f"{title} · CloudNex Local LLM Studio", page_icon=icon, layout="wide")
     st.markdown(_CSS, unsafe_allow_html=True)
 
 
