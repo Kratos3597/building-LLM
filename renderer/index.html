@@ -32,7 +32,10 @@
       <article><span class="metric-label">DEVICE</span><strong id="device-status">Detecting</strong><small>Local compute</small></article>
       <article><span class="metric-label">WORKSPACE</span><strong>Ready</strong><small>CloudNex Studio</small></article>
     </section>
-    <section id="view-panel" class="workspace-panel"><div><span class="panel-kicker">PIPELINE</span><h2>Your next run starts here.</h2><p>Choose a stage to configure a focused experiment. Existing PyTorch scripts and checkpoints stay in the local workspace.</p></div><div class="pipeline"><span class="complete">01 Data</span><span>02 Train</span><span>03 Evaluate</span></div></section>
+    <section id="view-panel" class="workspace-panel">
+      <div id="overview-content"><div><span class="panel-kicker">PIPELINE</span><h2>Your next run starts here.</h2><p>Choose a stage to configure a focused experiment. Existing PyTorch scripts and checkpoints stay in the local workspace.</p></div><div class="pipeline"><span class="complete">01 Data</span><span>02 Train</span><span>03 Evaluate</span></div></div>
+      <div id="training-content" class="hidden training-content"><div><span class="panel-kicker">TRAINING RUN</span><h2>Launch a local experiment.</h2><p>The backend runs the existing PyTorch stage scripts and keeps their logs in your CloudNex workspace.</p></div><form id="training-form"><label for="stage-select">Stage<select id="stage-select"></select></label><label class="check-row"><input id="smoke-check" type="checkbox" checked> Use smoke configuration</label><button class="primary" type="submit">Start training <span>→</span></button></form><div id="job-list" class="job-list"></div></div>
+    </section>
   </main>
   <script src="./app.js"></script>
 </body>

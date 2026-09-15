@@ -14,9 +14,11 @@ let shuttingDown = false;
 function backendPaths() {
   const root = app.isPackaged ? process.resourcesPath : __dirname;
   const directory = path.join(root, 'backend');
+  const engine = app.isPackaged ? path.join(root, 'engine') : root;
   const executableName = process.platform === 'win32' ? 'cloudnex-backend.exe' : 'cloudnex-backend';
   return {
     directory,
+    engine,
     executable: path.join(directory, executableName),
     script: path.join(directory, 'app.py'),
   };
@@ -31,7 +33,12 @@ function startBackend() {
 
   backendProcess = spawn(command, args, {
     cwd: paths.directory,
-    env: { ...process.env, CLOUDNEX_DESKTOP: '1', CLOUDNEX_BACKEND_PORT: String(BACKEND_PORT) },
+    env: {
+      ...process.env,
+      CLOUDNEX_DESKTOP: '1',
+      CLOUDNEX_BACKEND_PORT: String(BACKEND_PORT),
+      CLOUDNEX_ENGINE_ROOT: paths.engine,
+    },
     stdio: 'ignore',
     windowsHide: true,
     detached: process.platform !== 'win32',

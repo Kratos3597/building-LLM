@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import subprocess
 import sys
+import os
 from pathlib import Path
 
 
@@ -40,6 +41,15 @@ def main() -> None:
         str(SPEC),
         str(BACKEND / "app.py"),
     ]
+    data_separator = os.pathsep
+    for directory in ("scripts", "src", "config", "data_loader", "configs"):
+        command.extend(["--add-data", f"{ROOT / directory}{data_separator}engine/{directory}"])
+    command.extend([
+        "--collect-all", "torch",
+        "--collect-all", "numpy",
+        "--collect-all", "tiktoken",
+        "--collect-all", "h5py",
+    ])
     subprocess.run(command, cwd=ROOT, check=True)
 
 

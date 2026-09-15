@@ -33,6 +33,26 @@
         "from": "backend/dist",
         "to": "backend",
         "filter": ["cloudnex-backend*", "!*.log"]
+      },
+      {
+        "from": "scripts",
+        "to": "engine/scripts"
+      },
+      {
+        "from": "src",
+        "to": "engine/src"
+      },
+      {
+        "from": "config",
+        "to": "engine/config"
+      },
+      {
+        "from": "data_loader",
+        "to": "engine/data_loader"
+      },
+      {
+        "from": "configs",
+        "to": "engine/configs"
       }
     ],
     "mac": {
