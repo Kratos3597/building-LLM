@@ -18,8 +18,9 @@
     "backend": "python backend/app.py",
     "test:visual": "node tests/electron_visual.js",
     "build:backend": "python scripts/build_backend.py",
-    "build": "node -c server.js && node -c main.js && node -c preload.js",
-    "build:electron": "npm run build:backend && electron-builder --publish never",
+    "build": "node scripts/build.js",
+    "build:desktop": "BUILD_DESKTOP=true node scripts/build.js --desktop",
+    "build:electron": "BUILD_DESKTOP=true node scripts/build.js --desktop",
     "dist:win": "npm run build:backend && electron-builder --win --publish never",
     "dist:mac": "npm run build:backend && electron-builder --mac --publish never",
     "dist:linux": "npm run build:backend && electron-builder --linux --publish never"
