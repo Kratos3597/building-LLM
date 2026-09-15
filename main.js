@@ -20,6 +20,14 @@ function registerWindowControls() {
     event.sender.send('window:maximized-state', window?.isMaximized() || false);
   });
   ipcMain.on('window:close', (event) => BrowserWindow.fromWebContents(event.sender)?.close());
+  ipcMain.handle('checkpoint:save-dialog', async () => {
+    const result = await dialog.showSaveDialog(mainWindow, {
+      title: 'Export CloudNex checkpoint',
+      defaultPath: 'cloudnex-checkpoint.pt',
+      filters: [{ name: 'PyTorch checkpoint', extensions: ['pt'] }],
+    });
+    return result.canceled ? null : result.filePath;
+  });
 }
 
 function backendPaths() {

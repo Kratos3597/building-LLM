@@ -85,6 +85,11 @@ class DatasetUpdate(BaseModel):
     dataset_type: str
 
 
+class ExportRequest(BaseModel):
+    checkpoint: str
+    destination: str
+
+
 class EvaluationRequest(BaseModel):
     checkpoint: str
     split: str = "test"
@@ -348,6 +353,19 @@ def models() -> list[dict]:
                 "modified": path.stat().st_mtime,
             }
     return sorted(found.values(), key=lambda item: item["modified"], reverse=True)
+
+
+@app.post("/api/models/export")
+def export_model(request: ExportRequest) -> dict[str, str | int]:
+    source = _checkpoint_path(request.checkpoint)
+    destination = Path(request.destination).expanduser().resolve()
+    if destination == source:
+        raise HTTPException(status_code=400, detail="Choose a different destination from the source checkpoint.")
+    if destination.suffix.lower() != ".pt":
+        destination = destination.with_suffix(".pt")
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(source, destination)
+    return {"name": destination.name, "destination": str(destination), "size": destination.stat().st_size}
 
 
 @app.post("/api/chat")

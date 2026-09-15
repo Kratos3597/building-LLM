@@ -169,8 +169,18 @@ document.getElementById('data-file-list').addEventListener('click', async (event
 
 async function loadModels() {
   const models = await fetch(`${backend}/api/models`).then((response) => response.json());
-  document.getElementById('model-list').innerHTML = models.length ? models.map((model) => `<article class="job-card"><strong>${model.name}</strong><span> · ${model.size_mb} MB</span><code>${model.path}</code></article>`).join('') : '<span class="muted">No checkpoints found. Complete a training run first.</span>';
+  document.getElementById('model-list').innerHTML = models.length ? models.map((model) => `<article class="job-card model-card"><div><strong>${model.name}</strong><span> · ${model.size_mb} MB</span><code>${model.path}</code></div><button class="secondary export-model" type="button" data-model="${encodeURIComponent(model.path)}">Export</button></article>`).join('') : '<span class="muted">No checkpoints found. Complete a training run first.</span>';
 }
+
+document.getElementById('model-list').addEventListener('click', async (event) => {
+  const button = event.target.closest('.export-model');
+  if (!button) return;
+  const destination = await window.cloudnex.chooseCheckpointExportPath();
+  if (!destination) return;
+  const response = await fetch(`${backend}/api/models/export`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ checkpoint: decodeURIComponent(button.dataset.model), destination }) });
+  const payload = await response.json();
+  window.alert(response.ok ? `Exported ${payload.name}` : (payload.detail || 'Could not export checkpoint.'));
+});
 
 async function loadChatModels() {
   const models = await fetch(`${backend}/api/models`).then((response) => response.json());
