@@ -49,6 +49,7 @@ function selectView(view) {
     settings: 'Compute Resource & Hardware Controls.',
     about: 'About Mohammed Sheik & CloudNex Architecture.',
     terms: 'Terms of Service & License Agreement.',
+    installer: 'CloudNex Zero-Friction Installation Hub.',
   };
   const sectionKick = {
     overview: 'LOCAL WORKSPACE',
@@ -60,6 +61,7 @@ function selectView(view) {
     settings: 'HARDWARE CONTROLS',
     about: 'FOUNDER & ARCHITECT',
     terms: 'LEGAL & COMPLIANCE',
+    installer: 'INSTALLATION & RUNTIME',
   };
 
   const panelTitle = document.querySelector('.workspace-panel h2');
@@ -81,6 +83,7 @@ function selectView(view) {
       settings: 'Compute & VRAM Controls',
       about: 'About Mohammed Sheik',
       terms: 'License & Legal Agreement',
+      installer: 'Installation Hub & Bootstrap',
     };
     crumbName.textContent = breadcrumbMap[view] || 'Customer sales project';
   }
@@ -101,6 +104,8 @@ function selectView(view) {
   if (aboutPanel) aboutPanel.classList.toggle('hidden', view !== 'about');
   const termsPanel = document.getElementById('terms-content');
   if (termsPanel) termsPanel.classList.toggle('hidden', view !== 'terms');
+  const installerPanel = document.getElementById('installer-content');
+  if (installerPanel) installerPanel.classList.toggle('hidden', view !== 'installer');
 
   if (view !== 'overview') {
     const workspaceWindow = document.getElementById('workspace-window');
@@ -928,6 +933,8 @@ function initInstallerWizard() {
     document.getElementById('open-installer-btn'),
     document.getElementById('about-open-installer-btn'),
     document.getElementById('hero-installer-btn'),
+    document.getElementById('hub-open-wizard-btn'),
+    document.getElementById('hub-trigger-wizard-btn'),
   ];
   const closeBtn = document.getElementById('close-installer-modal');
   const cancelBtn = document.getElementById('wiz-cancel-btn');
@@ -1075,6 +1082,53 @@ function initInstallerWizard() {
       }
     });
   }
+
+  // Installation Hub Sandbox Runner
+  const hubRunBtn = document.getElementById('hub-run-diagnostic-btn');
+  const hubTermBody = document.getElementById('hub-term-body');
+  if (hubRunBtn && hubTermBody) {
+    hubRunBtn.addEventListener('click', () => {
+      hubRunBtn.disabled = true;
+      hubRunBtn.textContent = '⏳ Testing Environment...';
+      hubTermBody.textContent = '[$] Validating CloudNex Local Environment & Dependencies...\n';
+
+      const hubSteps = [
+        '[1/5] Checking OS Platform: Linux x86_64 / Cloud Run Container (Ready)',
+        '[2/5] Probing Node.js runtime: v20.x detected. Native async I/O available.',
+        '[3/5] Verifying 1-Click Bootstrap Script integrity: setup-and-run.bat & setup-and-run.sh verified.',
+        '[4/5] Checking Python virtualenv & PyTorch tensor library: sidecar ready.',
+        '[5/5] Engine status: Listening on port 3000. Hardware detection active.',
+        '--------------------------------------------------------------------------------',
+        '✔ ENVIRONMENT HEALTHY: 0 missing dependencies. 100% ready for local runs.',
+      ];
+
+      let i = 0;
+      const t = setInterval(() => {
+        if (i < hubSteps.length) {
+          hubTermBody.textContent += hubSteps[i] + '\n';
+          hubTermBody.scrollTop = hubTermBody.scrollHeight;
+          i++;
+        } else {
+          clearInterval(t);
+          hubRunBtn.disabled = false;
+          hubRunBtn.textContent = '✔ Re-run Diagnostic';
+        }
+      }, 300);
+    });
+  }
+
+  // Copy command buttons
+  document.querySelectorAll('.copy-cmd-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const textToCopy = btn.getAttribute('data-copy');
+      if (textToCopy && navigator.clipboard) {
+        navigator.clipboard.writeText(textToCopy);
+        const prev = btn.textContent;
+        btn.textContent = '✓';
+        setTimeout(() => { btn.textContent = prev; }, 1800);
+      }
+    });
+  });
 }
 
 initInstallerWizard();

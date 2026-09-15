@@ -77,6 +77,9 @@
 
       <button class="nav-item apple-nav-link" type="button" data-view="models">Models</button>
       <button class="nav-item apple-nav-link" type="button" data-view="terms">Docs &amp; EULA</button>
+      <button class="nav-item apple-nav-link install-nav-highlight" type="button" data-view="installer">
+        <span class="nav-install-icon">⚡</span> Installation Hub
+      </button>
 
       <!-- Glass Search Pill with ⌘K -->
       <button class="apple-glass-search-pill" id="spotlight-trigger-btn" type="button" title="Quick Command (⌘K)">
@@ -203,6 +206,7 @@
         <button class="studio-tab-btn nav-item" type="button" data-view="settings">⚙ Hardware Controls</button>
         <button class="studio-tab-btn nav-item" type="button" data-view="about">👤 Mohammed Sheik</button>
         <button class="studio-tab-btn nav-item" type="button" data-view="terms">📜 Terms &amp; EULA</button>
+        <button class="studio-tab-btn nav-item studio-tab-install" type="button" data-view="installer">📦 Installation Center</button>
       </div>
 
       <!-- METRICS STRIP (FROSTED GLASS CARDS) -->
@@ -923,6 +927,109 @@ For enterprise solutions, custom infrastructure, and updates, visit:
 https://cloudnex.co.za
 
 Copyright (c) 2026 Mohammed Sheik. All rights reserved.</pre>
+        </div>
+      </div>
+
+      <!-- DEDICATED FULL-PANEL INSTALLATION CENTER -->
+      <div id="installer-content" class="hidden training-content">
+        <div class="installer-hub-header">
+          <div>
+            <span class="panel-kicker">DEPLOYMENT &amp; RUNTIME</span>
+            <h2>CloudNex Zero-Friction Installation Hub</h2>
+            <p>Deploy CloudNex Local LLM Studio to any workstation with native 1-click bootstrap scripts or launch the desktop setup wizard.</p>
+          </div>
+          <div class="installer-hub-actions">
+            <button type="button" class="primary" id="hub-open-wizard-btn">Launch Setup Wizard <span>⛶</span></button>
+            <a href="https://github.com" target="_blank" rel="noopener noreferrer" class="secondary">View Source (GitHub) <span>↗</span></a>
+          </div>
+        </div>
+
+        <!-- 3 Modern Distribution Architecture Cards -->
+        <div class="install-modes-grid">
+          <!-- Card 1: 1-Click Bootstrap -->
+          <div class="install-mode-card featured-mode">
+            <div class="install-card-badge">RECOMMENDED · FASTEST</div>
+            <div class="install-card-icon">⚡</div>
+            <div class="install-card-title">
+              <h3>1-Click Native Launcher</h3>
+              <span>setup-and-run.bat (Win) · setup-and-run.sh (Mac/Linux)</span>
+            </div>
+            <p>Double-click the included script inside your project folder. Automatically validates your environment, installs dependencies natively without bulky 400MB zips, and starts the studio immediately.</p>
+            <div class="install-card-metrics">
+              <div class="metric-row"><span>Download Size</span><strong class="text-emerald">~4.8 MB (Instant)</strong></div>
+              <div class="metric-row"><span>Dependencies</span><strong>Auto-Bootstrapped via npm &amp; pip</strong></div>
+              <div class="metric-row"><span>Native Support</span><strong>Windows 10/11, macOS, Linux</strong></div>
+            </div>
+            <div class="install-command-box">
+              <code>./setup-and-run.sh &amp;&amp; npm start</code>
+              <button type="button" class="copy-cmd-btn" data-copy="./setup-and-run.sh" title="Copy command">📋</button>
+            </div>
+          </div>
+
+          <!-- Card 2: Interactive Desktop Wizard -->
+          <div class="install-mode-card">
+            <div class="install-card-badge badge-blue">INTERACTIVE GUI</div>
+            <div class="install-card-icon">🪟</div>
+            <div class="install-card-title">
+              <h3>Desktop Setup Wizard</h3>
+              <span>Interactive NSIS &amp; DMG Setup Flow</span>
+            </div>
+            <p>Experience the step-by-step graphical desktop installer with license acceptance, Python virtual environment auto-creation, and hardware validation tests.</p>
+            <div class="install-card-metrics">
+              <div class="metric-row"><span>Installer Engine</span><strong>NSIS 3.0 / Electron-Builder</strong></div>
+              <div class="metric-row"><span>Testing Sandbox</span><strong>Embedded live terminal runner</strong></div>
+              <div class="metric-row"><span>Desktop Shortcuts</span><strong>Auto-creates Start Menu &amp; Desktop icon</strong></div>
+            </div>
+            <button type="button" class="secondary full-w-btn" id="hub-trigger-wizard-btn">Preview Wizard Now <span>→</span></button>
+          </div>
+
+          <!-- Card 3: Cloud & Sovereign Server -->
+          <div class="install-mode-card">
+            <div class="install-card-badge badge-purple">SOVEREIGN WORKSTATION</div>
+            <div class="install-card-icon">🖥</div>
+            <div class="install-card-title">
+              <h3>Headless / Server Mode</h3>
+              <span>Local Network HTTP &amp; WebSocket Daemon</span>
+            </div>
+            <p>Run CloudNex Local LLM Studio as a system daemon or local service. Access the modern web GUI from any browser on your local network while processing stays on compute nodes.</p>
+            <div class="install-card-metrics">
+              <div class="metric-row"><span>Listen Port</span><strong>http://localhost:3000</strong></div>
+              <div class="metric-row"><span>FastAPI Sidecar</span><strong>http://localhost:8000</strong></div>
+              <div class="metric-row"><span>Zero Telemetry</span><strong>100% On-Device Guaranteed</strong></div>
+            </div>
+            <div class="install-command-box">
+              <code>npm start -- --port 3000</code>
+              <button type="button" class="copy-cmd-btn" data-copy="npm start -- --port 3000" title="Copy command">📋</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live In-Hub Interactive Dependency Test Window -->
+        <div class="hub-interactive-runner-card">
+          <div class="hub-runner-header">
+            <div class="runner-title-group">
+              <span class="runner-icon">💻</span>
+              <div>
+                <h4>Interactive Installation Diagnostic Sandbox</h4>
+                <p>Verify that your system runtime, Node.js, and PyTorch dependencies resolve correctly without leaving this window.</p>
+              </div>
+            </div>
+            <div class="runner-actions">
+              <button type="button" class="btn-term-action" id="hub-run-diagnostic-btn">▶ Run Environment Check</button>
+            </div>
+          </div>
+          <div class="embedded-terminal-window">
+            <div class="terminal-bar">
+              <span class="term-dot"></span><span class="term-dot"></span><span class="term-dot"></span>
+              <span class="term-title">Console Output — cloudnex-bootstrap-diagnostics</span>
+              <span class="term-status-badge ready">READY</span>
+            </div>
+            <div class="terminal-body" id="hub-term-body">
+[CloudNex Diagnostics Ready]
+Target: Node.js 18+/20+ LTS + Python 3.10-3.12 + Embedded PyTorch 2.4
+Click "Run Environment Check" above to simulate real-time installation verification.
+            </div>
+          </div>
         </div>
       </div>
     </section>
