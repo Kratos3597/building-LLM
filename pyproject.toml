@@ -27,12 +27,14 @@ dependencies = [
 [project.optional-dependencies]
 # Post-training extras (datasets + optional experiment logging).
 train = ["datasets", "wandb"]
+# Build the self-contained Python sidecar used by the desktop installer.
+desktop = ["pyinstaller"]
 # The Streamlit control-panel UI.
 ui = ["streamlit", "pandas", "altair"]
 # The MkDocs Material documentation site.
 docs = ["mkdocs", "mkdocs-material", "pymdown-extensions"]
 # Everything, for development.
-all = ["datasets", "wandb", "streamlit", "pandas", "altair", "mkdocs", "mkdocs-material", "pymdown-extensions"]
+all = ["datasets", "wandb", "streamlit", "pandas", "altair", "mkdocs", "mkdocs-material", "pymdown-extensions", "pyinstaller"]
 
 # Make the existing import roots installable so `pip install -e .` removes the need for
 # `PYTHONPATH=.`. These packages already exist in the repo (additive __init__.py only).

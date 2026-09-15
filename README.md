@@ -22,6 +22,7 @@ Install Python dependencies and the Electron development dependencies:
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e ".[ui]"
+pip install -e ".[desktop]"
 npm install
 ```
 
@@ -47,7 +48,9 @@ Build native installers for the current host with:
 npm run build
 ```
 
-Electron Builder is configured for macOS (`.dmg` and `.app` on arm64/x64), Windows (`nsis`), and Linux (`AppImage`). The packaged application includes the Python backend directory as an extra resource. A production deployment can replace `backend/app.py` with a platform-specific PyInstaller executable without changing the Electron lifecycle code.
+Electron Builder is configured for macOS (`.dmg` and `.app` on arm64/x64), Windows (`nsis`), and Linux (`AppImage`). `npm run build` first compiles `backend/app.py` into a one-file PyInstaller executable, then embeds that executable inside the installer. The end user does not need Python, FastAPI, uvicorn, Node.js, or npm installed.
+
+Build on the target operating system and architecture. A Windows executable must be built on Windows, a macOS arm64 app on an Apple Silicon Mac, and so on; PyInstaller does not produce portable binaries across operating systems. GPU acceleration still depends on the user's installed graphics drivers and compatible PyTorch build.
 
 ## Python Engine
 

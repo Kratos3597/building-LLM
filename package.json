@@ -10,7 +10,8 @@
     "start": "electron .",
     "dev": "electron .",
     "backend": "python backend/app.py",
-    "build": "electron-builder"
+    "build:backend": "python scripts/build_backend.py",
+    "build": "npm run build:backend && electron-builder"
   },
   "devDependencies": {
     "electron": "^38.1.0",
@@ -29,9 +30,9 @@
     ],
     "extraResources": [
       {
-        "from": "backend",
+        "from": "backend/dist",
         "to": "backend",
-        "filter": ["**/*"]
+        "filter": ["cloudnex-backend*", "!*.log"]
       }
     ],
     "mac": {

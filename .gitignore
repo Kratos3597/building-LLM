@@ -1,6 +1,10 @@
 node_modules/
 dist/
+backend/build/
+backend/dist/
+backend/spec/
 release/
 .venv/
 __pycache__/
+*.egg-info/
 *.pyc
