@@ -32,7 +32,7 @@ app = FastAPI(title="CloudNex Local LLM Studio", version="0.2.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["null", "file://", "http://localhost"],
-    allow_methods=["GET", "POST"],
+    allow_methods=["GET", "POST", "PATCH", "DELETE"],
     allow_headers=["*"],
 )
 
@@ -78,6 +78,10 @@ class ChatRequest(BaseModel):
     greedy: bool = False
 
 
+class DatasetUpdate(BaseModel):
+    dataset_type: str
+
+
 def _registry_path(job_id: str) -> Path:
     return _job_dir / f"{job_id}.json"
 
@@ -90,6 +94,13 @@ def _safe_filename(filename: str | None) -> str:
     name = Path(filename or "upload.bin").name
     name = re.sub(r"[^A-Za-z0-9._-]", "_", name).strip(".")
     return name[:180] or "upload.bin"
+
+
+def _data_path(filename: str) -> Path:
+    path = (_data_dir / _safe_filename(filename)).resolve()
+    if _data_dir.resolve() not in path.parents or not path.is_file():
+        raise HTTPException(status_code=404, detail="Dataset file not found.")
+    return path
 
 
 def _checkpoint_path(name: str) -> Path:
@@ -222,6 +233,31 @@ def upload_data(file: UploadFile = File(...), dataset_type: str = Form("general"
     metadata[destination.name] = {"dataset_type": dataset_type, "uploaded": time.time()}
     metadata_path.write_text(json.dumps(metadata), encoding="utf-8")
     return {"name": destination.name, "size": destination.stat().st_size, "dataset_type": dataset_type}
+
+
+@app.patch("/api/data/files/{filename}")
+def update_data(filename: str, update: DatasetUpdate) -> dict:
+    allowed_types = {"pretrain", "sft", "preference", "rl", "general"}
+    if update.dataset_type not in allowed_types:
+        raise HTTPException(status_code=400, detail="Unsupported dataset type")
+    path = _data_path(filename)
+    metadata_path = _data_dir / "uploads.json"
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8")) if metadata_path.exists() else {}
+    metadata[path.name] = {**metadata.get(path.name, {}), "dataset_type": update.dataset_type}
+    metadata_path.write_text(json.dumps(metadata), encoding="utf-8")
+    return {"name": path.name, "dataset_type": update.dataset_type}
+
+
+@app.delete("/api/data/files/{filename}")
+def delete_data(filename: str) -> dict[str, str]:
+    path = _data_path(filename)
+    path.unlink()
+    metadata_path = _data_dir / "uploads.json"
+    if metadata_path.exists():
+        metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+        metadata.pop(path.name, None)
+        metadata_path.write_text(json.dumps(metadata), encoding="utf-8")
+    return {"status": "deleted", "name": path.name}
 
 
 @app.get("/api/models")

@@ -75,7 +75,10 @@ dropZone.addEventListener('drop', (event) => setFiles(event.dataTransfer.files))
 
 async function loadDataFiles() {
   const files = await fetch(`${backend}/api/data/files`).then((response) => response.json());
-  document.getElementById('data-file-list').innerHTML = files.length ? files.map((file) => `<article class="job-card"><strong>${file.name}</strong><span> · ${formatBytes(file.size)}</span><code>${file.dataset_type} dataset</code></article>`).join('') : '<span class="muted">No datasets uploaded yet.</span>';
+  const filter = document.getElementById('data-filter').value;
+  const visible = filter === 'all' ? files : files.filter((file) => file.dataset_type === filter);
+  document.getElementById('data-count').textContent = `${visible.length} shown · ${files.length} total`;
+  document.getElementById('data-file-list').innerHTML = visible.length ? visible.map((file) => `<article class="job-card data-card"><div><strong>${file.name}</strong><span> · ${formatBytes(file.size)}</span><code>${file.dataset_type} dataset</code></div><div class="data-actions"><select class="type-editor" data-file="${encodeURIComponent(file.name)}"><option value="general" ${file.dataset_type === 'general' ? 'selected' : ''}>General</option><option value="pretrain" ${file.dataset_type === 'pretrain' ? 'selected' : ''}>Pretraining</option><option value="sft" ${file.dataset_type === 'sft' ? 'selected' : ''}>SFT</option><option value="preference" ${file.dataset_type === 'preference' ? 'selected' : ''}>Preference</option><option value="rl" ${file.dataset_type === 'rl' ? 'selected' : ''}>RL prompts</option></select><button class="danger-button delete-data" type="button" data-file="${encodeURIComponent(file.name)}">Delete</button></div></article>`).join('') : '<span class="muted">No datasets match this filter.</span>';
 }
 
 function formatBytes(bytes) { return bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`; }
@@ -101,6 +104,23 @@ document.getElementById('upload-form').addEventListener('submit', async (event) 
     status.textContent = error.message;
     uploadButton.disabled = selectedFiles.length === 0;
   }
+});
+
+document.getElementById('data-filter').addEventListener('change', loadDataFiles);
+document.getElementById('data-file-list').addEventListener('change', async (event) => {
+  if (!event.target.classList.contains('type-editor')) return;
+  const filename = decodeURIComponent(event.target.dataset.file);
+  await fetch(`${backend}/api/data/files/${encodeURIComponent(filename)}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dataset_type: event.target.value }) });
+  await loadDataFiles();
+});
+document.getElementById('data-file-list').addEventListener('click', async (event) => {
+  const button = event.target.closest('.delete-data');
+  if (!button) return;
+  const filename = decodeURIComponent(button.dataset.file);
+  if (!window.confirm(`Delete ${filename} from the local workspace?`)) return;
+  const response = await fetch(`${backend}/api/data/files/${encodeURIComponent(filename)}`, { method: 'DELETE' });
+  if (!response.ok) document.getElementById('upload-status').textContent = 'Could not delete that dataset.';
+  await loadDataFiles();
 });
 
 async function loadModels() {
