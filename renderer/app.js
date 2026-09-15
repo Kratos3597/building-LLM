@@ -54,7 +54,25 @@ async function loadTraining() {
   const select = document.getElementById('stage-select');
   if (!select.options.length) stages.forEach((stage) => select.add(new Option(stage.title, stage.key)));
   await loadConfigEditor();
+  await loadMetrics(select.value);
   document.getElementById('job-list').innerHTML = jobs.length ? jobs.map((job) => `<article class="job-card ${job.status}"><strong>${job.title}</strong> · ${job.status}<code>${job.log_tail || 'Waiting for output...'}</code></article>`).join('') : '<span class="muted">No training runs yet.</span>';
+}
+
+async function loadMetrics(stage) {
+  const records = await fetch(`${backend}/api/metrics/${stage}`).then((response) => response.json());
+  const loss = records.filter((record) => typeof record.train_loss === 'number' || typeof record.eval_loss === 'number');
+  const chart = document.getElementById('metrics-chart');
+  if (!loss.length) {
+    chart.innerHTML = '<span class="muted">Metrics will appear after the first logged training steps.</span>';
+    document.getElementById('chart-summary').textContent = 'Waiting for metrics';
+    return;
+  }
+  const width = 720; const height = 210; const pad = 28;
+  const values = loss.flatMap((record) => [record.train_loss, record.eval_loss]).filter((value) => typeof value === 'number');
+  const min = Math.min(...values); const max = Math.max(...values); const span = max - min || 1;
+  const points = (key) => loss.filter((record) => typeof record[key] === 'number').map((record) => `${pad + ((record.step - loss[0].step) / Math.max(1, loss[loss.length - 1].step - loss[0].step)) * (width - pad * 2)},${height - pad - ((record[key] - min) / span) * (height - pad * 2)}`).join(' ');
+  chart.innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Training loss chart"><line class="chart-axis" x1="${pad}" y1="${height - pad}" x2="${width - pad}" y2="${height - pad}"/><polyline class="chart-line train" points="${points('train_loss')}"/><polyline class="chart-line eval" points="${points('eval_loss')}"/><text x="${pad}" y="18">loss ${max.toFixed(3)}</text><text x="${pad}" y="${height - 7}">step ${loss[0].step}</text><text x="${width - 72}" y="${height - 7}">${loss[loss.length - 1].step}</text></svg><div class="chart-legend"><span class="train-key">Train loss</span><span class="eval-key">Eval loss</span></div>`;
+  document.getElementById('chart-summary').textContent = `${loss.length} points · latest step ${loss[loss.length - 1].step}`;
 }
 
 async function loadConfigEditor() {
@@ -77,7 +95,7 @@ function collectOverrides() {
   return values;
 }
 
-document.getElementById('stage-select').addEventListener('change', loadConfigEditor);
+document.getElementById('stage-select').addEventListener('change', () => { loadConfigEditor(); loadMetrics(document.getElementById('stage-select').value); });
 document.getElementById('smoke-check').addEventListener('change', loadConfigEditor);
 
 let selectedFiles = [];

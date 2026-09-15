@@ -48,6 +48,7 @@ _job_dir = Path(os.environ.get("CLOUDNEX_JOB_DIR", Path.home() / "CloudNex Local
 _job_dir.mkdir(parents=True, exist_ok=True)
 _data_dir = Path(os.environ.get("CLOUDNEX_DATA_DIR", Path.home() / "CloudNex Local LLM Studio" / "data"))
 _data_dir.mkdir(parents=True, exist_ok=True)
+_log_dirs = [Path(os.environ.get("CLOUDNEX_LOG_DIR", Path.home() / "CloudNex Local LLM Studio" / "logs")), Path("/ephemeral/logs")]
 _processes: dict[str, subprocess.Popen] = {}
 _checkpoint_dirs = [
     Path(os.environ.get("CLOUDNEX_CHECKPOINT_DIR", Path.home() / "CloudNex Local LLM Studio" / "checkpoints")),
@@ -226,6 +227,24 @@ def health() -> dict[str, str]:
 @app.get("/api/system")
 def system_info() -> dict[str, str]:
     return {"platform": platform.system(), "python": platform.python_version(), "device": os.environ.get("CLOUDNEX_DEVICE", "auto")}
+
+
+@app.get("/api/metrics/{stage}")
+def metrics(stage: str, limit: int = 200) -> list[dict]:
+    if stage not in STAGES:
+        raise HTTPException(status_code=404, detail="Unknown training stage")
+    records = []
+    for directory in _log_dirs:
+        for path in directory.glob(f"{stage}_*.jsonl") if directory.is_dir() else []:
+            for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+                try:
+                    record = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if isinstance(record.get("step"), (int, float)):
+                    records.append(record)
+    records.sort(key=lambda item: (item.get("step", 0), item.get("wall", 0)))
+    return records[-max(1, min(limit, 2000)):]
 
 
 @app.get("/api/stages")
