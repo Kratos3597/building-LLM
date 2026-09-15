@@ -15,6 +15,7 @@
       <button class="nav-item active" type="button" data-view="overview">Overview</button>
       <button class="nav-item" type="button" data-view="training">Training</button>
       <button class="nav-item" type="button" data-view="models">Models</button>
+      <button class="nav-item" type="button" data-view="chat">Chat</button>
       <button class="nav-item" type="button" data-view="settings">Settings</button>
     </nav>
     <div class="sidebar-foot"><span class="status-dot"></span><span id="connection-status">Connecting to local engine</span></div>
@@ -35,6 +36,8 @@
     <section id="view-panel" class="workspace-panel">
       <div id="overview-content"><div><span class="panel-kicker">PIPELINE</span><h2>Your next run starts here.</h2><p>Choose a stage to configure a focused experiment. Existing PyTorch scripts and checkpoints stay in the local workspace.</p></div><div class="pipeline"><span class="complete">01 Data</span><span>02 Train</span><span>03 Evaluate</span></div></div>
       <div id="training-content" class="hidden training-content"><div><span class="panel-kicker">TRAINING RUN</span><h2>Launch a local experiment.</h2><p>The backend runs the existing PyTorch stage scripts and keeps their logs in your CloudNex workspace.</p></div><form id="training-form"><label for="stage-select">Stage<select id="stage-select"></select></label><label class="check-row"><input id="smoke-check" type="checkbox" checked> Use smoke configuration</label><button class="primary" type="submit">Start training <span>→</span></button></form><div id="job-list" class="job-list"></div></div>
+      <div id="models-content" class="hidden training-content"><div><span class="panel-kicker">CHECKPOINTS</span><h2>Your local model shelf.</h2><p>Checkpoints are read from the CloudNex workspace and the existing training output folder.</p></div><div id="model-list" class="job-list"></div></div>
+      <div id="chat-content" class="hidden training-content"><div><span class="panel-kicker">LOCAL INFERENCE</span><h2>Talk to a checkpoint.</h2><p>Choose a local model and send prompts through the private Python engine.</p></div><form id="chat-form"><label for="model-select">Model<select id="model-select"></select></label><label for="prompt-input">Prompt<textarea id="prompt-input" rows="4" placeholder="Ask your local model something..."></textarea></label><button class="primary" type="submit">Send prompt <span>→</span></button></form><pre id="chat-output" class="chat-output">Your response will appear here.</pre></div>
     </section>
   </main>
   <script src="./app.js"></script>

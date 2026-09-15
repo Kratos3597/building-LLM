@@ -44,6 +44,20 @@ else:
 _job_dir = Path(os.environ.get("CLOUDNEX_JOB_DIR", Path.home() / "CloudNex Local LLM Studio" / "jobs"))
 _job_dir.mkdir(parents=True, exist_ok=True)
 _processes: dict[str, subprocess.Popen] = {}
+_checkpoint_dirs = [
+    Path(os.environ.get("CLOUDNEX_CHECKPOINT_DIR", Path.home() / "CloudNex Local LLM Studio" / "checkpoints")),
+    Path("/ephemeral/ckpts"),
+]
+_loaded_models: dict[tuple[str, str], object] = {}
+
+
+def _cuda_available() -> bool:
+    try:
+        import torch
+
+        return torch.cuda.is_available()
+    except Exception:
+        return False
 
 
 class JobRequest(BaseModel):
@@ -52,12 +66,31 @@ class JobRequest(BaseModel):
     nproc: int = Field(default=1, ge=1, le=8)
 
 
+class ChatRequest(BaseModel):
+    checkpoint: str
+    prompt: str = Field(min_length=1, max_length=12000)
+    temperature: float = Field(default=0.8, ge=0.0, le=2.0)
+    max_new_tokens: int = Field(default=256, ge=1, le=2048)
+    greedy: bool = False
+
+
 def _registry_path(job_id: str) -> Path:
     return _job_dir / f"{job_id}.json"
 
 
 def _log_path(job_id: str) -> Path:
     return _job_dir / f"{job_id}.log"
+
+
+def _checkpoint_path(name: str) -> Path:
+    candidate = Path(name)
+    if candidate.is_absolute() and candidate.is_file():
+        return candidate.resolve()
+    for directory in _checkpoint_dirs:
+        path = (directory / name).resolve()
+        if path.is_file() and directory.resolve() in path.parents:
+            return path
+    raise HTTPException(status_code=404, detail="Checkpoint not found in the CloudNex checkpoint folders.")
 
 
 def _write_job(record: dict) -> None:
@@ -148,6 +181,47 @@ def system_info() -> dict[str, str]:
 @app.get("/api/stages")
 def stages() -> list[dict[str, str]]:
     return [{"key": key, **stage} for key, stage in STAGES.items()]
+
+
+@app.get("/api/models")
+def models() -> list[dict]:
+    found = {}
+    for directory in _checkpoint_dirs:
+        if not directory.is_dir():
+            continue
+        for path in directory.glob("*.pt"):
+            resolved = path.resolve()
+            found[str(resolved)] = {
+                "name": path.name,
+                "path": path.name,
+                "size_mb": round(path.stat().st_size / 1024 / 1024, 1),
+                "modified": path.stat().st_mtime,
+            }
+    return sorted(found.values(), key=lambda item: item["modified"], reverse=True)
+
+
+@app.post("/api/chat")
+def chat(request: ChatRequest) -> dict[str, str | float]:
+    checkpoint = _checkpoint_path(request.checkpoint)
+    device = os.environ.get("CLOUDNEX_DEVICE", "cuda" if _cuda_available() else "cpu")
+    cache_key = (str(checkpoint), device)
+    model = _loaded_models.get(cache_key)
+    if model is None:
+        from src.post_training.inference import load_model_from_ckpt
+
+        model = load_model_from_ckpt(str(checkpoint), device)
+        _loaded_models[cache_key] = model
+    from src.post_training.inference import generate_reply
+
+    reply = generate_reply(
+        model,
+        request.prompt,
+        device=device,
+        max_new_tokens=request.max_new_tokens,
+        temperature=request.temperature,
+        greedy=request.greedy,
+    )
+    return {"reply": reply, "model": checkpoint.name, "device": device}
 
 
 @app.get("/api/jobs")
