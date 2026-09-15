@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' http://127.0.0.1:8000; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' http://127.0.0.1:8000; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'">
   <title>CloudNex Local LLM Studio</title>
   <meta name="description" content="Studio for local language model workflows, dataset preparation, training runs, checkpoint management, and inference evaluation.">
   <meta property="og:title" content="CloudNex Local LLM Studio">
@@ -26,7 +26,15 @@
       <button class="nav-item" type="button" data-view="chat">Chat</button>
       <button class="nav-item" type="button" data-view="evaluation">Evaluate</button>
       <button class="nav-item" type="button" data-view="settings">Settings</button>
+      <button class="nav-item" type="button" data-view="about">About Creator</button>
+      <button class="nav-item" type="button" data-view="terms">Terms &amp; License</button>
     </nav>
+    <div class="sidebar-action-box">
+      <button id="open-installer-btn" class="installer-preview-trigger" type="button">
+        <span class="pulse-beacon"></span>
+        <span>Installer Preview</span>
+      </button>
+    </div>
     <div class="sidebar-foot"><span class="status-dot"></span><span id="connection-status">Connecting to local engine</span></div>
   </aside>
   <main class="main-content">
@@ -170,8 +178,293 @@
           </div>
         </form>
       </div>
+
+      <!-- ABOUT THE CREATOR PANEL -->
+      <div id="about-content" class="hidden training-content">
+        <div>
+          <span class="panel-kicker">ARCHITECT &amp; VISION</span>
+          <h2>About Mohammed Sheik &amp; CloudNex</h2>
+          <p>The vision and engineering behind the self-contained local post-training engine.</p>
+        </div>
+
+        <div class="creator-profile-card">
+          <div class="creator-avatar-column">
+            <div class="avatar-frame">
+              <img id="creator-img" src="./altaaf.jpeg" alt="Mohammed Sheik - Founder of CloudNex" class="creator-portrait-img" onerror="this.classList.add('hidden'); document.getElementById('avatar-fallback').classList.remove('hidden');">
+              <div id="avatar-fallback" class="avatar-fallback hidden">
+                <span class="avatar-initials">MS</span>
+                <span class="avatar-tag">Mohammed Sheik</span>
+              </div>
+              <div class="avatar-glow-ring"></div>
+            </div>
+            <div class="creator-role-tag">
+              <span class="verified-icon">✦</span>
+              <span>Founder &amp; System Architect</span>
+            </div>
+            <a href="https://cloudnex.co.za" target="_blank" rel="noopener noreferrer" class="cloudnex-link-pill">
+              <span>Visit cloudnex.co.za</span>
+              <span class="arrow-glyph">↗</span>
+            </a>
+          </div>
+
+          <div class="creator-bio-column">
+            <div class="bio-header">
+              <h3>Mohammed Sheik</h3>
+              <span class="bio-org">CloudNex · Digital Sovereignty &amp; Local AI</span>
+            </div>
+
+            <p class="bio-lead">
+              Mohammed Sheik founded <strong>CloudNex</strong> (<a href="https://cloudnex.co.za" target="_blank" rel="noopener noreferrer">cloudnex.co.za</a>) with a dedication to engineering high-performance computing systems, sovereign cloud solutions, and accessible deep learning infrastructure.
+            </p>
+
+            <p class="bio-body">
+              <strong>CloudNex Local LLM Studio</strong> was created to eliminate the immense friction surrounding local open-weights post-training. Traditional open-source machine learning often devolves into "dependency hell" — incompatible CUDA drivers, broken pip wheels, and complex multi-step build scripts.
+            </p>
+
+            <div class="creator-highlights-grid">
+              <div class="highlight-item">
+                <strong>Zero-Pip Architecture</strong>
+                <p>Bundles an embedded PyTorch distribution and compiled C++ tensor kernels inside the desktop binary for instantaneous, one-click launches.</p>
+              </div>
+              <div class="highlight-item">
+                <strong>Hardware Inclusivity</strong>
+                <p>First-class optimization for AMD ROCm (RDNA 4 Navi 48 / RDNA 3), NVIDIA CUDA Ada/Ampere, Apple Metal (MPS), and multi-core CPU SIMD.</p>
+              </div>
+              <div class="highlight-item">
+                <strong>100% Private &amp; Sovereign</strong>
+                <p>No remote telemetry, no telemetry beacons, and zero cloud API dependencies. Checkpoints, datasets, and prompts stay on your physical storage.</p>
+              </div>
+            </div>
+
+            <div class="creator-cta-row">
+              <button class="primary" type="button" id="about-open-installer-btn">Preview Desktop Installer Experience <span>→</span></button>
+              <button class="secondary" type="button" data-view="terms">Review License &amp; Terms</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TERMS & CONDITIONS / LICENSE PANEL -->
+      <div id="terms-content" class="hidden training-content">
+        <div class="terms-header-row">
+          <div>
+            <span class="panel-kicker">LEGAL &amp; COMPLIANCE</span>
+            <h2>Terms of Service &amp; EULA</h2>
+            <p>End User License Agreement, Privacy Guarantee, and Hardware Safety Guidelines.</p>
+          </div>
+          <div class="terms-actions-bar">
+            <button class="secondary" type="button" id="copy-license-btn">Copy Full EULA Text</button>
+          </div>
+        </div>
+
+        <div class="terms-sections-list">
+          <article class="terms-card">
+            <div class="terms-card-head">
+              <span class="terms-num">01</span>
+              <h4>Grant of License</h4>
+              <span class="terms-badge">Worldwide</span>
+            </div>
+            <p>Mohammed Sheik and CloudNex grant you a non-exclusive, worldwide, royalty-free license to install, execute, inspect, and deploy CloudNex Local LLM Studio on your personal workstations, laptops, and enterprise compute clusters for commercial, research, and educational purposes.</p>
+          </article>
+
+          <article class="terms-card">
+            <div class="terms-card-head">
+              <span class="terms-num">02</span>
+              <h4>Absolute Local-Only &amp; Zero-Telemetry Guarantee</h4>
+              <span class="terms-badge privacy-badge">100% On-Device</span>
+            </div>
+            <p>CloudNex Local LLM Studio operates strictly on-device. The software contains zero tracking beacons, no analytics telemetry, and no hidden cloud transmissions. Your training datasets, fine-tuned weights, and private prompts remain exclusively on your local disk at all times.</p>
+          </article>
+
+          <article class="terms-card">
+            <div class="terms-card-head">
+              <span class="terms-num">03</span>
+              <h4>Self-Contained Bundled Runtime</h4>
+              <span class="terms-badge">Zero-Pip</span>
+            </div>
+            <p>The desktop distribution is packaged with a frozen Python engine and pre-compiled PyTorch runtime. Users are not required to manually configure Python environments, virtualenvs, or pip dependencies. The software manages its local worker processes autonomously.</p>
+          </article>
+
+          <article class="terms-card">
+            <div class="terms-card-head">
+              <span class="terms-num">04</span>
+              <h4>Hardware Thermal Headroom &amp; Compute Safety</h4>
+              <span class="terms-badge warn-badge">Compute Safety</span>
+            </div>
+            <p>Fine-tuning deep neural networks generates substantial computational loads on CPU and GPU silicon. The studio provides fine-grained controls for thread allocation, RAM ceilings, and VRAM reservation fractions. Users must maintain adequate chassis cooling. CloudNex is not liable for thermal throttling or system resets under sustained compute loads.</p>
+          </article>
+
+          <article class="terms-card">
+            <div class="terms-card-head">
+              <span class="terms-num">05</span>
+              <h4>Limitation of Liability &amp; Disclaimer</h4>
+              <span class="terms-badge">As-Is</span>
+            </div>
+            <p>The Software is provided "as is" without warranty of any kind. Under no circumstances shall Mohammed Sheik, CloudNex, or contributors be held liable for any direct, indirect, incidental, or consequential damages resulting from model outputs, training jobs, or hardware operations.</p>
+          </article>
+
+          <article class="terms-card">
+            <div class="terms-card-head">
+              <span class="terms-num">06</span>
+              <h4>Author Attribution &amp; Contact</h4>
+              <span class="terms-badge">CloudNex</span>
+            </div>
+            <p>Authored by <strong>Mohammed Sheik</strong>. For enterprise inquiries, specialized models, or support, visit <a href="https://cloudnex.co.za" target="_blank" rel="noopener noreferrer">https://cloudnex.co.za</a>. Copyright &copy; 2026 Mohammed Sheik. All rights reserved.</p>
+          </article>
+        </div>
+
+        <div class="raw-license-box">
+          <div class="raw-license-header">
+            <span>Raw Installer License File (<code>installer/LICENSE.txt</code>)</span>
+            <span id="raw-license-status"></span>
+          </div>
+          <pre id="raw-license-text" class="raw-license-pre">Loading license text...</pre>
+        </div>
+      </div>
     </section>
   </main>
+
+  <!-- INTERACTIVE INSTALLER SETUP WIZARD PREVIEW MODAL -->
+  <div id="installer-modal" class="installer-modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="installer-window-title">
+    <div class="installer-window-frame">
+      <div class="installer-window-header">
+        <div class="installer-window-brand">
+          <span class="nsis-icon">CN</span>
+          <span id="installer-window-title">CloudNex Local LLM Studio Setup — v0.1.0</span>
+        </div>
+        <button id="close-installer-modal" class="installer-close-x" type="button" aria-label="Close setup window">×</button>
+      </div>
+
+      <div class="installer-window-body">
+        <!-- Sidebar with Wizard Steps -->
+        <div class="installer-wizard-sidebar">
+          <div class="sidebar-brand-block">
+            <div class="wizard-logo">CloudNex</div>
+            <div class="wizard-subtitle">By Mohammed Sheik</div>
+          </div>
+          <ol class="wizard-steps-list">
+            <li id="wiz-step-1" class="wizard-step-item active">
+              <span class="step-circle">1</span>
+              <span class="step-label">Welcome &amp; Creator</span>
+            </li>
+            <li id="wiz-step-2" class="wizard-step-item">
+              <span class="step-circle">2</span>
+              <span class="step-label">Architecture &amp; Readme</span>
+            </li>
+            <li id="wiz-step-3" class="wizard-step-item">
+              <span class="step-circle">3</span>
+              <span class="step-label">Terms &amp; Conditions</span>
+            </li>
+            <li id="wiz-step-4" class="wizard-step-item">
+              <span class="step-circle">4</span>
+              <span class="step-label">Ready &amp; Finish</span>
+            </li>
+          </ol>
+          <div class="wizard-sidebar-foot">
+            <span class="foot-domain">cloudnex.co.za</span>
+          </div>
+        </div>
+
+        <!-- Main Content of Wizard -->
+        <div class="installer-wizard-content">
+          <!-- STEP 1: WELCOME & ABOUT -->
+          <div id="wizard-pane-1" class="wizard-pane active">
+            <div class="wizard-pane-header">
+              <h3>Welcome to CloudNex Local LLM Studio Setup</h3>
+              <p>Post-training and local model intelligence, built for your workstation.</p>
+            </div>
+            <div class="wizard-welcome-card">
+              <div class="wizard-author-row">
+                <div class="wizard-avatar-box">
+                  <img src="./altaaf.jpeg" alt="Mohammed Sheik" class="wizard-author-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                  <div class="wizard-avatar-fallback" style="display:none;">MS</div>
+                </div>
+                <div class="wizard-author-info">
+                  <strong>Created by Mohammed Sheik</strong>
+                  <span>Founder, CloudNex · <a href="https://cloudnex.co.za" target="_blank" rel="noopener noreferrer">https://cloudnex.co.za</a></span>
+                  <small>Zero-pip installation • Embedded PyTorch • ROCm, CUDA &amp; Apple Silicon</small>
+                </div>
+              </div>
+              <div class="wizard-welcome-message">
+                <p>This setup wizard will install <strong>CloudNex Local LLM Studio</strong> on your machine with all necessary Python runtimes, C++ tensor acceleration libraries, and hardware drivers pre-bundled.</p>
+                <div class="feature-bullets">
+                  <div>✓ <strong>Zero Pip Installation:</strong> No manual Python, CUDA, or pip setup required.</div>
+                  <div>✓ <strong>100% Private &amp; Offline:</strong> All weights and datasets stay on your physical drive.</div>
+                  <div>✓ <strong>Hardware Optimized:</strong> Auto-detects AMD ROCm (RDNA 4/3/2), NVIDIA CUDA, and Apple MPS.</div>
+                </div>
+              </div>
+            </div>
+            <p class="wizard-prompt-text">Click <strong>Next</strong> to review the system Readme and technical architecture.</p>
+          </div>
+
+          <!-- STEP 2: README & SYSTEM ARCHITECTURE -->
+          <div id="wizard-pane-2" class="wizard-pane hidden">
+            <div class="wizard-pane-header">
+              <h3>System Architecture &amp; Readme</h3>
+              <p>Please review the engine specifications and hardware requirements before continuing.</p>
+            </div>
+            <div class="wizard-scrollable-doc" id="wizard-readme-content">
+              <div class="doc-loading">Loading technical README...</div>
+            </div>
+            <p class="wizard-prompt-text">Click <strong>Next</strong> to review the Software License Agreement &amp; Terms.</p>
+          </div>
+
+          <!-- STEP 3: TERMS & CONDITIONS (EULA) -->
+          <div id="wizard-pane-3" class="wizard-pane hidden">
+            <div class="wizard-pane-header">
+              <h3>End User License Agreement &amp; Terms</h3>
+              <p>Please review the terms of service and local privacy guarantee before installing.</p>
+            </div>
+            <div class="wizard-scrollable-doc" id="wizard-license-content">
+              <div class="doc-loading">Loading License Agreement...</div>
+            </div>
+            <div class="agreement-checkbox-row">
+              <input type="checkbox" id="wizard-agree-checkbox">
+              <label for="wizard-agree-checkbox">
+                <strong>I accept the terms in the Software License Agreement and Privacy Policy</strong>
+                <span class="sub-label">I acknowledge that CloudNex Studio runs 100% on-device and I agree to compute safety guidelines.</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- STEP 4: READY / FINISHED -->
+          <div id="wizard-pane-4" class="wizard-pane hidden">
+            <div class="wizard-pane-header">
+              <h3>Setup Ready &amp; Verified</h3>
+              <p>CloudNex Local LLM Studio is ready to deploy on your machine.</p>
+            </div>
+            <div class="wizard-finish-card">
+              <div class="success-glyph">✓</div>
+              <h4>Zero-Setup Installation Complete</h4>
+              <p>All core components, PyTorch binaries, and hardware detection modules are verified.</p>
+              <div class="finish-details-grid">
+                <div><span>Engine:</span><strong>Embedded Python 3.12 + PyTorch 2.4</strong></div>
+                <div><span>Acceleration:</span><strong>AMD ROCm / NVIDIA CUDA / MPS</strong></div>
+                <div><span>Creator:</span><strong>Mohammed Sheik (<a href="https://cloudnex.co.za" target="_blank" rel="noopener noreferrer">cloudnex.co.za</a>)</strong></div>
+                <div><span>Data Policy:</span><strong>100% Sovereign &amp; Offline</strong></div>
+              </div>
+            </div>
+            <div class="finish-checkbox-row">
+              <label class="check-row"><input type="checkbox" checked id="wizard-launch-check"> Launch CloudNex Local LLM Studio now</label>
+              <label class="check-row"><input type="checkbox" checked id="wizard-readme-check"> View Readme documentation</label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Installer Window Footer Actions -->
+      <div class="installer-window-footer">
+        <div class="installer-foot-left">
+          <span class="installer-version-badge">NSIS / DMG Packager · CloudNex v0.1.0</span>
+        </div>
+        <div class="installer-foot-actions">
+          <button type="button" id="wiz-back-btn" class="secondary" disabled>&lt; Back</button>
+          <button type="button" id="wiz-next-btn" class="primary">Next &gt;</button>
+          <button type="button" id="wiz-cancel-btn" class="secondary">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
   <script src="./app.js"></script>
 </body>
 </html>

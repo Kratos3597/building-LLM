@@ -43,6 +43,8 @@ function selectView(view) {
     chat: 'Talk to a local checkpoint.',
     evaluation: 'Measure a local checkpoint.',
     settings: 'Compute Resource & Hardware Controls.',
+    about: 'About Mohammed Sheik & CloudNex Architecture.',
+    terms: 'Terms of Service & License Agreement.',
   };
   const panelTitle = document.querySelector('.workspace-panel h2');
   if (panelTitle) panelTitle.textContent = titles[view] || titles.overview;
@@ -54,6 +56,10 @@ function selectView(view) {
   document.getElementById('evaluation-content').classList.toggle('hidden', view !== 'evaluation');
   const settingsPanel = document.getElementById('settings-content');
   if (settingsPanel) settingsPanel.classList.toggle('hidden', view !== 'settings');
+  const aboutPanel = document.getElementById('about-content');
+  if (aboutPanel) aboutPanel.classList.toggle('hidden', view !== 'about');
+  const termsPanel = document.getElementById('terms-content');
+  if (termsPanel) termsPanel.classList.toggle('hidden', view !== 'terms');
 
   if (view === 'training') loadTraining();
   if (view === 'data') loadDataFiles();
@@ -61,6 +67,7 @@ function selectView(view) {
   if (view === 'chat') loadChatModels();
   if (view === 'evaluation') loadEvaluation();
   if (view === 'settings') loadSettings();
+  if (view === 'terms') loadLicenseDocs();
 }
 
 document.querySelectorAll('[data-view]').forEach((button) => button.addEventListener('click', () => selectView(button.dataset.view)));
@@ -481,5 +488,174 @@ if (resetBtn) {
     document.getElementById('settings-form').dispatchEvent(new Event('submit'));
   });
 }
+
+/* --- LICENSE & README LOADER --- */
+let cachedLicense = '';
+let cachedReadme = '';
+
+async function loadLicenseDocs() {
+  const preEl = document.getElementById('raw-license-text');
+  const statusEl = document.getElementById('raw-license-status');
+  if (!preEl) return;
+
+  if (cachedLicense) {
+    preEl.textContent = cachedLicense;
+    return;
+  }
+
+  try {
+    const res = await fetch(`${backend}/api/license`);
+    const data = await res.json();
+    cachedLicense = data.license || 'License not found.';
+    preEl.textContent = cachedLicense;
+    if (statusEl) statusEl.textContent = 'Loaded from installer/LICENSE.txt';
+  } catch (err) {
+    preEl.textContent = 'CloudNex Local LLM Studio\nCopyright (c) 2026 Mohammed Sheik (https://cloudnex.co.za)\nAll rights reserved.';
+  }
+}
+
+async function loadReadmeDoc() {
+  if (cachedReadme) return cachedReadme;
+  try {
+    const res = await fetch(`${backend}/api/readme`);
+    const data = await res.json();
+    cachedReadme = data.readme || 'Readme documentation.';
+    return cachedReadme;
+  } catch (_) {
+    return '# CloudNex Local LLM Studio\nCreated by Mohammed Sheik.\nhttps://cloudnex.co.za';
+  }
+}
+
+// Copy license button
+const copyLicenseBtn = document.getElementById('copy-license-btn');
+if (copyLicenseBtn) {
+  copyLicenseBtn.addEventListener('click', async () => {
+    await loadLicenseDocs();
+    if (cachedLicense && navigator.clipboard) {
+      navigator.clipboard.writeText(cachedLicense);
+      const originalText = copyLicenseBtn.textContent;
+      copyLicenseBtn.textContent = 'Copied to Clipboard! ✓';
+      setTimeout(() => { copyLicenseBtn.textContent = originalText; }, 2500);
+    }
+  });
+}
+
+/* --- INTERACTIVE INSTALLER WIZARD CONTROLLER --- */
+function initInstallerWizard() {
+  const modal = document.getElementById('installer-modal');
+  const openTriggers = [
+    document.getElementById('open-installer-btn'),
+    document.getElementById('about-open-installer-btn'),
+  ];
+  const closeBtn = document.getElementById('close-installer-modal');
+  const cancelBtn = document.getElementById('wiz-cancel-btn');
+  const nextBtn = document.getElementById('wiz-next-btn');
+  const backBtn = document.getElementById('wiz-back-btn');
+  const agreeCheck = document.getElementById('wizard-agree-checkbox');
+  const readmeBox = document.getElementById('wizard-readme-content');
+  const licenseBox = document.getElementById('wizard-license-content');
+
+  let currentStep = 1;
+  const maxSteps = 4;
+
+  function setStep(step) {
+    currentStep = step;
+
+    // Update step indicators
+    for (let i = 1; i <= maxSteps; i++) {
+      const stepItem = document.getElementById(`wiz-step-${i}`);
+      const pane = document.getElementById(`wizard-pane-${i}`);
+      if (stepItem) {
+        stepItem.classList.toggle('active', i === currentStep);
+        stepItem.classList.toggle('completed', i < currentStep);
+      }
+      if (pane) {
+        pane.classList.toggle('hidden', i !== currentStep);
+        pane.classList.toggle('active', i === currentStep);
+      }
+    }
+
+    // Update Back button
+    if (backBtn) {
+      backBtn.disabled = currentStep === 1;
+    }
+
+    // Update Next / Finish button
+    if (nextBtn) {
+      if (currentStep === 4) {
+        nextBtn.textContent = 'Finish & Launch';
+        nextBtn.disabled = false;
+      } else if (currentStep === 3) {
+        nextBtn.textContent = 'Next >';
+        nextBtn.disabled = !agreeCheck.checked;
+      } else {
+        nextBtn.textContent = 'Next >';
+        nextBtn.disabled = false;
+      }
+    }
+
+    // Load async contents
+    if (currentStep === 2 && readmeBox) {
+      loadReadmeDoc().then((text) => {
+        readmeBox.textContent = text;
+      });
+    }
+
+    if (currentStep === 3 && licenseBox) {
+      loadLicenseDocs().then(() => {
+        licenseBox.textContent = cachedLicense;
+      });
+    }
+  }
+
+  function openWizard() {
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    setStep(1);
+  }
+
+  function closeWizard() {
+    if (!modal) return;
+    modal.classList.add('hidden');
+  }
+
+  openTriggers.forEach((btn) => {
+    if (btn) btn.addEventListener('click', openWizard);
+  });
+
+  if (closeBtn) closeBtn.addEventListener('click', closeWizard);
+  if (cancelBtn) cancelBtn.addEventListener('click', closeWizard);
+
+  if (agreeCheck) {
+    agreeCheck.addEventListener('change', () => {
+      if (currentStep === 3 && nextBtn) {
+        nextBtn.disabled = !agreeCheck.checked;
+      }
+    });
+  }
+
+  if (nextBtn) {
+    nextBtn.addEventListener('click', () => {
+      if (currentStep === 4) {
+        closeWizard();
+        selectView('overview');
+        return;
+      }
+      if (currentStep < maxSteps) {
+        setStep(currentStep + 1);
+      }
+    });
+  }
+
+  if (backBtn) {
+    backBtn.addEventListener('click', () => {
+      if (currentStep > 1) {
+        setStep(currentStep - 1);
+      }
+    });
+  }
+}
+
+initInstallerWizard();
 
 connect();

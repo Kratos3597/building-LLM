@@ -1,0 +1,72 @@
+CLOUDNEX LOCAL LLM STUDIO - END USER LICENSE AGREEMENT & TERMS OF SERVICE
+
+Version: 1.0 (2026)
+Author: Mohammed Sheik
+Website: https://cloudnex.co.za
+Software: CloudNex Local LLM Studio
+
+PLEASE READ THIS END USER LICENSE AGREEMENT ("EULA") CAREFULLY BEFORE INSTALLING
+OR USING CLOUDNEX LOCAL LLM STUDIO ("THE SOFTWARE"). BY INSTALLING, COPYING, OR
+USING THE SOFTWARE, YOU AGREE TO BE BOUND BY THE TERMS AND CONDITIONS OF THIS AGREEMENT.
+
+================================================================================
+1. GRANT OF LICENSE
+================================================================================
+Mohammed Sheik and CloudNex ("Licensor") hereby grant you a non-exclusive, 
+worldwide, royalty-free license to use, execute, inspect, and deploy CloudNex 
+Local LLM Studio on your personal computers, workstations, and local computing 
+clusters for research, commercial, and educational purposes.
+
+================================================================================
+2. LOCAL-ONLY & ZERO-TELEMETRY GUARANTEE
+================================================================================
+CloudNex Local LLM Studio is built from the ground up on an uncompromising 
+principle of digital sovereignty and absolute data privacy:
+- 100% On-Device Processing: All neural network training, tokenization, 
+  inference, checkpoint evaluations, and dataset operations execute strictly 
+  on your local hardware (CPU, AMD ROCm, NVIDIA CUDA, or Apple Silicon).
+- Zero Telemetry / No Phoning Home: The Software contains no background tracking, 
+  no user analytics, no automated telemetry beacons, and no external API call-outs.
+  Your training datasets, proprietary prompts, and model weights never leave your machine.
+
+================================================================================
+3. BUNDLED RUNTIME & SELF-CONTAINED EXECUTION
+================================================================================
+The Software ships with a fully self-contained local Python engine and PyTorch 
+runtime. Users are NOT required to manually configure Python environments, pip 
+dependencies, or compilation toolchains. The Software manages its own sidecar 
+subprocesses and workspace folders.
+
+================================================================================
+4. COMPUTE RESOURCE & HARDWARE THERMAL SAFETY
+================================================================================
+Training and fine-tuning language models creates heavy mathematical loads on CPU 
+cores and graphics processing units (GPUs).
+- The Software provides explicit resource capping controls (CPU core allocation, 
+  system RAM usage ceiling, and GPU VRAM reservation fraction).
+- The user is responsible for ensuring adequate physical chassis ventilation, 
+  power delivery, and thermal cooling for sustained deep learning workloads.
+- Licensor shall not be held liable for thermal throttling, hardware instability, 
+  or system crashes resulting from continuous full-power training operations.
+
+================================================================================
+5. NO WARRANTY & LIMITATION OF LIABILITY
+================================================================================
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS 
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR 
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER 
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION 
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+================================================================================
+6. ABOUT THE CREATOR & CLOUDNEX
+================================================================================
+CloudNex Local LLM Studio was conceptualized and developed by Mohammed Sheik to 
+democratize state-of-the-art post-training (SFT, DPO, PPO, GRPO) and local AI 
+sovereignty worldwide.
+
+For enterprise solutions, custom infrastructure, and updates, visit:
+https://cloudnex.co.za
+
+Copyright (c) 2026 Mohammed Sheik. All rights reserved.

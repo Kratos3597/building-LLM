@@ -388,6 +388,26 @@ const server = http.createServer(async (req, res) => {
     return sendJson(res, 200, { reply });
   }
 
+  if (pathname === '/api/license') {
+    const licensePath = path.join(ROOT_DIR, 'installer', 'LICENSE.txt');
+    try {
+      const text = fs.readFileSync(licensePath, 'utf8');
+      return sendJson(res, 200, { license: text });
+    } catch (_) {
+      return sendJson(res, 200, { license: 'Copyright (c) 2026 Mohammed Sheik (https://cloudnex.co.za). All rights reserved.' });
+    }
+  }
+
+  if (pathname === '/api/readme') {
+    const readmePath = path.join(ROOT_DIR, 'installer', 'README.md');
+    try {
+      const text = fs.readFileSync(readmePath, 'utf8');
+      return sendJson(res, 200, { readme: text });
+    } catch (_) {
+      return sendJson(res, 200, { readme: '# CloudNex Local LLM Studio\nCreated by Mohammed Sheik.' });
+    }
+  }
+
   if (pathname === '/api/evaluations') {
     if (req.method === 'GET') {
       return sendJson(res, 200, evaluations);
