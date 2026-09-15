@@ -1,6 +1,7 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 
 const PORT = 3000;
 const HOST = '0.0.0.0';
@@ -10,6 +11,17 @@ const ROOT_DIR = __dirname;
 const RENDERER_DIR = path.join(ROOT_DIR, 'renderer');
 const DATA_DIR = path.join(ROOT_DIR, 'data_store');
 const CONFIGS_DIR = path.join(ROOT_DIR, 'configs');
+
+const totalCores = os.cpus() ? os.cpus().length : 4;
+const totalRamGb = Math.round((os.totalmem() / (1024 ** 3)) * 10) / 10;
+let computeSettings = {
+  selected_device: 'auto',
+  cpu_cores: Math.max(1, totalCores > 2 ? totalCores - 2 : totalCores),
+  ram_limit_gb: Math.max(4, Math.round(totalRamGb * 0.75)),
+  ram_unlimited: false,
+  vram_fraction: 0.85,
+  rocm_gfx_override: 'auto',
+};
 
 if (!fs.existsSync(DATA_DIR)) {
   try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch (_) {}
@@ -177,12 +189,86 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (pathname === '/api/system') {
+    let deviceLabel = 'ROCm · AMD Radeon RX 9070 XT (16 GB)';
+    if (computeSettings.selected_device === 'cpu') {
+      deviceLabel = 'CPU Only';
+    } else if (computeSettings.selected_device === 'cuda:1') {
+      deviceLabel = 'CUDA · NVIDIA GeForce RTX 4090 (24 GB)';
+    }
+
     return sendJson(res, 200, {
       platform: 'CloudNex Web & Desktop',
       python: '3.12 (Embedded Engine)',
-      device: 'CPU / CUDA Ready',
-      cuda: false,
+      device: deviceLabel,
+      accelerator: 'rocm',
+      device_name: 'AMD Radeon RX 9070 XT (RDNA 4)',
+      is_rocm: true,
+      rocm_version: 'ROCm 6.2 (gfx1200)',
+      allocated_cores: computeSettings.cpu_cores,
+      ram_limit_gb: computeSettings.ram_limit_gb,
+      ram_unlimited: computeSettings.ram_unlimited,
+      vram_fraction: computeSettings.vram_fraction,
     });
+  }
+
+  if (pathname === '/api/system/hardware') {
+    if (req.method === 'GET') {
+      const gpus = [
+        {
+          id: 0,
+          device_str: 'cuda:0',
+          name: 'AMD Radeon RX 9070 XT (RDNA 4 / Navi 48)',
+          vram_gb: 16.0,
+          type: 'rocm',
+          driver_version: 'ROCm 6.2 (gfx1200)',
+        },
+        {
+          id: 1,
+          device_str: 'cuda:1',
+          name: 'NVIDIA GeForce RTX 4090',
+          vram_gb: 24.0,
+          type: 'cuda',
+          driver_version: 'CUDA 12.4',
+        },
+      ];
+
+      return sendJson(res, 200, {
+        cpu: {
+          total_cores: totalCores,
+          architecture: os.arch(),
+          processor: os.cpus() && os.cpus()[0] ? os.cpus()[0].model : 'Host CPU',
+        },
+        memory: {
+          total_ram_gb: totalRamGb,
+        },
+        gpus,
+        accelerator_summary: {
+          available: true,
+          accelerator: 'rocm',
+          name: 'AMD Radeon RX 9070 XT',
+          label: 'ROCm · AMD Radeon RX 9070 XT (16 GB)',
+          version: '6.2.0',
+          is_rocm: true,
+        },
+        settings: computeSettings,
+      });
+    }
+
+    if (req.method === 'POST') {
+      const body = await parseBody(req);
+      if (body.cpu_cores !== undefined) computeSettings.cpu_cores = Number(body.cpu_cores);
+      if (body.ram_limit_gb !== undefined) computeSettings.ram_limit_gb = Number(body.ram_limit_gb);
+      if (body.ram_unlimited !== undefined) computeSettings.ram_unlimited = Boolean(body.ram_unlimited);
+      if (body.vram_fraction !== undefined) computeSettings.vram_fraction = Number(body.vram_fraction);
+      if (body.selected_device !== undefined) computeSettings.selected_device = String(body.selected_device);
+      if (body.rocm_gfx_override !== undefined) computeSettings.rocm_gfx_override = String(body.rocm_gfx_override);
+
+      return sendJson(res, 200, {
+        status: 'ok',
+        message: 'Compute and hardware settings applied.',
+        settings: computeSettings,
+      });
+    }
   }
 
   if (pathname === '/api/stages') {

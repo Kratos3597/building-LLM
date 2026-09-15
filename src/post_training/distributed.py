@@ -37,20 +37,21 @@ def ddp_setup(device: str = "cuda") -> DDPContext:
     """Initialize the process group if launched under torchrun; otherwise single-process.
 
     Reads ``RANK`` / ``LOCAL_RANK`` / ``WORLD_SIZE`` from the environment (set by
-    torchrun). Uses the NCCL backend on CUDA, gloo on CPU.
+    torchrun). Uses the NCCL backend on CUDA / ROCm, gloo on CPU.
     """
+    is_gpu = device in ("cuda", "rocm") and torch.cuda.is_available()
     world_size = int(os.environ.get("WORLD_SIZE", "1"))
     if world_size == 1:
-        dev = device if (device == "cuda" and torch.cuda.is_available()) else "cpu"
+        dev = "cuda" if is_gpu else "cpu"
         if dev == "cuda":
             torch.cuda.set_device(0)
         return DDPContext(rank=0, local_rank=0, world_size=1, device=dev)
 
     rank = int(os.environ["RANK"])
     local_rank = int(os.environ["LOCAL_RANK"])
-    backend = "nccl" if (device == "cuda" and torch.cuda.is_available()) else "gloo"
+    backend = "nccl" if is_gpu else "gloo"
     dist.init_process_group(backend=backend, rank=rank, world_size=world_size)
-    if device == "cuda":
+    if is_gpu:
         torch.cuda.set_device(local_rank)
         dev = f"cuda:{local_rank}"
     else:

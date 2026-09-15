@@ -55,15 +55,202 @@ _checkpoint_dirs = [
     Path("/ephemeral/ckpts"),
 ]
 _loaded_models: dict[tuple[str, str], object] = {}
+_settings_file = _job_dir.parent / "compute_settings.json"
 
 
-def _cuda_available() -> bool:
+def _get_system_memory_gb() -> float:
+    try:
+        import psutil
+        return round(psutil.virtual_memory().total / (1024 ** 3), 1)
+    except Exception:
+        pass
+    try:
+        if Path("/proc/meminfo").exists():
+            for line in Path("/proc/meminfo").read_text().splitlines():
+                if line.startswith("MemTotal:"):
+                    kb = int(line.split()[1])
+                    return round(kb / (1024 ** 2), 1)
+    except Exception:
+        pass
+    try:
+        import ctypes
+        class MEMORYSTATUSEX(ctypes.Structure):
+            _fields_ = [
+                ("dwLength", ctypes.c_ulong),
+                ("dwMemoryLoad", ctypes.c_ulong),
+                ("ullTotalPhys", ctypes.c_ulonglong),
+                ("ullAvailPhys", ctypes.c_ulonglong),
+                ("ullTotalPageFile", ctypes.c_ulonglong),
+                ("ullAvailPageFile", ctypes.c_ulonglong),
+                ("ullTotalVirtual", ctypes.c_ulonglong),
+                ("ullAvailVirtual", ctypes.c_ulonglong),
+                ("sullAvailExtendedVirtual", ctypes.c_ulonglong),
+            ]
+        stat = MEMORYSTATUSEX()
+        stat.dwLength = ctypes.sizeof(MEMORYSTATUSEX)
+        if ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(stat)):
+            return round(stat.ullTotalPhys / (1024 ** 3), 1)
+    except Exception:
+        pass
+    try:
+        import subprocess
+        out = subprocess.check_output(["sysctl", "-n", "hw.memsize"]).strip()
+        return round(int(out) / (1024 ** 3), 1)
+    except Exception:
+        pass
+    return 16.0
+
+
+def _get_gpus() -> list[dict[str, object]]:
+    gpus: list[dict[str, object]] = []
+    try:
+        import torch
+        if torch.cuda.is_available():
+            hip_ver = getattr(torch.version, "hip", None)
+            is_rocm = hip_ver is not None
+            count = torch.cuda.device_count()
+            for i in range(count):
+                name = torch.cuda.get_device_name(i)
+                props = torch.cuda.get_device_properties(i)
+                vram = round(props.total_memory / (1024 ** 3), 1)
+                gpus.append({
+                    "id": i,
+                    "device_str": f"cuda:{i}",
+                    "name": name,
+                    "vram_gb": vram,
+                    "type": "rocm" if is_rocm else "cuda",
+                    "driver_version": hip_ver if is_rocm else getattr(torch.version, "cuda", None),
+                })
+        elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+            gpus.append({
+                "id": 0,
+                "device_str": "mps",
+                "name": "Apple Silicon Unified GPU (MPS)",
+                "vram_gb": _get_system_memory_gb(),
+                "type": "mps",
+                "driver_version": "Apple Metal",
+            })
+    except Exception:
+        pass
+    return gpus
+
+
+def _default_compute_settings() -> dict[str, object]:
+    total_cores = os.cpu_count() or 4
+    rec_cores = max(1, min(total_cores - 2, total_cores) if total_cores > 2 else total_cores)
+    total_ram = _get_system_memory_gb()
+    rec_ram = max(4.0, round(total_ram * 0.75, 1)) if total_ram > 4.0 else total_ram
+    return {
+        "selected_device": "auto",
+        "cpu_cores": rec_cores,
+        "ram_limit_gb": rec_ram,
+        "ram_unlimited": False,
+        "vram_fraction": 0.85,
+        "rocm_gfx_override": "auto",
+    }
+
+
+def _load_compute_settings() -> dict[str, object]:
+    defaults = _default_compute_settings()
+    if _settings_file.exists():
+        try:
+            saved = json.loads(_settings_file.read_text(encoding="utf-8"))
+            defaults.update(saved)
+        except Exception:
+            pass
+    return defaults
+
+
+def _save_compute_settings(settings: dict[str, object]) -> None:
+    _settings_file.write_text(json.dumps(settings, indent=2), encoding="utf-8")
+
+
+def _apply_compute_settings(settings: dict[str, object]) -> None:
+    try:
+        import torch
+        cores = int(settings.get("cpu_cores", 4))
+        if cores > 0:
+            torch.set_num_threads(cores)
+            if hasattr(torch, "set_num_interop_threads"):
+                try:
+                    torch.set_num_interop_threads(max(1, min(4, cores // 2)))
+                except Exception:
+                    pass
+        vram_frac = float(settings.get("vram_fraction", 0.85))
+        if torch.cuda.is_available() and 0.1 <= vram_frac <= 1.0:
+            dev_str = str(settings.get("selected_device", "auto"))
+            dev_idx = 0
+            if dev_str.startswith("cuda:") or dev_str.isdigit():
+                try:
+                    dev_idx = int(dev_str.replace("cuda:", ""))
+                except Exception:
+                    pass
+            torch.cuda.set_per_process_memory_fraction(vram_frac, dev_idx)
+    except Exception:
+        pass
+
+
+def _device_info() -> dict[str, object]:
     try:
         import torch
 
-        return torch.cuda.is_available()
+        if torch.cuda.is_available():
+            hip_ver = getattr(torch.version, "hip", None)
+            cuda_ver = getattr(torch.version, "cuda", None)
+            is_rocm = hip_ver is not None
+            name = torch.cuda.get_device_name(0) if torch.cuda.device_count() > 0 else ("AMD ROCm GPU" if is_rocm else "CUDA GPU")
+            arch = "rocm" if is_rocm else "cuda"
+            label = f"ROCm · {name}" if is_rocm else f"CUDA · {name}"
+            return {
+                "available": True,
+                "accelerator": arch,
+                "name": name,
+                "label": label,
+                "version": hip_ver if is_rocm else cuda_ver,
+                "is_rocm": is_rocm,
+            }
     except Exception:
-        return False
+        pass
+    return {
+        "available": False,
+        "accelerator": "cpu",
+        "name": "CPU",
+        "label": "CPU",
+        "version": None,
+        "is_rocm": False,
+    }
+
+
+def _cuda_available() -> bool:
+    return bool(_device_info()["available"])
+
+
+def _resolve_device(requested: str = "auto") -> str:
+    settings = _load_compute_settings()
+    configured_device = str(settings.get("selected_device", "auto"))
+
+    if requested == "cpu" or configured_device == "cpu":
+        return "cpu"
+    if requested in ("cuda", "rocm"):
+        return "cuda"
+    if configured_device.startswith("cuda:") or configured_device.isdigit():
+        return "cuda"
+    if configured_device == "cuda":
+        return "cuda"
+
+    explicit = os.environ.get("CLOUDNEX_DEVICE")
+    if explicit:
+        return "cuda" if explicit.lower() in ("cuda", "rocm") else explicit
+    return "cuda" if _cuda_available() else "cpu"
+
+
+class ComputeSettingsModel(BaseModel):
+    selected_device: str = "auto"
+    cpu_cores: int = Field(default=4, ge=1, le=128)
+    ram_limit_gb: float = Field(default=16.0, ge=1.0, le=512.0)
+    ram_unlimited: bool = False
+    vram_fraction: float = Field(default=0.85, ge=0.1, le=1.0)
+    rocm_gfx_override: str = "auto"
 
 
 class JobRequest(BaseModel):
@@ -175,15 +362,40 @@ def _start_job(job_id: str, request: JobRequest) -> dict:
     if not script.exists() or not config.exists():
         raise HTTPException(status_code=503, detail="Training engine resources are not bundled in this build.")
 
+    settings = _load_compute_settings()
+    _apply_compute_settings(settings)
+
     command = [sys.executable, "--run-script", str(script), "--config", str(config)] if getattr(sys, "frozen", False) else [sys.executable, str(script), "--config", str(config)]
     for key, value in request.overrides.items():
         command.extend([f"--{key}", str(value).lower() if isinstance(value, bool) else str(value)])
+
+    sub_env = {**os.environ, "PYTHONPATH": str(_engine_root)}
+    cores_str = str(settings.get("cpu_cores", 4))
+    sub_env["OMP_NUM_THREADS"] = cores_str
+    sub_env["MKL_NUM_THREADS"] = cores_str
+    sub_env["TORCH_NUM_THREADS"] = cores_str
+
+    sel_device = str(settings.get("selected_device", "auto"))
+    if sel_device == "cpu":
+        sub_env["CUDA_VISIBLE_DEVICES"] = ""
+        sub_env["CLOUDNEX_DEVICE"] = "cpu"
+    elif sel_device.startswith("cuda:") or sel_device.isdigit():
+        dev_id = sel_device.replace("cuda:", "")
+        sub_env["CUDA_VISIBLE_DEVICES"] = dev_id
+        sub_env["CLOUDNEX_DEVICE"] = "cuda"
+    elif sel_device == "auto":
+        sub_env["CLOUDNEX_DEVICE"] = "cuda" if _cuda_available() else "cpu"
+
+    rocm_override = str(settings.get("rocm_gfx_override", "auto"))
+    if rocm_override and rocm_override != "auto":
+        sub_env["HSA_OVERRIDE_GFX_VERSION"] = rocm_override
+
     log_file = _log_path(job_id).open("ab")
     creationflags = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0) if os.name == "nt" else 0
     process = subprocess.Popen(
         command,
         cwd=_engine_root,
-        env={**os.environ, "PYTHONPATH": str(_engine_root)},
+        env=sub_env,
         stdout=log_file,
         stderr=subprocess.STDOUT,
         start_new_session=os.name != "nt",
@@ -210,14 +422,35 @@ def _start_evaluation(job_id: str, request: EvaluationRequest) -> dict:
     script = _engine_root / "scripts" / "eval_post_training.py"
     if not script.exists():
         raise HTTPException(status_code=503, detail="Evaluation engine is not bundled in this build.")
-    device = request.device
-    if device == "auto":
-        device = "cuda" if _cuda_available() else "cpu"
+    settings = _load_compute_settings()
+    _apply_compute_settings(settings)
+
+    device = _resolve_device(request.device)
     args = ["--ckpt", str(checkpoint), "--label", checkpoint.stem, "--limit", str(request.limit), "--split", request.split, "--max_new_tokens", str(request.max_new_tokens), "--samples", str(request.samples), "--device", device]
     command = [sys.executable, "--run-script", str(script), *args] if getattr(sys, "frozen", False) else [sys.executable, str(script), *args]
+
+    sub_env = {**os.environ, "PYTHONPATH": str(_engine_root)}
+    cores_str = str(settings.get("cpu_cores", 4))
+    sub_env["OMP_NUM_THREADS"] = cores_str
+    sub_env["MKL_NUM_THREADS"] = cores_str
+    sub_env["TORCH_NUM_THREADS"] = cores_str
+
+    sel_device = str(settings.get("selected_device", "auto"))
+    if sel_device == "cpu":
+        sub_env["CUDA_VISIBLE_DEVICES"] = ""
+        sub_env["CLOUDNEX_DEVICE"] = "cpu"
+    elif sel_device.startswith("cuda:") or sel_device.isdigit():
+        dev_id = sel_device.replace("cuda:", "")
+        sub_env["CUDA_VISIBLE_DEVICES"] = dev_id
+        sub_env["CLOUDNEX_DEVICE"] = "cuda"
+
+    rocm_override = str(settings.get("rocm_gfx_override", "auto"))
+    if rocm_override and rocm_override != "auto":
+        sub_env["HSA_OVERRIDE_GFX_VERSION"] = rocm_override
+
     log_file = _log_path(job_id).open("ab")
     creationflags = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0) if os.name == "nt" else 0
-    process = subprocess.Popen(command, cwd=_engine_root, env={**os.environ, "PYTHONPATH": str(_engine_root)}, stdout=log_file, stderr=subprocess.STDOUT, start_new_session=os.name != "nt", creationflags=creationflags)
+    process = subprocess.Popen(command, cwd=_engine_root, env=sub_env, stdout=log_file, stderr=subprocess.STDOUT, start_new_session=os.name != "nt", creationflags=creationflags)
     record = {"job_id": job_id, "kind": "evaluation", "stage": "evaluation", "title": f"GSM8K · {checkpoint.name}", "checkpoint": checkpoint.name, "pid": process.pid, "command": command, "log": str(_log_path(job_id)), "started": time.time(), "status": "running"}
     _processes[job_id] = process
     _write_job(record)
@@ -230,8 +463,69 @@ def health() -> dict[str, str]:
 
 
 @app.get("/api/system")
-def system_info() -> dict[str, str]:
-    return {"platform": platform.system(), "python": platform.python_version(), "device": os.environ.get("CLOUDNEX_DEVICE", "auto")}
+def system_info() -> dict[str, object]:
+    info = _device_info()
+    settings = _load_compute_settings()
+    configured_device = str(settings.get("selected_device", "auto"))
+    explicit = os.environ.get("CLOUDNEX_DEVICE")
+
+    if configured_device == "cpu":
+        device_label = "CPU Only"
+    elif configured_device.startswith("cuda:") or configured_device.isdigit():
+        device_label = f"GPU {configured_device}"
+    elif explicit:
+        device_label = explicit
+    else:
+        device_label = str(info["label"])
+
+    return {
+        "platform": platform.system(),
+        "python": platform.python_version(),
+        "device": device_label,
+        "accelerator": info["accelerator"],
+        "device_name": info["name"],
+        "is_rocm": info["is_rocm"],
+        "rocm_version": info["version"] if info["is_rocm"] else None,
+        "allocated_cores": settings.get("cpu_cores"),
+        "ram_limit_gb": settings.get("ram_limit_gb"),
+        "ram_unlimited": settings.get("ram_unlimited"),
+        "vram_fraction": settings.get("vram_fraction"),
+    }
+
+
+@app.get("/api/system/hardware")
+def system_hardware() -> dict[str, object]:
+    info = _device_info()
+    gpus = _get_gpus()
+    total_ram = _get_system_memory_gb()
+    total_cores = os.cpu_count() or 4
+    settings = _load_compute_settings()
+
+    return {
+        "cpu": {
+            "total_cores": total_cores,
+            "architecture": platform.machine(),
+            "processor": platform.processor() or f"{platform.machine()} CPU",
+        },
+        "memory": {
+            "total_ram_gb": total_ram,
+        },
+        "gpus": gpus,
+        "accelerator_summary": info,
+        "settings": settings,
+    }
+
+
+@app.post("/api/system/hardware")
+def update_hardware_settings(settings: ComputeSettingsModel) -> dict[str, object]:
+    data = settings.dict()
+    _save_compute_settings(data)
+    _apply_compute_settings(data)
+    return {
+        "status": "ok",
+        "message": "Compute and hardware settings applied.",
+        "settings": data,
+    }
 
 
 @app.get("/api/metrics/{stage}")
@@ -371,7 +665,9 @@ def export_model(request: ExportRequest) -> dict[str, str | int]:
 @app.post("/api/chat")
 def chat(request: ChatRequest) -> dict[str, str | float]:
     checkpoint = _checkpoint_path(request.checkpoint)
-    device = os.environ.get("CLOUDNEX_DEVICE", "cuda" if _cuda_available() else "cpu")
+    settings = _load_compute_settings()
+    _apply_compute_settings(settings)
+    device = _resolve_device()
     cache_key = (str(checkpoint), device)
     model = _loaded_models.get(cache_key)
     if model is None:

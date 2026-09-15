@@ -54,6 +54,23 @@ def main() -> None:
         "--collect-all", "tiktoken",
         "--collect-all", "h5py",
         "--collect-all", "multipart",
+        "--collect-all", "fastapi",
+        "--collect-all", "uvicorn",
+        "--collect-all", "starlette",
+        "--collect-all", "pydantic",
+        "--collect-all", "psutil",
+        "--collect-all", "requests",
+        "--collect-all", "zstandard",
+        "--hidden-import", "uvicorn.logging",
+        "--hidden-import", "uvicorn.loops",
+        "--hidden-import", "uvicorn.loops.auto",
+        "--hidden-import", "uvicorn.protocols",
+        "--hidden-import", "uvicorn.protocols.http",
+        "--hidden-import", "uvicorn.protocols.http.auto",
+        "--hidden-import", "uvicorn.protocols.websockets",
+        "--hidden-import", "uvicorn.protocols.websockets.auto",
+        "--hidden-import", "uvicorn.lifespans",
+        "--hidden-import", "uvicorn.lifespans.on",
     ])
     subprocess.run(command, cwd=ROOT, check=True)
 

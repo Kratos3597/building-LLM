@@ -35,19 +35,32 @@ if (window.cloudnex?.window?.minimize) {
 
 function selectView(view) {
   document.querySelectorAll('.nav-item').forEach((button) => button.classList.toggle('active', button.dataset.view === view));
-  const titles = { overview: 'Your next run starts here.', data: 'Prepare a clean local dataset.', training: 'Configure a focused training run.', models: 'Your local model shelf.', chat: 'Talk to a local checkpoint.', evaluation: 'Measure a local checkpoint.', settings: 'Workspace settings.' };
-  document.querySelector('.workspace-panel h2').textContent = titles[view] || titles.overview;
+  const titles = {
+    overview: 'Your next run starts here.',
+    data: 'Prepare a clean local dataset.',
+    training: 'Configure a focused training run.',
+    models: 'Your local model shelf.',
+    chat: 'Talk to a local checkpoint.',
+    evaluation: 'Measure a local checkpoint.',
+    settings: 'Compute Resource & Hardware Controls.',
+  };
+  const panelTitle = document.querySelector('.workspace-panel h2');
+  if (panelTitle) panelTitle.textContent = titles[view] || titles.overview;
   document.getElementById('overview-content').classList.toggle('hidden', view !== 'overview');
   document.getElementById('data-content').classList.toggle('hidden', view !== 'data');
   document.getElementById('training-content').classList.toggle('hidden', view !== 'training');
   document.getElementById('models-content').classList.toggle('hidden', view !== 'models');
   document.getElementById('chat-content').classList.toggle('hidden', view !== 'chat');
   document.getElementById('evaluation-content').classList.toggle('hidden', view !== 'evaluation');
+  const settingsPanel = document.getElementById('settings-content');
+  if (settingsPanel) settingsPanel.classList.toggle('hidden', view !== 'settings');
+
   if (view === 'training') loadTraining();
   if (view === 'data') loadDataFiles();
   if (view === 'models') loadModels();
   if (view === 'chat') loadChatModels();
   if (view === 'evaluation') loadEvaluation();
+  if (view === 'settings') loadSettings();
 }
 
 document.querySelectorAll('[data-view]').forEach((button) => button.addEventListener('click', () => selectView(button.dataset.view)));
@@ -58,9 +71,15 @@ async function connect() {
     const system = await fetch(`${backend}/api/system`).then((response) => response.json());
     statusText.textContent = 'Local engine connected';
     engineStatus.textContent = health.status === 'ok' ? 'Online' : 'Unavailable';
-    deviceStatus.textContent = system.device;
+    deviceStatus.textContent = system.device || 'CPU';
     platformLabel.textContent = system.platform;
     dot.classList.add('ready');
+
+    const resourceSummary = document.getElementById('resource-summary');
+    if (resourceSummary && (system.allocated_cores || system.ram_limit_gb)) {
+      const ramStr = system.ram_unlimited ? 'Uncapped RAM' : `${system.ram_limit_gb} GB RAM`;
+      resourceSummary.textContent = `${system.allocated_cores || 4} Cores · ${ramStr}`;
+    }
   } catch (error) {
     statusText.textContent = 'Local engine unavailable';
     engineStatus.textContent = 'Offline';
@@ -243,5 +262,224 @@ document.getElementById('evaluation-form').addEventListener('submit', async (eve
   if (!response.ok) window.alert((await response.json()).detail || 'Could not start evaluation.');
   await loadEvaluation();
 });
+
+let hardwareData = null;
+
+async function loadSettings() {
+  const statusEl = document.getElementById('settings-status');
+  if (statusEl) statusEl.textContent = 'Probing hardware...';
+  try {
+    const res = await fetch(`${backend}/api/system/hardware`);
+    if (!res.ok) throw new Error('Could not fetch hardware info');
+    hardwareData = await res.json();
+    const { cpu, memory, gpus, accelerator_summary, settings } = hardwareData;
+
+    const cpuName = document.getElementById('hw-cpu-name');
+    const cpuDetail = document.getElementById('hw-cpu-detail');
+    if (cpuName) cpuName.textContent = `${cpu.processor || 'CPU'} (${cpu.architecture})`;
+    if (cpuDetail) cpuDetail.textContent = `${cpu.total_cores} Total Cores (${cpu.total_cores} Execution Threads)`;
+
+    const ramTotal = document.getElementById('hw-ram-total');
+    const ramDetail = document.getElementById('hw-ram-detail');
+    if (ramTotal) ramTotal.textContent = `${memory.total_ram_gb} GB Physical RAM`;
+    if (ramDetail) ramDetail.textContent = 'Available for model tensors, caches & training';
+
+    const gpuName = document.getElementById('hw-gpu-name');
+    const gpuDetail = document.getElementById('hw-gpu-detail');
+    if (gpuName) gpuName.textContent = accelerator_summary.label || accelerator_summary.name || 'CPU Only';
+    if (gpuDetail) {
+      if (gpus && gpus.length > 0) {
+        gpuDetail.textContent = `${gpus.length} accelerated device(s) ready · ${gpus[0].vram_gb} GB VRAM`;
+      } else {
+        gpuDetail.textContent = 'No discrete GPU detected. Using CPU engine.';
+      }
+    }
+
+    const devSelect = document.getElementById('settings-device-select');
+    const devHint = document.getElementById('settings-device-hint');
+    if (devSelect) {
+      devSelect.innerHTML = '';
+      devSelect.add(new Option('Auto-detect (Recommend best accelerator)', 'auto'));
+      if (gpus && gpus.length > 0) {
+        gpus.forEach((gpu) => {
+          const typeStr = gpu.type === 'rocm' ? 'AMD ROCm' : (gpu.type === 'mps' ? 'Apple MPS' : 'NVIDIA CUDA');
+          devSelect.add(new Option(`${typeStr} · GPU ${gpu.id}: ${gpu.name} (${gpu.vram_gb} GB VRAM)`, gpu.device_str));
+        });
+        if (devHint) devHint.textContent = `${gpus.length} GPU(s) available for tensor acceleration.`;
+      } else {
+        if (devHint) devHint.textContent = 'Standard CPU compute active.';
+      }
+      devSelect.add(new Option('CPU Only (Strict CPU execution)', 'cpu'));
+      devSelect.value = settings.selected_device || 'auto';
+    }
+
+    const cpuSlider = document.getElementById('settings-cpu-cores');
+    const cpuBadge = document.getElementById('settings-cpu-cores-badge');
+    const cpuHint = document.getElementById('settings-cpu-hint');
+    if (cpuSlider) {
+      cpuSlider.max = String(Math.max(1, cpu.total_cores));
+      cpuSlider.value = String(settings.cpu_cores || Math.max(1, cpu.total_cores > 2 ? cpu.total_cores - 2 : cpu.total_cores));
+      if (cpuBadge) cpuBadge.textContent = `${cpuSlider.value} Cores`;
+      if (cpuHint) {
+        const pct = Math.round((Number(cpuSlider.value) / Math.max(1, cpu.total_cores)) * 100);
+        cpuHint.textContent = `Allocated ${cpuSlider.value} of ${cpu.total_cores} system cores (${pct}% allocated to training/inference).`;
+      }
+    }
+
+    const ramSlider = document.getElementById('settings-ram-limit');
+    const ramBadge = document.getElementById('settings-ram-badge');
+    const ramUnlimited = document.getElementById('settings-ram-unlimited');
+    if (ramSlider && ramUnlimited) {
+      const maxRam = Math.max(16, Math.ceil(memory.total_ram_gb));
+      ramSlider.max = String(maxRam);
+      ramUnlimited.checked = Boolean(settings.ram_unlimited);
+      ramSlider.disabled = ramUnlimited.checked;
+      ramSlider.value = String(settings.ram_limit_gb || Math.max(4, Math.round(memory.total_ram_gb * 0.75)));
+      if (ramBadge) {
+        ramBadge.textContent = ramUnlimited.checked ? 'No limit' : `${ramSlider.value} GB`;
+      }
+    }
+
+    const vramSlider = document.getElementById('settings-vram-fraction');
+    const vramBadge = document.getElementById('settings-vram-badge');
+    if (vramSlider) {
+      const vramPct = Math.round((settings.vram_fraction || 0.85) * 100);
+      vramSlider.value = String(vramPct);
+      if (vramBadge) vramBadge.textContent = `${vramPct}%`;
+    }
+
+    const rocmSelect = document.getElementById('settings-rocm-gfx');
+    if (rocmSelect) {
+      rocmSelect.value = settings.rocm_gfx_override || 'auto';
+    }
+
+    if (statusEl) statusEl.textContent = '';
+  } catch (err) {
+    if (statusEl) statusEl.textContent = 'Failed to load hardware configuration.';
+  }
+}
+
+// Live interactive slider badge updates
+const cpuRangeInput = document.getElementById('settings-cpu-cores');
+if (cpuRangeInput) {
+  cpuRangeInput.addEventListener('input', (e) => {
+    const badge = document.getElementById('settings-cpu-cores-badge');
+    const hint = document.getElementById('settings-cpu-hint');
+    if (badge) badge.textContent = `${e.target.value} Cores`;
+    if (hint && hardwareData) {
+      const total = hardwareData.cpu.total_cores || 4;
+      const pct = Math.round((Number(e.target.value) / total) * 100);
+      hint.textContent = `Allocated ${e.target.value} of ${total} system cores (${pct}% allocated to training/inference).`;
+    }
+  });
+}
+
+const ramRangeInput = document.getElementById('settings-ram-limit');
+if (ramRangeInput) {
+  ramRangeInput.addEventListener('input', (e) => {
+    const badge = document.getElementById('settings-ram-badge');
+    if (badge) badge.textContent = `${e.target.value} GB`;
+  });
+}
+
+const ramUnlimitedCheckbox = document.getElementById('settings-ram-unlimited');
+if (ramUnlimitedCheckbox) {
+  ramUnlimitedCheckbox.addEventListener('change', (e) => {
+    const slider = document.getElementById('settings-ram-limit');
+    const badge = document.getElementById('settings-ram-badge');
+    if (slider) slider.disabled = e.target.checked;
+    if (badge) badge.textContent = e.target.checked ? 'No limit' : `${slider?.value || 16} GB`;
+  });
+}
+
+const vramRangeInput = document.getElementById('settings-vram-fraction');
+if (vramRangeInput) {
+  vramRangeInput.addEventListener('input', (e) => {
+    const badge = document.getElementById('settings-vram-badge');
+    if (badge) badge.textContent = `${e.target.value}%`;
+  });
+}
+
+const settingsForm = document.getElementById('settings-form');
+if (settingsForm) {
+  settingsForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const statusEl = document.getElementById('settings-status');
+    if (statusEl) statusEl.textContent = 'Applying settings...';
+
+    const selected_device = document.getElementById('settings-device-select').value;
+    const cpu_cores = Number(document.getElementById('settings-cpu-cores').value);
+    const ram_unlimited = document.getElementById('settings-ram-unlimited').checked;
+    const ram_limit_gb = Number(document.getElementById('settings-ram-limit').value);
+    const vram_fraction = Number(document.getElementById('settings-vram-fraction').value) / 100;
+    const rocm_gfx_override = document.getElementById('settings-rocm-gfx').value;
+
+    const payload = {
+      selected_device,
+      cpu_cores,
+      ram_limit_gb,
+      ram_unlimited,
+      vram_fraction,
+      rocm_gfx_override,
+    };
+
+    try {
+      const res = await fetch(`${backend}/api/system/hardware`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || 'Could not save compute settings');
+
+      if (statusEl) statusEl.textContent = '✓ Hardware settings saved & applied to engine.';
+      setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 4000);
+
+      // Refresh topbar status
+      const resSummary = document.getElementById('resource-summary');
+      if (resSummary) {
+        const ramStr = ram_unlimited ? 'Uncapped RAM' : `${ram_limit_gb} GB RAM`;
+        resSummary.textContent = `${cpu_cores} Cores · ${ramStr}`;
+      }
+      const devStatus = document.getElementById('device-status');
+      if (devStatus) {
+        if (selected_device === 'cpu') devStatus.textContent = 'CPU Only';
+        else if (selected_device.startsWith('cuda:')) devStatus.textContent = `GPU ${selected_device}`;
+        else devStatus.textContent = hardwareData?.accelerator_summary?.label || 'Auto (GPU)';
+      }
+    } catch (err) {
+      if (statusEl) statusEl.textContent = `Error: ${err.message}`;
+    }
+  });
+}
+
+const resetBtn = document.getElementById('reset-settings-btn');
+if (resetBtn) {
+  resetBtn.addEventListener('click', async () => {
+    if (!hardwareData) return;
+    const { cpu, memory } = hardwareData;
+    const recCores = Math.max(1, cpu.total_cores > 2 ? cpu.total_cores - 2 : cpu.total_cores);
+    const recRam = Math.max(4, Math.round(memory.total_ram_gb * 0.75));
+
+    document.getElementById('settings-device-select').value = 'auto';
+    const cpuSlider = document.getElementById('settings-cpu-cores');
+    cpuSlider.value = String(recCores);
+    document.getElementById('settings-cpu-cores-badge').textContent = `${recCores} Cores`;
+
+    const ramSlider = document.getElementById('settings-ram-limit');
+    ramSlider.value = String(recRam);
+    ramSlider.disabled = false;
+    document.getElementById('settings-ram-unlimited').checked = false;
+    document.getElementById('settings-ram-badge').textContent = `${recRam} GB`;
+
+    const vramSlider = document.getElementById('settings-vram-fraction');
+    vramSlider.value = '85';
+    document.getElementById('settings-vram-badge').textContent = '85%';
+
+    document.getElementById('settings-rocm-gfx').value = 'auto';
+
+    document.getElementById('settings-form').dispatchEvent(new Event('submit'));
+  });
+}
 
 connect();

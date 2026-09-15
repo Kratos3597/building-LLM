@@ -39,7 +39,8 @@
     </section>
     <section class="metrics" aria-label="Workspace metrics">
       <article><span class="metric-label">ENGINE</span><strong id="engine-status">Starting</strong><small>FastAPI sidecar</small></article>
-      <article><span class="metric-label">DEVICE</span><strong id="device-status">Detecting</strong><small>Local compute</small></article>
+      <article><span class="metric-label">DEVICE</span><strong id="device-status">Detecting</strong><small id="device-sublabel">Local compute</small></article>
+      <article><span class="metric-label">ALLOCATION</span><strong id="resource-summary">Detecting...</strong><small id="resource-sublabel">CPU &amp; RAM Limit</small></article>
       <article><span class="metric-label">WORKSPACE</span><strong>Ready</strong><small>CloudNex Studio</small></article>
     </section>
     <section id="view-panel" class="workspace-panel">
@@ -49,6 +50,126 @@
       <div id="models-content" class="hidden training-content"><div><span class="panel-kicker">CHECKPOINTS</span><h2>Your local model shelf.</h2><p>Checkpoints are read from the CloudNex workspace and the existing training output folder.</p></div><div id="model-list" class="job-list"></div></div>
       <div id="chat-content" class="hidden training-content"><div><span class="panel-kicker">LOCAL INFERENCE</span><h2>Talk to a checkpoint.</h2><p>Choose a local model and send prompts through the private Python engine.</p></div><form id="chat-form"><label for="model-select">Model<select id="model-select"></select></label><label for="prompt-input">Prompt<textarea id="prompt-input" rows="4" placeholder="Ask your local model something..."></textarea></label><button class="primary" type="submit">Send prompt <span>→</span></button></form><pre id="chat-output" class="chat-output">Your response will appear here.</pre></div>
       <div id="evaluation-content" class="hidden training-content"><div><span class="panel-kicker">MODEL EVALUATION</span><h2>Measure a checkpoint.</h2><p>Run GSM8K locally and compare accuracy, correct answers, and sample generations.</p></div><form id="evaluation-form"><label for="evaluation-model">Checkpoint<select id="evaluation-model"></select></label><div class="evaluation-grid"><label>Split<select id="evaluation-split"><option value="test">Test</option><option value="train">Train</option></select></label><label>Examples<input id="evaluation-limit" type="number" min="1" max="10000" value="200"></label><label>Max tokens<input id="evaluation-tokens" type="number" min="1" max="2048" value="300"></label><label>Samples<input id="evaluation-samples" type="number" min="0" max="20" value="3"></label></div><button class="primary" type="submit">Run evaluation <span>→</span></button></form><div id="evaluation-list" class="job-list"></div></div>
+      <div id="settings-content" class="hidden training-content">
+        <div>
+          <span class="panel-kicker">HARDWARE &amp; COMPUTE</span>
+          <h2>Compute Resource Controls</h2>
+          <p>Allocate CPU thread pools, cap memory usage to keep your desktop responsive, and select which GPU accelerator executes training and inference jobs.</p>
+        </div>
+
+        <div class="hardware-overview-grid">
+          <div class="hw-summary-card">
+            <span class="hw-card-label">CPU ARCHITECTURE</span>
+            <strong id="hw-cpu-name">Probing processor...</strong>
+            <small id="hw-cpu-detail">Loading thread pool</small>
+          </div>
+          <div class="hw-summary-card">
+            <span class="hw-card-label">HOST MEMORY</span>
+            <strong id="hw-ram-total">Probing RAM...</strong>
+            <small id="hw-ram-detail">Total system physical memory</small>
+          </div>
+          <div class="hw-summary-card">
+            <span class="hw-card-label">GRAPHICS ACCELERATOR</span>
+            <strong id="hw-gpu-name">Detecting accelerator...</strong>
+            <small id="hw-gpu-detail">ROCm / CUDA / MPS engine</small>
+          </div>
+        </div>
+
+        <form id="settings-form" class="settings-control-form">
+          <div class="settings-group">
+            <div class="settings-group-header">
+              <h3>Compute Target &amp; GPU Selection</h3>
+              <p>Choose which device processes PyTorch tensor operations, checkpoints, and inference.</p>
+            </div>
+            <div class="settings-row">
+              <label for="settings-device-select">Target Device
+                <select id="settings-device-select">
+                  <option value="auto">Auto-detect (Recommend best accelerator)</option>
+                  <option value="cpu">CPU Only (No GPU acceleration)</option>
+                </select>
+              </label>
+              <span class="field-hint" id="settings-device-hint">Detecting GPU hardware...</span>
+            </div>
+          </div>
+
+          <div class="settings-group">
+            <div class="settings-group-header">
+              <h3>CPU Core Allocation</h3>
+              <p>Controls PyTorch intra-op threads (<code>torch.set_num_threads</code>), OpenMP/MKL workers, and data loaders.</p>
+            </div>
+            <div class="settings-row">
+              <div class="slider-header">
+                <label for="settings-cpu-cores">Max CPU Cores for Compute</label>
+                <span class="slider-badge" id="settings-cpu-cores-badge">4 Cores</span>
+              </div>
+              <input id="settings-cpu-cores" type="range" min="1" max="16" value="4" step="1">
+              <span class="field-hint" id="settings-cpu-hint">Reserving cores ensures system responsiveness during heavy training.</span>
+            </div>
+          </div>
+
+          <div class="settings-group">
+            <div class="settings-group-header">
+              <h3>System RAM Usage Limit</h3>
+              <p>Maximum physical memory allocated to model weights, dataset caches, and training batches.</p>
+            </div>
+            <div class="settings-row">
+              <div class="slider-header">
+                <label for="settings-ram-limit">Memory Ceiling</label>
+                <span class="slider-badge" id="settings-ram-badge">16 GB</span>
+              </div>
+              <input id="settings-ram-limit" type="range" min="2" max="64" value="16" step="1">
+              <label class="check-row" style="margin-top: 10px;">
+                <input id="settings-ram-unlimited" type="checkbox">
+                <span>No RAM limit (Allow PyTorch to consume all free system memory)</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="settings-group">
+            <div class="settings-group-header">
+              <h3>GPU Memory &amp; VRAM Headroom</h3>
+              <p>Reserve a safety margin so window managers, desktop displays, and browser tabs don't stutter.</p>
+            </div>
+            <div class="settings-row">
+              <div class="slider-header">
+                <label for="settings-vram-fraction">GPU VRAM Fraction Cap</label>
+                <span class="slider-badge" id="settings-vram-badge">85%</span>
+              </div>
+              <input id="settings-vram-fraction" type="range" min="40" max="95" value="85" step="5">
+              <span class="field-hint">Configures <code>torch.cuda.set_per_process_memory_fraction</code> for the active GPU.</span>
+            </div>
+          </div>
+
+          <div class="settings-group">
+            <div class="settings-group-header">
+              <h3>AMD ROCm / RDNA Architecture Override</h3>
+              <p>For AMD Radeon RDNA 4, RDNA 3, or RDNA 2 cards running through ROCm/HIP compatibility layers.</p>
+            </div>
+            <div class="settings-row">
+              <label for="settings-rocm-gfx">HSA_OVERRIDE_GFX_VERSION
+                <select id="settings-rocm-gfx">
+                  <option value="auto">Auto (Default hardware detection)</option>
+                  <option value="12.0.0">gfx1200 / 12.0.0 — AMD RDNA 4 (Radeon RX 9070 / RX 9070 XT)</option>
+                  <option value="11.0.0">gfx1100 / 11.0.0 — AMD RDNA 3 (Radeon RX 7900 XTX / XT)</option>
+                  <option value="11.0.1">gfx1101 / 11.0.1 — AMD RDNA 3 (Radeon RX 7800 XT / 7700 XT)</option>
+                  <option value="11.0.2">gfx1102 / 11.0.2 — AMD RDNA 3 (Radeon RX 7600 / 7600 XT)</option>
+                  <option value="10.3.0">gfx1030 / 10.3.0 — AMD RDNA 2 (Radeon RX 6950 / 6900 / 6800)</option>
+                  <option value="9.0.0">gfx900 — AMD Vega / Instinct MI25</option>
+                  <option value="9.0.6">gfx906 — AMD Instinct MI50 / MI60</option>
+                  <option value="9.0.a">gfx90a — AMD Instinct MI210 / MI250</option>
+                </select>
+              </label>
+              <span class="field-hint">Forces HIP kernel compilation for bleeding-edge RDNA architectures on Linux and Windows WSL.</span>
+            </div>
+          </div>
+
+          <div class="settings-actions">
+            <button class="primary" type="submit" id="save-settings-btn">Save &amp; Apply Hardware Settings <span>✓</span></button>
+            <button class="secondary" type="button" id="reset-settings-btn">Reset to Recommended</button>
+            <span id="settings-status" class="settings-status-text" aria-live="polite"></span>
+          </div>
+        </form>
+      </div>
     </section>
   </main>
   <script src="./app.js"></script>

@@ -23,13 +23,14 @@ dependencies = [
     "fastapi",
     "uvicorn",
     "python-multipart",
+    "psutil",
 ]
 
 [project.optional-dependencies]
 # Post-training extras (datasets + optional experiment logging).
 train = ["datasets", "wandb"]
 # Build the self-contained Python sidecar used by the desktop installer.
-desktop = ["pyinstaller"]
+desktop = ["pyinstaller", "psutil"]
 # The Streamlit control-panel UI.
 ui = ["streamlit", "pandas", "altair"]
 # The MkDocs Material documentation site.
