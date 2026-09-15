@@ -11,48 +11,283 @@
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
-  <header class="window-bar">
-    <div class="window-drag-zone"><span class="window-brand-mark">CN</span><span class="window-title">CloudNex <b>Local LLM Studio</b></span></div>
-    <div class="window-actions" aria-label="Window controls"><button id="minimize-window" type="button" aria-label="Minimize">−</button><button id="maximize-window" type="button" aria-label="Maximize">□</button><button id="close-window" class="close-window" type="button" aria-label="Close">×</button></div>
+  <!-- COSMIC STARDUST & AMBIENT AURORA GLOWS -->
+  <div class="ambient-glow ambient-glow-top"></div>
+  <div class="ambient-glow ambient-glow-bottom-right"></div>
+  <div class="stardust-field" id="stardust-field" aria-hidden="true"></div>
+
+  <!-- COMPACT OS TITLEBAR (ELECTRON / DRAGBAR) -->
+  <header class="window-bar apple-window-bar">
+    <div class="window-drag-zone">
+      <span class="window-brand-glyph">✦</span>
+      <span class="window-title">CloudNex <b>Local LLM Studio · Apple Glass Edition</b></span>
+    </div>
+    <div class="window-engine-pill">
+      <span class="status-dot"></span>
+      <span id="connection-status">Connecting to local engine</span>
+    </div>
+    <div class="window-actions" aria-label="Window controls">
+      <button id="minimize-window" type="button" aria-label="Minimize">−</button>
+      <button id="maximize-window" type="button" aria-label="Maximize">□</button>
+      <button id="close-window" class="close-window" type="button" aria-label="Close">×</button>
+    </div>
   </header>
-  <aside class="sidebar">
-    <div class="brand-mark">CN</div>
-    <div class="brand-copy"><strong>CloudNex</strong><span>Local LLM Studio</span></div>
-    <nav aria-label="Primary navigation">
-      <button class="nav-item active" type="button" data-view="overview">Overview</button>
-      <button class="nav-item" type="button" data-view="data">Data</button>
-      <button class="nav-item" type="button" data-view="training">Training</button>
-      <button class="nav-item" type="button" data-view="models">Models</button>
-      <button class="nav-item" type="button" data-view="chat">Chat</button>
-      <button class="nav-item" type="button" data-view="evaluation">Evaluate</button>
-      <button class="nav-item" type="button" data-view="settings">Settings</button>
-      <button class="nav-item" type="button" data-view="about">About Creator</button>
-      <button class="nav-item" type="button" data-view="terms">Terms &amp; License</button>
-    </nav>
-    <div class="sidebar-action-box">
-      <button id="open-installer-btn" class="installer-preview-trigger" type="button">
-        <span class="pulse-beacon"></span>
-        <span>Installer Preview</span>
+
+  <!-- FLOATING APPLE GLASS TOP NAVIGATION BAR (VisionOS / macOS Style) -->
+  <nav class="apple-glass-navbar" aria-label="Main Navigation">
+    <div class="nav-brand-group">
+      <span class="apple-logo-glyph">✦</span>
+      <span class="apple-brand-name">CloudNex <span class="brand-sub">AGI</span></span>
+    </div>
+
+    <div class="nav-links-cluster">
+      <div class="nav-dropdown-wrapper">
+        <button class="nav-item apple-nav-link" type="button" data-view="overview">
+          Platform <span class="nav-caret">▾</span>
+        </button>
+        <div class="apple-glass-dropdown">
+          <button class="dropdown-item nav-item" type="button" data-view="overview"><span class="drop-icon">⊞</span> Command Deck &amp; Telemetry</button>
+          <button class="dropdown-item nav-item" type="button" data-view="evaluation"><span class="drop-icon">📊</span> Benchmark &amp; Evaluations</button>
+          <button class="dropdown-item nav-item" type="button" data-view="settings"><span class="drop-icon">⚙</span> Hardware &amp; Thermal Guard</button>
+        </div>
+      </div>
+
+      <div class="nav-dropdown-wrapper">
+        <button class="nav-item apple-nav-link" type="button" data-view="training">
+          Studio <span class="nav-caret">▾</span>
+        </button>
+        <div class="apple-glass-dropdown">
+          <button class="dropdown-item nav-item" type="button" data-view="training"><span class="drop-icon">⚡</span> Post-Training (SFT · DPO · GRPO)</button>
+          <button class="dropdown-item nav-item" type="button" data-view="data"><span class="drop-icon">🗎</span> Plain .TXT Corpus Ingestion</button>
+          <button class="dropdown-item nav-item" type="button" data-view="models"><span class="drop-icon">💾</span> Checkpoint Weights Shelf</button>
+          <button class="dropdown-item nav-item" type="button" data-view="chat"><span class="drop-icon">💬</span> Local Inference Chat</button>
+        </div>
+      </div>
+
+      <div class="nav-dropdown-wrapper">
+        <button class="nav-item apple-nav-link" type="button" data-view="about">
+          Resources <span class="nav-caret">▾</span>
+        </button>
+        <div class="apple-glass-dropdown">
+          <button class="dropdown-item" type="button" id="open-installer-btn"><span class="drop-icon">⊞</span> Desktop Installer Setup</button>
+          <button class="dropdown-item nav-item" type="button" data-view="about"><span class="drop-icon">👤</span> Mohammed Sheik (Founder)</button>
+          <a class="dropdown-item" href="https://cloudnex.co.za" target="_blank" rel="noopener noreferrer"><span class="drop-icon">↗</span> cloudnex.co.za</a>
+        </div>
+      </div>
+
+      <button class="nav-item apple-nav-link" type="button" data-view="models">Models</button>
+      <button class="nav-item apple-nav-link" type="button" data-view="terms">Docs &amp; EULA</button>
+
+      <!-- Glass Search Pill with ⌘K -->
+      <button class="apple-glass-search-pill" id="spotlight-trigger-btn" type="button" title="Quick Command (⌘K)">
+        <span class="search-glass-icon">🔍</span>
+        <span class="search-glass-placeholder">Search</span>
+        <kbd class="apple-kbd">⌘K</kbd>
       </button>
     </div>
-    <div class="sidebar-foot"><span class="status-dot"></span><span id="connection-status">Connecting to local engine</span></div>
-  </aside>
-  <main class="main-content">
-    <header class="topbar"><span class="eyebrow">LOCAL WORKSPACE</span><span id="platform-label">Desktop</span></header>
-    <section class="hero">
-      <p class="eyebrow">MODEL OPERATIONS</p>
-      <h1>Build intelligence<br><em>on your machine.</em></h1>
-      <p class="lede">A calm control surface for preparing data, running training stages, and evaluating local checkpoints.</p>
-      <div class="hero-actions"><button class="primary" type="button" data-view="training">Start a training run <span>→</span></button><button class="secondary" type="button" data-view="models">Browse models</button></div>
+
+    <div class="nav-actions-right">
+      <a class="apple-github-pill" href="https://github.com" target="_blank" rel="noopener noreferrer" title="View Source on GitHub">
+        <svg class="octo-svg" viewBox="0 0 16 16" width="14" height="14" fill="currentColor">
+          <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+        </svg>
+        <span class="star-glyph">★</span>
+        <span class="star-count">1.3k</span>
+      </a>
+
+      <button class="apple-pill-btn-white" type="button" data-view="training">
+        Get Started - Free
+      </button>
+    </div>
+  </nav>
+
+  <!-- MAIN WRAPPER -->
+  <div class="apple-app-container">
+    <!-- HERO SECTION (FAITHFUL TO USER REFERENCE IMAGE) -->
+    <header class="topbar sr-only"><span class="eyebrow">LOCAL WORKSPACE</span><span id="platform-label">Desktop</span></header>
+    
+    <section class="hero apple-hero-section">
+      <!-- Open Source Pill Badge -->
+      <div class="apple-hero-badge">
+        <span class="badge-tag-amber">🗲 OPEN SOURCE</span>
+        <span class="badge-sep">★</span>
+        <span class="badge-stars">1,310 <small>on GitHub</small></span>
+        <span class="badge-sep">·</span>
+        <span class="badge-license">Apache 2.0 · Sovereign</span>
+      </div>
+
+      <!-- High-Contrast Display Headline -->
+      <h1 class="apple-hero-title">
+        <span class="title-bright">AI Agents hallucinate,</span><br>
+        <span class="title-ghost">fix it faster.</span>
+      </h1>
+
+      <!-- Elegant Subtitle -->
+      <p class="apple-hero-lede">
+        Build self-improving agents. Catch what breaks. Know why. Train on-device with zero telemetry. Ship smarter every time.
+      </p>
+
+      <!-- Signature CTA Button Pair -->
+      <div class="apple-hero-cta-row">
+        <button class="apple-btn-solid-white" type="button" data-view="training">
+          <span>Try for Free</span> <span class="arrow-up-right">↗</span>
+        </button>
+        <button class="apple-btn-glass-secondary" type="button" id="hero-installer-btn">
+          <span class="icon-selfhost">⛶</span> <span>Self-host it</span>
+        </button>
+      </div>
     </section>
-    <section class="metrics" aria-label="Workspace metrics">
-      <article><span class="metric-label">ENGINE</span><strong id="engine-status">Starting</strong><small>FastAPI sidecar</small></article>
-      <article><span class="metric-label">DEVICE</span><strong id="device-status">Detecting</strong><small id="device-sublabel">Local compute</small></article>
-      <article><span class="metric-label">ALLOCATION</span><strong id="resource-summary">Detecting...</strong><small id="resource-sublabel">CPU &amp; RAM Limit</small></article>
-      <article><span class="metric-label">WORKSPACE</span><strong>Ready</strong><small>CloudNex Studio</small></article>
-    </section>
-    <section id="view-panel" class="workspace-panel">
-      <div id="overview-content" class="overview-deck">
+
+    <!-- FLOATING APPLE GLASS EMBEDDED WORKSPACE WINDOW -->
+    <div class="apple-glass-window-frame" id="apple-workspace-window">
+      <!-- Window Titlebar with macOS Dots & Breadcrumbs -->
+      <div class="glass-window-header">
+        <div class="macos-traffic-dots">
+          <span class="dot-red" title="Close"></span>
+          <span class="dot-yellow" title="Minimize"></span>
+          <span class="dot-green" title="Maximize"></span>
+        </div>
+
+        <div class="window-breadcrumbs">
+          <span class="crumb-back" data-view="overview">‹ Back</span>
+          <strong class="crumb-name">Customer sales project</strong>
+          <span class="crumb-caret">▾</span>
+          <span class="crumb-flag" title="Active Project">⚑</span>
+        </div>
+
+        <div class="window-header-meta">
+          <span class="meta-timestamp">Last updated on 15-09-2026, 11:20pm</span>
+          <div class="auto-refresh-badge">
+            <span>Auto refresh (10s)</span>
+            <label class="apple-switch" title="Auto-refresh telemetry">
+              <input type="checkbox" checked id="auto-refresh-toggle">
+              <span class="slider-round"></span>
+            </label>
+          </div>
+          <button class="glass-icon-btn" type="button" title="Download Report">⤓</button>
+          <button class="glass-icon-btn nav-item" type="button" data-view="settings" title="Hardware Settings">⚙</button>
+        </div>
+      </div>
+
+      <!-- Sub-Navigation Glass Toolbar (Directly Matching Screenshot) -->
+      <div class="glass-subnav-toolbar">
+        <div class="subnav-left-views">
+          <button class="glass-subnav-pill active nav-item" type="button" data-view="overview">
+            <span class="pill-glyph">⊞</span> Graph view
+          </button>
+          <button class="glass-subnav-pill nav-item" type="button" data-view="training">
+            <span class="pill-glyph">⚙</span> Agent Graph
+          </button>
+          <button class="glass-subnav-pill nav-item" type="button" data-view="data">
+            <span class="pill-glyph">↗</span> Agent Path
+          </button>
+        </div>
+
+        <div class="subnav-right-filters">
+          <button class="glass-filter-pill" type="button"><span class="flt-icon">📅</span> Past 3M <span class="flt-caret">▾</span></button>
+          <button class="glass-filter-pill" type="button"><span class="flt-icon">▼</span> Filter</button>
+          <button class="glass-filter-pill" type="button"><span class="flt-icon">☼</span> Display <span class="flt-caret">▾</span></button>
+          <button class="glass-filter-pill highlight-eval nav-item" type="button" data-view="evaluation">+ Add Evals</button>
+          <button class="glass-filter-pill" type="button" id="save-view-btn">💾 Save view</button>
+        </div>
+      </div>
+
+      <!-- Studio View Switcher Tabs -->
+      <div class="apple-studio-tabs-row" aria-label="Studio Modes">
+        <button class="studio-tab-btn nav-item active" type="button" data-view="overview">⊞ Command Deck</button>
+        <button class="studio-tab-btn nav-item" type="button" data-view="training">⚡ Training Studio</button>
+        <button class="studio-tab-btn nav-item" type="button" data-view="data">🗎 Plain .TXT Ingestion</button>
+        <button class="studio-tab-btn nav-item" type="button" data-view="models">💾 Checkpoints</button>
+        <button class="studio-tab-btn nav-item" type="button" data-view="chat">💬 Local Chat</button>
+        <button class="studio-tab-btn nav-item" type="button" data-view="evaluation">📊 Benchmarking</button>
+        <button class="studio-tab-btn nav-item" type="button" data-view="settings">⚙ Hardware Controls</button>
+        <button class="studio-tab-btn nav-item" type="button" data-view="about">👤 Mohammed Sheik</button>
+        <button class="studio-tab-btn nav-item" type="button" data-view="terms">📜 Terms &amp; EULA</button>
+      </div>
+
+      <!-- METRICS STRIP (FROSTED GLASS CARDS) -->
+      <section class="metrics apple-glass-metrics" aria-label="Workspace metrics">
+        <article><span class="metric-label">ENGINE</span><strong id="engine-status">Starting</strong><small>FastAPI sidecar</small></article>
+        <article><span class="metric-label">DEVICE</span><strong id="device-status">Detecting</strong><small id="device-sublabel">Local compute</small></article>
+        <article><span class="metric-label">ALLOCATION</span><strong id="resource-summary">Detecting...</strong><small id="resource-sublabel">CPU &amp; RAM Limit</small></article>
+        <article><span class="metric-label">WORKSPACE</span><strong>100% Sovereign</strong><small>CloudNex Studio</small></article>
+      </section>
+
+      <!-- WORKSPACE PANELS -->
+      <section id="view-panel" class="workspace-panel apple-glass-inner-panel">
+        <div id="overview-content" class="overview-deck">
+          <!-- PRIMARY NEON GRAPH (MATCHING USER SCREENSHOT AT BOTTOM) -->
+          <div class="apple-primary-graph-card">
+            <div class="graph-top-row">
+              <div class="graph-title-block">
+                <span class="graph-kicker">REAL-TIME TELEMETRY</span>
+                <div class="graph-title-dropdown">
+                  <h3 class="graph-main-title">Primary Graph</h3>
+                  <button class="graph-metric-select-btn" type="button">Latency (ms) <span class="caret">▾</span></button>
+                </div>
+              </div>
+              <div class="graph-legend-controls">
+                <div class="graph-legend-item"><span class="legend-dot cyan-dot"></span> Latency (ms)</div>
+                <div class="graph-legend-item"><span class="legend-dot blue-dot"></span> Traffic (tok/s)</div>
+                <div class="graph-zoom-group">
+                  <button class="graph-zoom-btn" id="graph-zoom-in" type="button">+</button>
+                  <button class="graph-zoom-btn" id="graph-zoom-out" type="button">−</button>
+                  <button class="graph-zoom-btn" id="graph-zoom-fit" type="button">⛶</button>
+                  <span class="graph-scale-tag">900</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Glowing Interactive Neon Chart -->
+            <div class="neon-chart-container">
+              <div class="neon-y-axis">
+                <span>900</span>
+                <span>600</span>
+                <span>300</span>
+                <span>0</span>
+              </div>
+              <div class="neon-canvas-wrapper">
+                <svg class="neon-chart-svg" viewBox="0 0 1000 240" preserveAspectRatio="none">
+                  <defs>
+                    <linearGradient id="neonCyanGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stop-color="#00F0FF" stop-opacity="0.32" />
+                      <stop offset="100%" stop-color="#00F0FF" stop-opacity="0.0" />
+                    </linearGradient>
+                    <linearGradient id="neonBlueGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stop-color="#3B82F6" stop-opacity="0.25" />
+                      <stop offset="100%" stop-color="#3B82F6" stop-opacity="0.0" />
+                    </linearGradient>
+                    <filter id="neonGlow" x="-20%" y="-20%" width="140%" height="140%">
+                      <feGaussianBlur stdDeviation="3" result="blur" />
+                      <feMerge>
+                        <feMergeNode in="blur" />
+                        <feMergeNode in="SourceGraphic" />
+                      </feMerge>
+                    </filter>
+                  </defs>
+
+                  <!-- Subtle Grid Lines -->
+                  <line class="chart-grid-line" x1="0" y1="20" x2="1000" y2="20" />
+                  <line class="chart-grid-line" x1="0" y1="80" x2="1000" y2="80" />
+                  <line class="chart-grid-line" x1="0" y1="140" x2="1000" y2="140" />
+                  <line class="chart-grid-line" x1="0" y1="200" x2="1000" y2="200" />
+
+                  <!-- Gradient Fills -->
+                  <polygon class="neon-fill-blue" points="0,210 100,200 200,210 320,180 440,150 560,165 680,110 800,140 920,80 1000,100 1000,220 0,220" fill="url(#neonBlueGrad)" />
+                  <polygon class="neon-fill-cyan" points="0,190 120,185 240,195 380,140 480,95 600,120 720,70 840,90 940,45 1000,60 1000,220 0,220" fill="url(#neonCyanGrad)" />
+
+                  <!-- Glowing Neon Lines -->
+                  <path class="neon-line-blue" d="M 0,210 Q 100,200 200,210 T 440,150 T 680,110 T 920,80 L 1000,100" />
+                  <path class="neon-line-cyan" filter="url(#neonGlow)" d="M 0,190 Q 120,185 240,195 T 480,95 T 720,70 T 940,45 L 1000,60" />
+
+                  <!-- Active Glowing Data Nodes -->
+                  <circle class="neon-node" cx="480" cy="95" r="5" fill="#00F0FF" />
+                  <circle class="neon-node" cx="720" cy="70" r="5" fill="#00F0FF" />
+                  <circle class="neon-node" cx="940" cy="45" r="6" fill="#FFFFFF" stroke="#00F0FF" stroke-width="2" />
+                </svg>
+              </div>
+            </div>
+          </div>
         <div class="deck-header">
           <div class="deck-title-area">
             <span class="cyber-badge-live"><span class="pulse-beacon"></span> COMMAND DECK ONLINE</span>
@@ -691,7 +926,142 @@ Copyright (c) 2026 Mohammed Sheik. All rights reserved.</pre>
         </div>
       </div>
     </section>
-  </main>
+    </div> <!-- /#apple-workspace-window -->
+  </div> <!-- /.apple-app-container -->
+
+  <!-- FLOATING APPLE-GLASS QUESTION ORB (VISIONOS STYLE - BOTTOM RIGHT) -->
+  <aside class="floating-help-orb-wrapper" aria-label="Quick Assistance & Guide">
+    <button class="apple-glass-floating-orb" id="floating-help-btn" type="button" aria-label="Open Studio Quick Assist HUD">
+      <span class="orb-pulsing-halo"></span>
+      <span class="orb-glyph">?</span>
+    </button>
+  </aside>
+
+  <!-- APPLE GLASS QUICK ASSIST HUD MODAL -->
+  <div id="apple-help-modal" class="apple-glass-modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="help-hud-title">
+    <div class="apple-glass-dialog-box">
+      <div class="dialog-header">
+        <div class="dialog-brand">
+          <span class="dialog-glyph">✦</span>
+          <h3 id="help-hud-title">CloudNex Studio · Quick Assist &amp; Shortcuts</h3>
+        </div>
+        <button id="close-help-modal" class="dialog-close-btn" type="button" aria-label="Close help">×</button>
+      </div>
+      <div class="dialog-content-body">
+        <div class="dialog-grid-cards">
+          <div class="hud-feature-card">
+            <span class="card-kicker">SPOTLIGHT</span>
+            <strong>Quick Search (⌘K)</strong>
+            <p>Press <kbd>⌘K</kbd> or <kbd>Ctrl+K</kbd> anywhere in the studio to jump to any stage, model checkpoint, or hardware slider instantly.</p>
+          </div>
+          <div class="hud-feature-card">
+            <span class="card-kicker">ACCELERATION</span>
+            <strong>Hardware Detection</strong>
+            <p>Automatically mounts AMD ROCm (RX 9070/7900), NVIDIA CUDA, or Apple Metal (MPS). Zero telemetry is ever sent outside your host.</p>
+          </div>
+          <div class="hud-feature-card">
+            <span class="card-kicker">PIPELINE</span>
+            <strong>Post-Training Flow</strong>
+            <p>Supports full 5-stage sovereign pipeline: Pretraining &rarr; SFT/LoRA &rarr; Reward Modeling &rarr; DPO &rarr; Reasoning (PPO / GRPO).</p>
+          </div>
+          <div class="hud-feature-card">
+            <span class="card-kicker">CREATOR</span>
+            <strong>Mohammed Sheik</strong>
+            <p>Designed and built for total privacy and sovereign deep learning compute. Learn more at <a href="https://cloudnex.co.za" target="_blank" rel="noopener noreferrer">cloudnex.co.za</a>.</p>
+          </div>
+        </div>
+        <div class="dialog-actions-footer">
+          <button type="button" class="apple-btn-solid-white" id="help-test-run-btn">Run Pipeline Verification</button>
+          <button type="button" class="apple-btn-glass-secondary" id="help-view-eula-btn">View EULA License</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- APPLE GLASS SPOTLIGHT COMMAND PALETTE (⌘K) -->
+  <div id="apple-spotlight-modal" class="apple-glass-modal-overlay hidden" role="dialog" aria-modal="true" aria-label="Spotlight Command Search">
+    <div class="apple-spotlight-box">
+      <div class="spotlight-search-header">
+        <span class="spotlight-icon">🔍</span>
+        <input type="text" id="spotlight-input" class="spotlight-input-field" placeholder="Type a command or jump to view (e.g. training, txt, models, gpu, eula)..." autocomplete="off">
+        <kbd class="spotlight-esc-badge" id="close-spotlight-btn">ESC</kbd>
+      </div>
+      <div class="spotlight-results-list" id="spotlight-results">
+        <button class="spotlight-item" data-action-view="overview">
+          <span class="item-icon">⊞</span>
+          <div class="item-meta">
+            <strong>Overview Command Deck</strong>
+            <small>Live PyTorch telemetry, oscillogram, and GPU headroom</small>
+          </div>
+          <span class="item-shortcut">↵</span>
+        </button>
+        <button class="spotlight-item" data-action-view="training">
+          <span class="item-icon">⚡</span>
+          <div class="item-meta">
+            <strong>Post-Training Studio</strong>
+            <small>SFT, DPO, PPO, GRPO loss tracking &amp; execution</small>
+          </div>
+          <span class="item-shortcut">↵</span>
+        </button>
+        <button class="spotlight-item" data-action-view="data">
+          <span class="item-icon">🗎</span>
+          <div class="item-meta">
+            <strong>Plain .TXT Dataset Ingestion</strong>
+            <small>Drag-and-drop raw text files and inspect token count</small>
+          </div>
+          <span class="item-shortcut">↵</span>
+        </button>
+        <button class="spotlight-item" data-action-view="models">
+          <span class="item-icon">💾</span>
+          <div class="item-meta">
+            <strong>Model Checkpoints &amp; Weights</strong>
+            <small>GGUF, Safetensors, and local adapter shelf</small>
+          </div>
+          <span class="item-shortcut">↵</span>
+        </button>
+        <button class="spotlight-item" data-action-view="chat">
+          <span class="item-icon">💬</span>
+          <div class="item-meta">
+            <strong>Local Inference Chat</strong>
+            <small>Talk to fine-tuned checkpoints in real time</small>
+          </div>
+          <span class="item-shortcut">↵</span>
+        </button>
+        <button class="spotlight-item" data-action-view="settings">
+          <span class="item-icon">⚙</span>
+          <div class="item-meta">
+            <strong>Hardware &amp; Thermal Limits</strong>
+            <small>Configure CPU worker threads, RAM ceiling, and GPU fraction</small>
+          </div>
+          <span class="item-shortcut">↵</span>
+        </button>
+        <button class="spotlight-item" data-action-view="about">
+          <span class="item-icon">👤</span>
+          <div class="item-meta">
+            <strong>About Mohammed Sheik &amp; CloudNex</strong>
+            <small>Architect biography, vision, and official links</small>
+          </div>
+          <span class="item-shortcut">↵</span>
+        </button>
+        <button class="spotlight-item" data-action-view="terms">
+          <span class="item-icon">📜</span>
+          <div class="item-meta">
+            <strong>Software License Agreement &amp; EULA</strong>
+            <small>100% offline sovereignty and legal compliance</small>
+          </div>
+          <span class="item-shortcut">↵</span>
+        </button>
+        <button class="spotlight-item" data-action-installer="true">
+          <span class="item-icon">⛶</span>
+          <div class="item-meta">
+            <strong>Launch Desktop Setup Wizard</strong>
+            <small>Open interactive NSIS/DMG installer preview</small>
+          </div>
+          <span class="item-shortcut">↵</span>
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- INTERACTIVE INSTALLER SETUP WIZARD PREVIEW MODAL -->
   <div id="installer-modal" class="installer-modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="installer-window-title">

@@ -35,6 +35,10 @@ if (window.cloudnex?.window?.minimize) {
 
 function selectView(view) {
   document.querySelectorAll('.nav-item').forEach((button) => button.classList.toggle('active', button.dataset.view === view));
+  document.querySelectorAll('.apple-nav-link').forEach((button) => button.classList.toggle('active', button.dataset.view === view));
+  document.querySelectorAll('.studio-tab-btn').forEach((button) => button.classList.toggle('active', button.dataset.view === view));
+  document.querySelectorAll('.glass-subnav-pill[data-view]').forEach((button) => button.classList.toggle('active', button.dataset.view === view));
+
   const titles = {
     overview: 'Your next run starts here.',
     data: 'Prepare a clean local dataset.',
@@ -64,8 +68,25 @@ function selectView(view) {
   const topbarEyebrow = document.querySelector('.topbar .eyebrow');
   if (topbarEyebrow) topbarEyebrow.textContent = sectionKick[view] || 'LOCAL WORKSPACE';
 
-  // Toggle hero section: only show hero on overview so content panels start at top
-  const heroSection = document.querySelector('.hero');
+  // Update Breadcrumb
+  const crumbName = document.querySelector('.crumb-name');
+  if (crumbName) {
+    const breadcrumbMap = {
+      overview: 'Customer sales project',
+      data: 'Dataset Ingestion Pipeline',
+      training: 'LoRA / DPO Training Run',
+      models: 'Model Registry & Shelf',
+      chat: 'Local Inference Chat',
+      evaluation: 'Model Evaluation Suite',
+      settings: 'Compute & VRAM Controls',
+      about: 'About Mohammed Sheik',
+      terms: 'License & Legal Agreement',
+    };
+    crumbName.textContent = breadcrumbMap[view] || 'Customer sales project';
+  }
+
+  // Toggle hero section: only show hero on overview
+  const heroSection = document.querySelector('.apple-hero-section');
   if (heroSection) heroSection.classList.toggle('hidden', view !== 'overview');
 
   document.getElementById('overview-content').classList.toggle('hidden', view !== 'overview');
@@ -81,10 +102,14 @@ function selectView(view) {
   const termsPanel = document.getElementById('terms-content');
   if (termsPanel) termsPanel.classList.toggle('hidden', view !== 'terms');
 
-  // Scroll to top of view
-  window.scrollTo({ top: 0, behavior: 'instant' });
-  const mainContent = document.querySelector('.main-content');
-  if (mainContent) mainContent.scrollTop = 0;
+  if (view !== 'overview') {
+    const workspaceWindow = document.getElementById('workspace-window');
+    if (workspaceWindow) {
+      workspaceWindow.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  } else {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
 
   if (view === 'training') loadTraining();
   if (view === 'data') loadDataFiles();
@@ -1015,5 +1040,196 @@ function initInstallerWizard() {
 }
 
 initInstallerWizard();
+
+/* --- APPLE GLASS SUITE CONTROLLERS --- */
+function initAppleGlassSuite() {
+  // Real-time clock for window header
+  const headerTimestamp = document.getElementById('header-timestamp');
+  function updateClock() {
+    if (headerTimestamp) {
+      const now = new Date();
+      headerTimestamp.textContent = now.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      }) + ', ' + now.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true,
+      });
+    }
+  }
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  // Spotlight Command Palette (⌘K)
+  const spotlightModal = document.getElementById('apple-spotlight-modal');
+  const spotlightInput = document.getElementById('spotlight-input');
+  const spotlightTrigger = document.getElementById('open-spotlight-btn');
+  const closeSpotlightBtn = document.getElementById('close-spotlight-btn');
+  const spotlightItems = document.querySelectorAll('.spotlight-item');
+
+  function openSpotlight() {
+    if (!spotlightModal) return;
+    spotlightModal.classList.remove('hidden');
+    if (spotlightInput) {
+      spotlightInput.value = '';
+      spotlightInput.focus();
+    }
+    filterSpotlight('');
+  }
+
+  function closeSpotlight() {
+    if (!spotlightModal) return;
+    spotlightModal.classList.add('hidden');
+  }
+
+  function filterSpotlight(query) {
+    const q = query.toLowerCase().trim();
+    spotlightItems.forEach((item) => {
+      const text = item.textContent.toLowerCase();
+      item.style.display = text.includes(q) ? 'flex' : 'none';
+    });
+  }
+
+  if (spotlightTrigger) {
+    spotlightTrigger.addEventListener('click', openSpotlight);
+  }
+  if (closeSpotlightBtn) {
+    closeSpotlightBtn.addEventListener('click', closeSpotlight);
+  }
+  if (spotlightModal) {
+    spotlightModal.addEventListener('click', (e) => {
+      if (e.target === spotlightModal) closeSpotlight();
+    });
+  }
+  if (spotlightInput) {
+    spotlightInput.addEventListener('input', (e) => {
+      filterSpotlight(e.target.value);
+    });
+  }
+
+  // Keyboard shortcut listener for ⌘K or Ctrl+K and Escape
+  window.addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+      e.preventDefault();
+      if (spotlightModal && !spotlightModal.classList.contains('hidden')) {
+        closeSpotlight();
+      } else {
+        openSpotlight();
+      }
+    } else if (e.key === 'Escape') {
+      closeSpotlight();
+      closeHelpModal();
+    }
+  });
+
+  // Spotlight Item Clicks
+  spotlightItems.forEach((item) => {
+    item.addEventListener('click', () => {
+      const view = item.dataset.view;
+      const action = item.dataset.action;
+      closeSpotlight();
+      if (view) {
+        selectView(view);
+      } else if (action === 'open-installer') {
+        const wizard = document.getElementById('installer-modal');
+        if (wizard) wizard.classList.remove('hidden');
+      }
+    });
+  });
+
+  // VisionOS Floating Question Orb & Quick Assist Modal
+  const helpOrb = document.getElementById('floating-help-btn');
+  const helpModal = document.getElementById('apple-help-modal');
+  const closeHelpBtn = document.getElementById('close-help-modal');
+  const helpTestRunBtn = document.getElementById('help-test-run-btn');
+  const helpViewEulaBtn = document.getElementById('help-view-eula-btn');
+
+  function openHelpModal() {
+    if (helpModal) helpModal.classList.remove('hidden');
+  }
+  function closeHelpModal() {
+    if (helpModal) helpModal.classList.add('hidden');
+  }
+
+  if (helpOrb) helpOrb.addEventListener('click', openHelpModal);
+  if (closeHelpBtn) closeHelpBtn.addEventListener('click', closeHelpModal);
+  if (helpModal) {
+    helpModal.addEventListener('click', (e) => {
+      if (e.target === helpModal) closeHelpModal();
+    });
+  }
+  if (helpTestRunBtn) {
+    helpTestRunBtn.addEventListener('click', () => {
+      closeHelpModal();
+      selectView('training');
+    });
+  }
+  if (helpViewEulaBtn) {
+    helpViewEulaBtn.addEventListener('click', () => {
+      closeHelpModal();
+      selectView('terms');
+    });
+  }
+
+  // Hero CTAs
+  const heroFreeBtn = document.getElementById('hero-free-btn');
+  if (heroFreeBtn) {
+    heroFreeBtn.addEventListener('click', () => {
+      selectView('training');
+    });
+  }
+  const heroInstallerBtn = document.getElementById('hero-installer-btn');
+  if (heroInstallerBtn) {
+    heroInstallerBtn.addEventListener('click', () => {
+      const wizard = document.getElementById('installer-modal');
+      if (wizard) wizard.classList.remove('hidden');
+    });
+  }
+
+  // Neon Chart Interactive Zoom Controls
+  const zoomInBtn = document.getElementById('graph-zoom-in');
+  const zoomOutBtn = document.getElementById('graph-zoom-out');
+  const zoomFitBtn = document.getElementById('graph-zoom-fit');
+  const chartSvg = document.getElementById('apple-neon-svg');
+  let currentZoom = 1;
+
+  if (zoomInBtn && chartSvg) {
+    zoomInBtn.addEventListener('click', () => {
+      currentZoom = Math.min(2.5, currentZoom + 0.2);
+      chartSvg.style.transform = `scaleY(${currentZoom})`;
+      chartSvg.style.transformOrigin = 'bottom';
+      chartSvg.style.transition = 'transform 0.25s ease';
+    });
+  }
+  if (zoomOutBtn && chartSvg) {
+    zoomOutBtn.addEventListener('click', () => {
+      currentZoom = Math.max(0.5, currentZoom - 0.2);
+      chartSvg.style.transform = `scaleY(${currentZoom})`;
+      chartSvg.style.transformOrigin = 'bottom';
+      chartSvg.style.transition = 'transform 0.25s ease';
+    });
+  }
+  if (zoomFitBtn && chartSvg) {
+    zoomFitBtn.addEventListener('click', () => {
+      currentZoom = 1;
+      chartSvg.style.transform = `scaleY(1)`;
+      chartSvg.style.transition = 'transform 0.25s ease';
+    });
+  }
+
+  // Neon Node Click Tooltips / Info
+  document.querySelectorAll('.neon-node').forEach((node) => {
+    node.addEventListener('mouseenter', () => {
+      const cy = parseFloat(node.getAttribute('cy') || '0');
+      const val = Math.round(400 - (cy / 180) * 360);
+      node.setAttribute('title', `Measured Latency: ${val} ms`);
+    });
+  });
+}
+
+initAppleGlassSuite();
 
 connect();
