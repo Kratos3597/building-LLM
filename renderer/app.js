@@ -46,8 +46,28 @@ function selectView(view) {
     about: 'About Mohammed Sheik & CloudNex Architecture.',
     terms: 'Terms of Service & License Agreement.',
   };
+  const sectionKick = {
+    overview: 'LOCAL WORKSPACE',
+    data: 'DATASET INGESTION',
+    training: 'TRAINING STUDIO',
+    models: 'CHECKPOINT REGISTRY',
+    chat: 'LOCAL INFERENCE',
+    evaluation: 'MODEL BENCHMARKING',
+    settings: 'HARDWARE CONTROLS',
+    about: 'FOUNDER & ARCHITECT',
+    terms: 'LEGAL & COMPLIANCE',
+  };
+
   const panelTitle = document.querySelector('.workspace-panel h2');
   if (panelTitle) panelTitle.textContent = titles[view] || titles.overview;
+
+  const topbarEyebrow = document.querySelector('.topbar .eyebrow');
+  if (topbarEyebrow) topbarEyebrow.textContent = sectionKick[view] || 'LOCAL WORKSPACE';
+
+  // Toggle hero section: only show hero on overview so content panels start at top
+  const heroSection = document.querySelector('.hero');
+  if (heroSection) heroSection.classList.toggle('hidden', view !== 'overview');
+
   document.getElementById('overview-content').classList.toggle('hidden', view !== 'overview');
   document.getElementById('data-content').classList.toggle('hidden', view !== 'data');
   document.getElementById('training-content').classList.toggle('hidden', view !== 'training');
@@ -60,6 +80,11 @@ function selectView(view) {
   if (aboutPanel) aboutPanel.classList.toggle('hidden', view !== 'about');
   const termsPanel = document.getElementById('terms-content');
   if (termsPanel) termsPanel.classList.toggle('hidden', view !== 'terms');
+
+  // Scroll to top of view
+  window.scrollTo({ top: 0, behavior: 'instant' });
+  const mainContent = document.querySelector('.main-content');
+  if (mainContent) mainContent.scrollTop = 0;
 
   if (view === 'training') loadTraining();
   if (view === 'data') loadDataFiles();
@@ -679,49 +704,191 @@ if (resetBtn) {
 }
 
 /* --- LICENSE & README LOADER --- */
-let cachedLicense = '';
-let cachedReadme = '';
+const FALLBACK_LICENSE = `CLOUDNEX LOCAL LLM STUDIO - END USER LICENSE AGREEMENT & TERMS OF SERVICE
+
+Version: 1.0 (2026)
+Author: Mohammed Sheik
+Website: https://cloudnex.co.za
+Software: CloudNex Local LLM Studio
+
+PLEASE READ THIS END USER LICENSE AGREEMENT ("EULA") CAREFULLY BEFORE INSTALLING
+OR USING CLOUDNEX LOCAL LLM STUDIO ("THE SOFTWARE"). BY INSTALLING, COPYING, OR
+USING THE SOFTWARE, YOU AGREE TO BE BOUND BY THE TERMS AND CONDITIONS OF THIS AGREEMENT.
+
+================================================================================
+1. GRANT OF LICENSE
+================================================================================
+Mohammed Sheik and CloudNex ("Licensor") hereby grant you a non-exclusive, 
+worldwide, royalty-free license to use, execute, inspect, and deploy CloudNex 
+Local LLM Studio on your personal computers, workstations, and local computing 
+clusters for research, commercial, and educational purposes.
+
+================================================================================
+2. LOCAL-ONLY & ZERO-TELEMETRY GUARANTEE
+================================================================================
+CloudNex Local LLM Studio is built from the ground up on an uncompromising 
+principle of digital sovereignty and absolute data privacy:
+- 100% On-Device Processing: All neural network training, tokenization, 
+  inference, checkpoint evaluations, and dataset operations execute strictly 
+  on your local hardware (CPU, AMD ROCm, NVIDIA CUDA, or Apple Silicon).
+- Zero Telemetry / No Phoning Home: The Software contains no background tracking, 
+  no user analytics, no automated telemetry beacons, and no external API call-outs.
+  Your training datasets, proprietary prompts, and model weights never leave your machine.
+
+================================================================================
+3. BUNDLED RUNTIME & SELF-CONTAINED EXECUTION
+================================================================================
+The Software ships with a fully self-contained local Python engine and PyTorch 
+runtime. Users are NOT required to manually configure Python environments, pip 
+dependencies, or compilation toolchains. The Software manages its own sidecar 
+subprocesses and workspace folders.
+
+================================================================================
+4. COMPUTE RESOURCE & HARDWARE THERMAL SAFETY
+================================================================================
+Training and fine-tuning language models creates heavy mathematical loads on CPU 
+cores and graphics processing units (GPUs).
+- The Software provides explicit resource capping controls (CPU core allocation, 
+  system RAM usage ceiling, and GPU VRAM reservation fraction).
+- The user is responsible for ensuring adequate physical chassis ventilation, 
+  power delivery, and thermal cooling for sustained deep learning workloads.
+- Licensor shall not be held liable for thermal throttling, hardware instability, 
+  or system crashes resulting from continuous full-power training operations.
+
+================================================================================
+5. NO WARRANTY & LIMITATION OF LIABILITY
+================================================================================
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS 
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR 
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER 
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION 
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+================================================================================
+6. ABOUT THE CREATOR & CLOUDNEX
+================================================================================
+CloudNex Local LLM Studio was conceptualized and developed by Mohammed Sheik to 
+democratize state-of-the-art post-training (SFT, DPO, PPO, GRPO) and local AI 
+sovereignty worldwide.
+
+For enterprise solutions, custom infrastructure, and updates, visit:
+https://cloudnex.co.za
+
+Copyright (c) 2026 Mohammed Sheik. All rights reserved.`;
+
+const FALLBACK_README = `# CloudNex Local LLM Studio
+Next-Generation Post-Training & Inference Studio for Local PyTorch AI
+
+Creator: Mohammed Sheik
+Website: https://cloudnex.co.za
+Platform Support: Windows (x64), macOS (Apple Silicon & Intel), Linux (x86_64)
+
+================================================================================
+VISION & PURPOSE
+================================================================================
+CloudNex Local LLM Studio was designed and built by Mohammed Sheik with a clear mission: to bring enterprise-grade post-training (Supervised Fine-Tuning, Direct Preference Optimization, PPO, and GRPO reasoning alignment) to local developer workstations and high-performance rigs without cloud dependency, data leakage, or complex DevOps overhead.
+
+================================================================================
+KEY HIGHLIGHTS
+================================================================================
+1. Zero-Setup Self-Contained Runtime:
+   - Packaged with an embedded, pre-compiled Python execution engine and PyTorch distribution.
+   - No manual Python installation, no virtualenv juggling, and no pip errors.
+   - Runs out of the box immediately upon installation.
+
+2. Native Hardware Accelerator Support:
+   - AMD ROCm: Native support for RDNA 4 (Radeon RX 9070 / 9070 XT), RDNA 3 (RX 7900 / 7800 / 7700), and RDNA 2 with automated HIP architecture override.
+   - NVIDIA CUDA: Full tensor core acceleration for RTX 40/30/20 series and professional Ada/Ampere cards.
+   - Apple Silicon: Metal Performance Shaders (MPS) unified memory execution on M1/M2/M3/M4 chips.
+   - Multi-Core CPU: AVX-512 / AVX2 multi-threaded fallback.
+
+3. 100% Private, Air-Gapped & Sovereign:
+   - Zero telemetry, zero analytics tracking, and zero cloud API dependencies.
+   - Your proprietary training data, custom prompts, and checkpoints remain exclusively on your physical storage.
+
+4. Multi-Stage Post-Training Pipeline:
+   - 01 Pretraining & Raw .TXT corpus token ingestion
+   - 02 Supervised Fine-Tuning (SFT / LoRA / QLoRA)
+   - 03 Reward Model Training
+   - 04 Direct Preference Optimization (DPO / ORPO / KTO)
+   - 05 Reasoning Alignment (PPO & GRPO / RLVR)
+
+================================================================================
+ABOUT MOHAMMED SHEIK & CLOUDNEX
+================================================================================
+Mohammed Sheik is the founder of CloudNex (https://cloudnex.co.za), pioneering sovereign cloud architectures, distributed high-performance computing, and zero-compromise privacy for local deep learning models.
+
+Copyright (c) 2026 Mohammed Sheik. All rights reserved.`;
+
+let cachedLicense = FALLBACK_LICENSE;
+let cachedReadme = FALLBACK_README;
 
 async function loadLicenseDocs() {
   const preEl = document.getElementById('raw-license-text');
   const statusEl = document.getElementById('raw-license-status');
-  if (!preEl) return;
+  const wizardLic = document.getElementById('wizard-license-content');
 
-  if (cachedLicense) {
+  // Immediately ensure elements show at least cached/fallback text
+  if (preEl && (!preEl.textContent || preEl.textContent.includes('Loading'))) {
     preEl.textContent = cachedLicense;
-    return;
+  }
+  if (wizardLic && (!wizardLic.textContent || wizardLic.textContent.includes('Loading'))) {
+    wizardLic.textContent = cachedLicense;
   }
 
   try {
     const res = await fetch(`${backend}/api/license`);
-    const data = await res.json();
-    cachedLicense = data.license || 'License not found.';
-    preEl.textContent = cachedLicense;
-    if (statusEl) statusEl.textContent = 'Loaded from installer/LICENSE.txt';
-  } catch (err) {
-    preEl.textContent = 'CloudNex Local LLM Studio\nCopyright (c) 2026 Mohammed Sheik (https://cloudnex.co.za)\nAll rights reserved.';
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.license) {
+        cachedLicense = data.license;
+        if (preEl) preEl.textContent = cachedLicense;
+        if (wizardLic) wizardLic.textContent = cachedLicense;
+        if (statusEl) statusEl.textContent = 'Verified from installer/LICENSE.txt';
+        return cachedLicense;
+      }
+    }
+  } catch (_) {
+    // Network or server error - keep fallback
   }
+
+  if (preEl) preEl.textContent = cachedLicense;
+  if (wizardLic) wizardLic.textContent = cachedLicense;
+  return cachedLicense;
 }
 
 async function loadReadmeDoc() {
-  if (cachedReadme) return cachedReadme;
+  const wizardReadme = document.getElementById('wizard-readme-content');
+  if (wizardReadme && (!wizardReadme.textContent || wizardReadme.textContent.includes('Loading'))) {
+    wizardReadme.textContent = cachedReadme;
+  }
+
   try {
     const res = await fetch(`${backend}/api/readme`);
-    const data = await res.json();
-    cachedReadme = data.readme || 'Readme documentation.';
-    return cachedReadme;
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.readme) {
+        cachedReadme = data.readme;
+        if (wizardReadme) wizardReadme.textContent = cachedReadme;
+        return cachedReadme;
+      }
+    }
   } catch (_) {
-    return '# CloudNex Local LLM Studio\nCreated by Mohammed Sheik.\nhttps://cloudnex.co.za';
+    // Keep fallback
   }
+
+  if (wizardReadme) wizardReadme.textContent = cachedReadme;
+  return cachedReadme;
 }
 
 // Copy license button
 const copyLicenseBtn = document.getElementById('copy-license-btn');
 if (copyLicenseBtn) {
   copyLicenseBtn.addEventListener('click', async () => {
-    await loadLicenseDocs();
-    if (cachedLicense && navigator.clipboard) {
-      navigator.clipboard.writeText(cachedLicense);
+    const text = await loadLicenseDocs();
+    if (text && navigator.clipboard) {
+      navigator.clipboard.writeText(text);
       const originalText = copyLicenseBtn.textContent;
       copyLicenseBtn.textContent = 'Copied to Clipboard! ✓';
       setTimeout(() => { copyLicenseBtn.textContent = originalText; }, 2500);
@@ -783,16 +950,18 @@ function initInstallerWizard() {
       }
     }
 
-    // Load async contents
+    // Load async contents with instant fallback
     if (currentStep === 2 && readmeBox) {
+      readmeBox.textContent = cachedReadme || FALLBACK_README;
       loadReadmeDoc().then((text) => {
-        readmeBox.textContent = text;
+        if (text) readmeBox.textContent = text;
       });
     }
 
     if (currentStep === 3 && licenseBox) {
-      loadLicenseDocs().then(() => {
-        licenseBox.textContent = cachedLicense;
+      licenseBox.textContent = cachedLicense || FALLBACK_LICENSE;
+      loadLicenseDocs().then((text) => {
+        if (text) licenseBox.textContent = text;
       });
     }
   }

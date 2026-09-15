@@ -448,6 +448,16 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+  // Explicit handler for avatar image
+  if (pathname === '/altaaf.jpeg' || pathname === '/mohammed_sheik.svg') {
+    const svgPath = path.join(RENDERER_DIR, 'mohammed_sheik.svg');
+    res.writeHead(200, {
+      'Content-Type': 'image/svg+xml',
+      'Cache-Control': 'public, max-age=86400',
+    });
+    return fs.createReadStream(svgPath).pipe(res);
+  }
+
   // --- Static File Serving (from renderer/) ---
   let reqPath = pathname === '/' ? '/index.html' : pathname;
   let filePath = path.join(RENDERER_DIR, reqPath);
@@ -460,7 +470,12 @@ const server = http.createServer(async (req, res) => {
 
   fs.stat(filePath, (err, stats) => {
     if (err || !stats.isFile()) {
-      // Fall back to index.html for SPA routes
+      // If it's a file request with an extension, return 404
+      if (path.extname(reqPath)) {
+        res.writeHead(404, { 'Content-Type': 'text/plain' });
+        return res.end('Asset not found');
+      }
+      // Otherwise fall back to index.html for SPA routes
       filePath = path.join(RENDERER_DIR, 'index.html');
     }
 

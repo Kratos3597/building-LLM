@@ -1,0 +1,119 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#04080D"/>
+      <stop offset="50%" stop-color="#09141D"/>
+      <stop offset="100%" stop-color="#050B10"/>
+    </linearGradient>
+    <linearGradient id="cyan-glow" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00F0FF" stop-opacity="0.8"/>
+      <stop offset="50%" stop-color="#7000FF" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#00F0FF" stop-opacity="0.9"/>
+    </linearGradient>
+    <linearGradient id="skin-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#E0B696"/>
+      <stop offset="100%" stop-color="#B88A68"/>
+    </linearGradient>
+    <linearGradient id="hair-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1A1C22"/>
+      <stop offset="100%" stop-color="#0A0B0E"/>
+    </linearGradient>
+    <linearGradient id="suit-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0D1822"/>
+      <stop offset="50%" stop-color="#152433"/>
+      <stop offset="100%" stop-color="#081018"/>
+    </linearGradient>
+    <radialGradient id="halo" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#00F0FF" stop-opacity="0.25"/>
+      <stop offset="60%" stop-color="#00F0FF" stop-opacity="0.05"/>
+      <stop offset="100%" stop-color="#00F0FF" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="glow-filter" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Background Base -->
+  <rect width="240" height="240" fill="url(#bg-grad)"/>
+  <circle cx="120" cy="110" r="95" fill="url(#halo)"/>
+
+  <!-- Neural Mesh Grid in Background -->
+  <g stroke="#00F0FF" stroke-width="0.7" opacity="0.2">
+    <line x1="40" y1="50" x2="80" y2="70"/>
+    <line x1="80" y1="70" x2="70" y2="110"/>
+    <line x1="160" y1="70" x2="200" y2="50"/>
+    <line x1="160" y1="70" x2="170" y2="110"/>
+    <line x1="80" y1="70" x2="120" y2="40"/>
+    <line x1="120" y1="40" x2="160" y2="70"/>
+    <circle cx="40" cy="50" r="2" fill="#00F0FF"/>
+    <circle cx="80" cy="70" r="2.5" fill="#00F0FF"/>
+    <circle cx="70" cy="110" r="2" fill="#00F0FF"/>
+    <circle cx="200" cy="50" r="2" fill="#00F0FF"/>
+    <circle cx="160" cy="70" r="2.5" fill="#00F0FF"/>
+    <circle cx="170" cy="110" r="2" fill="#00F0FF"/>
+    <circle cx="120" cy="40" r="3" fill="#00F0FF"/>
+  </g>
+
+  <!-- Outer Cybernetic Ring -->
+  <circle cx="120" cy="120" r="114" fill="none" stroke="#00F0FF" stroke-width="1.2" opacity="0.6"/>
+  <circle cx="120" cy="120" r="110" fill="none" stroke="url(#cyan-glow)" stroke-width="2" stroke-dasharray="45 15 20 10 70 25" filter="url(#glow-filter)"/>
+
+  <!-- Shoulders & Tailored Suit -->
+  <path d="M42 240 C46 195, 75 168, 120 168 C165 168, 194 195, 198 240 Z" fill="url(#suit-grad)"/>
+  
+  <!-- Suit Lapels & Accent Collar -->
+  <path d="M85 240 L106 175 L120 196 L134 175 L155 240 Z" fill="#070C12" stroke="#182A38" stroke-width="1"/>
+  <!-- Crisp White/Cyan Shirt Collar -->
+  <path d="M106 175 L120 196 L134 175 L126 168 L120 172 L114 168 Z" fill="#E8F4F8"/>
+  <!-- Executive Tie -->
+  <polygon points="117,192 123,192 125,240 115,240" fill="#00E5FF" opacity="0.85"/>
+  <polygon points="116,192 124,192 122,198 118,198" fill="#FFFFFF"/>
+
+  <!-- Neck -->
+  <rect x="107" y="140" width="26" height="32" rx="4" fill="url(#skin-grad)"/>
+  <path d="M107 148 C115 156, 125 156, 133 148 L133 162 C125 168, 115 168, 107 162 Z" fill="#9E6E4C" opacity="0.3"/>
+
+  <!-- Head & Face -->
+  <ellipse cx="120" cy="115" rx="34" ry="42" fill="url(#skin-grad)"/>
+  
+  <!-- Ears -->
+  <ellipse cx="85" cy="118" rx="6" ry="11" fill="url(#skin-grad)"/>
+  <ellipse cx="155" cy="118" rx="6" ry="11" fill="url(#skin-grad)"/>
+
+  <!-- Trimmed Beard & Jawline -->
+  <path d="M92 116 C92 144, 104 158, 120 158 C136 158, 148 144, 148 116 C144 140, 134 152, 120 152 C106 152, 96 140, 92 116 Z" fill="url(#hair-grad)"/>
+  <path d="M104 136 C110 133, 130 133, 136 136 C132 143, 108 143, 104 136 Z" fill="url(#hair-grad)"/>
+
+  <!-- Refined Hairstyle -->
+  <path d="M84 106 C83 82, 94 65, 120 65 C146 65, 157 82, 156 106 C150 78, 138 72, 120 72 C102 72, 90 78, 84 106 Z" fill="url(#hair-grad)"/>
+  <path d="M85 102 C90 78, 108 70, 124 71 C142 72, 154 82, 155 98 C148 86, 136 80, 122 80 C104 80, 94 88, 85 102 Z" fill="#2C323D" opacity="0.6"/>
+
+  <!-- Modern Executive Eyeglasses -->
+  <!-- Left Lens & Frame -->
+  <rect x="96" y="103" width="20" height="15" rx="3" fill="rgba(0, 240, 255, 0.12)" stroke="#00F0FF" stroke-width="1.8"/>
+  <!-- Right Lens & Frame -->
+  <rect x="124" y="103" width="20" height="15" rx="3" fill="rgba(0, 240, 255, 0.12)" stroke="#00F0FF" stroke-width="1.8"/>
+  <!-- Bridge & Temples -->
+  <line x1="116" y1="109" x2="124" y2="109" stroke="#00F0FF" stroke-width="2"/>
+  <line x1="88" y1="107" x2="96" y2="107" stroke="#00F0FF" stroke-width="1.6"/>
+  <line x1="144" y1="107" x2="152" y2="107" stroke="#00F0FF" stroke-width="1.6"/>
+  <!-- Eyeglass Lens Glare -->
+  <line x1="99" y1="106" x2="105" y2="106" stroke="#FFFFFF" stroke-width="1.2" opacity="0.8"/>
+  <line x1="127" y1="106" x2="133" y2="106" stroke="#FFFFFF" stroke-width="1.2" opacity="0.8"/>
+
+  <!-- Eyes behind glasses -->
+  <ellipse cx="106" cy="110" rx="3" ry="2" fill="#1C1814"/>
+  <ellipse cx="134" cy="110" rx="3" ry="2" fill="#1C1814"/>
+  <circle cx="107" cy="109" r="0.8" fill="#FFFFFF"/>
+  <circle cx="135" cy="109" r="0.8" fill="#FFFFFF"/>
+
+  <!-- Confident Smile / Mouth -->
+  <path d="M112 138 Q120 143 128 138" stroke="#7A4E38" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+
+  <!-- Submark Monogram Chip in Corner -->
+  <g transform="translate(178, 178)">
+    <circle cx="20" cy="20" r="20" fill="#04080D" stroke="#00F0FF" stroke-width="1.5"/>
+    <text x="20" y="24" text-anchor="middle" fill="#00F0FF" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="11" font-weight="800" letter-spacing="0.5">MS</text>
+  </g>
+</svg>
