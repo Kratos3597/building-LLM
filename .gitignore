@@ -4,6 +4,7 @@ backend/build/
 backend/dist/
 backend/spec/
 release/
+visual-artifacts/
 .venv/
 __pycache__/
 *.egg-info/

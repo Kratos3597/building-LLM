@@ -10,12 +10,14 @@
     "start": "electron .",
     "dev": "electron .",
     "backend": "python backend/app.py",
+    "test:visual": "node tests/electron_visual.js",
     "build:backend": "python scripts/build_backend.py",
     "build": "npm run build:backend && electron-builder"
   },
   "devDependencies": {
     "electron": "^38.1.0",
     "electron-builder": "^26.0.12",
+    "playwright": "^1.55.0",
     "wait-on": "^8.0.3"
   },
   "build": {

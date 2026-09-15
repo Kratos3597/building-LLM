@@ -103,8 +103,10 @@ function stopBackend() {
 }
 
 async function createWindow() {
-  startBackend();
-  await waitForBackend();
+  if (process.env.CLOUDNEX_SKIP_BACKEND !== '1') {
+    startBackend();
+    await waitForBackend();
+  }
   mainWindow = new BrowserWindow({
     width: 1440,
     height: 920,

@@ -65,6 +65,8 @@ PYTHONPATH=. python tests/test_rl_math.py
 PYTHONPATH=. python tests/test_post_training_smoke.py
 ```
 
+The GitHub Actions workflow `Visual Test Desktop UI` launches the real Electron window on hosted Windows and macOS runners, checks the branded title bar, navigation, resizing, and maximize behavior, and uploads screenshots as workflow artifacts. Run it manually from the repository's Actions tab or let it run on pushes to `main`.
+
 ## License and Attribution
 
 CloudNex Local LLM Studio is distributed under the MIT License. See [LICENSE](LICENSE) for the complete terms and required transformer logic attribution.
