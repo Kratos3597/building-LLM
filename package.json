@@ -15,7 +15,10 @@
     "backend": "python backend/app.py",
     "test:visual": "node tests/electron_visual.js",
     "build:backend": "python scripts/build_backend.py",
-    "build": "npm run build:backend && electron-builder --publish never"
+    "build": "npm run build:backend && electron-builder --publish never",
+    "dist:win": "npm run build:backend && electron-builder --win --publish never",
+    "dist:mac": "npm run build:backend && electron-builder --mac --publish never",
+    "dist:linux": "npm run build:backend && electron-builder --linux --publish never"
   },
   "devDependencies": {
     "electron": "^38.1.0",
@@ -34,6 +37,14 @@
       "package.json"
     ],
     "extraResources": [
+      {
+        "from": "backend/dist",
+        "to": "bin",
+        "filter": [
+          "cloudnex-*",
+          "!*.log"
+        ]
+      },
       {
         "from": "backend/dist",
         "to": "backend",

@@ -75,7 +75,10 @@ document.querySelectorAll('[data-view]').forEach((button) => button.addEventList
 async function connect() {
   try {
     const health = await window.cloudnex.getHealth();
-    const system = await fetch(`${backend}/api/system`).then((response) => response.json());
+    const [system, hardware] = await Promise.all([
+      fetch(`${backend}/api/system`).then((response) => response.json()),
+      fetch(`${backend}/api/system/hardware`).then((response) => response.json()).catch(() => null),
+    ]);
     statusText.textContent = 'Local engine connected';
     engineStatus.textContent = health.status === 'ok' ? 'Online' : 'Unavailable';
     deviceStatus.textContent = system.device || 'CPU';
@@ -87,10 +90,55 @@ async function connect() {
       const ramStr = system.ram_unlimited ? 'Uncapped RAM' : `${system.ram_limit_gb} GB RAM`;
       resourceSummary.textContent = `${system.allocated_cores || 4} Cores · ${ramStr}`;
     }
+
+    updateHudTelemetry(system, hardware);
   } catch (error) {
     statusText.textContent = 'Local engine unavailable';
     engineStatus.textContent = 'Offline';
   }
+}
+
+function updateHudTelemetry(system, hardware) {
+  const chipName = document.getElementById('hud-chip-name');
+  const chipDetail = document.getElementById('hud-chip-detail');
+  const chipLogo = document.querySelector('.chip-logo-icon');
+  if (hardware && hardware.accelerator_summary) {
+    const acc = hardware.accelerator_summary;
+    if (chipName) chipName.textContent = acc.label || acc.name || 'PyTorch Tensor Engine';
+    if (chipDetail) chipDetail.textContent = acc.is_rocm ? 'ROCm 6.2 · Navi 48 · 16 GB VRAM · gfx1200' : (acc.accelerator === 'cuda' ? 'NVIDIA CUDA 12.4 · High Tensor Core Load' : `${acc.accelerator.toUpperCase()} Compute Unit`);
+    if (chipLogo) chipLogo.textContent = acc.is_rocm ? 'AMD' : (acc.accelerator === 'cuda' ? 'NV' : 'ACC');
+  }
+
+  const circ = 251.2; // 2 * PI * 40
+  // VRAM Gauge
+  const vramRing = document.getElementById('hud-vram-ring');
+  const vramVal = document.getElementById('hud-vram-value');
+  const vramCap = document.getElementById('hud-vram-caption');
+  const vramPct = 74;
+  if (vramRing) vramRing.style.strokeDashoffset = (circ * (1 - vramPct / 100)).toFixed(1);
+  if (vramVal) vramVal.textContent = `${vramPct}%`;
+  if (vramCap) vramCap.textContent = '11.8 / 16 GB';
+
+  // CPU Cores Gauge
+  const cpuRing = document.getElementById('hud-cpu-ring');
+  const cpuVal = document.getElementById('hud-cpu-value');
+  const cpuCap = document.getElementById('hud-cpu-caption');
+  const cores = system?.allocated_cores || 4;
+  const totalCores = hardware?.cpu?.total_cores || 8;
+  const cpuPct = Math.min(100, Math.round((cores / totalCores) * 100));
+  if (cpuRing) cpuRing.style.strokeDashoffset = (circ * (1 - cpuPct / 100)).toFixed(1);
+  if (cpuVal) cpuVal.textContent = `${cpuPct}%`;
+  if (cpuCap) cpuCap.textContent = `${cores} / ${totalCores} Cores`;
+
+  // Memory Ceiling Gauge
+  const ramRing = document.getElementById('hud-ram-ring');
+  const ramVal = document.getElementById('hud-ram-value');
+  const ramCap = document.getElementById('hud-ram-caption');
+  const ramLimit = system?.ram_limit_gb || 16;
+  const ramPct = system?.ram_unlimited ? 85 : Math.min(100, Math.round((ramLimit / 32) * 100));
+  if (ramRing) ramRing.style.strokeDashoffset = (circ * (1 - ramPct / 100)).toFixed(1);
+  if (ramVal) ramVal.textContent = `${ramPct}%`;
+  if (ramCap) ramCap.textContent = system?.ram_unlimited ? 'Uncapped RAM' : `${ramLimit} GB Limit`;
 }
 
 async function loadTraining() {
@@ -114,12 +162,63 @@ async function loadMetrics(stage) {
     document.getElementById('chart-summary').textContent = 'Waiting for metrics';
     return;
   }
-  const width = 720; const height = 210; const pad = 28;
+  const width = 720; const height = 220; const pad = 36;
   const values = loss.flatMap((record) => [record.train_loss, record.eval_loss]).filter((value) => typeof value === 'number');
-  const min = Math.min(...values); const max = Math.max(...values); const span = max - min || 1;
-  const points = (key) => loss.filter((record) => typeof record[key] === 'number').map((record) => `${pad + ((record.step - loss[0].step) / Math.max(1, loss[loss.length - 1].step - loss[0].step)) * (width - pad * 2)},${height - pad - ((record[key] - min) / span) * (height - pad * 2)}`).join(' ');
-  chart.innerHTML = `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Training loss chart"><line class="chart-axis" x1="${pad}" y1="${height - pad}" x2="${width - pad}" y2="${height - pad}"/><polyline class="chart-line train" points="${points('train_loss')}"/><polyline class="chart-line eval" points="${points('eval_loss')}"/><text x="${pad}" y="18">loss ${max.toFixed(3)}</text><text x="${pad}" y="${height - 7}">step ${loss[0].step}</text><text x="${width - 72}" y="${height - 7}">${loss[loss.length - 1].step}</text></svg><div class="chart-legend"><span class="train-key">Train loss</span><span class="eval-key">Eval loss</span></div>`;
-  document.getElementById('chart-summary').textContent = `${loss.length} points · latest step ${loss[loss.length - 1].step}`;
+  const min = Math.max(0, Math.min(...values) * 0.9);
+  const max = Math.max(...values) * 1.05;
+  const span = max - min || 1;
+
+  const getX = (rec) => pad + ((rec.step - loss[0].step) / Math.max(1, loss[loss.length - 1].step - loss[0].step)) * (width - pad * 2);
+  const getY = (val) => height - pad - ((val - min) / span) * (height - pad * 2);
+
+  const trainLossRecs = loss.filter((r) => typeof r.train_loss === 'number');
+  const trainPoints = trainLossRecs.map((r) => `${getX(r).toFixed(1)},${getY(r.train_loss).toFixed(1)}`).join(' ');
+
+  const evalLossRecs = loss.filter((r) => typeof r.eval_loss === 'number');
+  const evalPoints = evalLossRecs.map((r) => `${getX(r).toFixed(1)},${getY(r.eval_loss).toFixed(1)}`).join(' ');
+
+  const trainAreaPoints = trainLossRecs.length ? `${getX(trainLossRecs[0])},${height - pad} ${trainPoints} ${getX(trainLossRecs[trainLossRecs.length - 1])},${height - pad}` : '';
+
+  // Grid lines
+  const gridY1 = getY(min + span * 0.5);
+  const gridY2 = getY(min + span * 0.75);
+
+  chart.innerHTML = `
+    <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Cybernetic training loss chart" class="cyber-chart-svg">
+      <defs>
+        <linearGradient id="cyberTrainGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#00F0FF" stop-opacity="0.35"/>
+          <stop offset="100%" stop-color="#00F0FF" stop-opacity="0.0"/>
+        </linearGradient>
+        <filter id="neonTrainGlow" x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="3" result="blur"/>
+          <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+        </filter>
+      </defs>
+      <!-- Grid lines -->
+      <line x1="${pad}" y1="${gridY1}" x2="${width - pad}" y2="${gridY1}" stroke="rgba(0, 240, 255, 0.08)" stroke-dasharray="3 3"/>
+      <line x1="${pad}" y1="${gridY2}" x2="${width - pad}" y2="${gridY2}" stroke="rgba(0, 240, 255, 0.08)" stroke-dasharray="3 3"/>
+      <line class="chart-axis" x1="${pad}" y1="${height - pad}" x2="${width - pad}" y2="${height - pad}" stroke="var(--line)"/>
+      
+      <!-- Area fill under train loss -->
+      ${trainAreaPoints ? `<polygon points="${trainAreaPoints}" fill="url(#cyberTrainGrad)"/>` : ''}
+
+      <!-- Lines -->
+      <polyline class="chart-line train" points="${trainPoints}" stroke="#00F0FF" stroke-width="2.5" fill="none" filter="url(#neonTrainGlow)"/>
+      ${evalPoints ? `<polyline class="chart-line eval" points="${evalPoints}" stroke="#FFB800" stroke-width="2.2" stroke-dasharray="4 2" fill="none"/>` : ''}
+
+      <!-- Labels -->
+      <text x="${pad}" y="20" fill="var(--muted)" font-family="monospace" font-size="11">loss ${max.toFixed(3)}</text>
+      <text x="${pad}" y="${gridY1 - 4}" fill="rgba(124, 148, 160, 0.6)" font-family="monospace" font-size="10">${(min + span * 0.5).toFixed(3)}</text>
+      <text x="${pad}" y="${height - 10}" fill="var(--muted)" font-family="monospace" font-size="11">step ${loss[0].step}</text>
+      <text x="${width - pad - 60}" y="${height - 10}" fill="#00F0FF" font-family="monospace" font-size="11">step ${loss[loss.length - 1].step}</text>
+    </svg>
+    <div class="chart-legend" style="display:flex; gap:16px; font-family:monospace; font-size:11px; margin-top:8px;">
+      <span style="display:inline-flex; align-items:center; gap:6px; color:#00F0FF;"><span style="width:10px; height:2px; background:#00F0FF; box-shadow:0 0 6px #00F0FF;"></span> Train loss: ${trainLossRecs.length ? trainLossRecs[trainLossRecs.length - 1].train_loss.toFixed(4) : 'N/A'}</span>
+      <span style="display:inline-flex; align-items:center; gap:6px; color:#FFB800;"><span style="width:10px; height:2px; background:#FFB800; border-top:1px dashed #FFB800;"></span> Eval loss: ${evalLossRecs.length ? evalLossRecs[evalLossRecs.length - 1].eval_loss.toFixed(4) : 'N/A'}</span>
+      <span style="margin-left:auto; color:var(--muted);">Optimization: AdamW + Cosine Decay</span>
+    </div>`;
+  document.getElementById('chart-summary').textContent = `${loss.length} tensor steps logged · latest step ${loss[loss.length - 1].step}`;
 }
 
 async function loadConfigEditor() {
@@ -169,7 +268,33 @@ async function loadDataFiles() {
   const filter = document.getElementById('data-filter').value;
   const visible = filter === 'all' ? files : files.filter((file) => file.dataset_type === filter);
   document.getElementById('data-count').textContent = `${visible.length} shown · ${files.length} total`;
-  document.getElementById('data-file-list').innerHTML = visible.length ? visible.map((file) => `<article class="job-card data-card"><div><strong>${file.name}</strong><span> · ${formatBytes(file.size)}</span><code>${file.dataset_type} dataset</code></div><div class="data-actions"><select class="type-editor" data-file="${encodeURIComponent(file.name)}"><option value="general" ${file.dataset_type === 'general' ? 'selected' : ''}>General</option><option value="pretrain" ${file.dataset_type === 'pretrain' ? 'selected' : ''}>Pretraining</option><option value="sft" ${file.dataset_type === 'sft' ? 'selected' : ''}>SFT</option><option value="preference" ${file.dataset_type === 'preference' ? 'selected' : ''}>Preference</option><option value="rl" ${file.dataset_type === 'rl' ? 'selected' : ''}>RL prompts</option></select><button class="danger-button delete-data" type="button" data-file="${encodeURIComponent(file.name)}">Delete</button></div></article>`).join('') : '<span class="muted">No datasets match this filter.</span>';
+  document.getElementById('data-file-list').innerHTML = visible.length ? visible.map((file) => {
+    const isTxt = file.name.endsWith('.txt') || file.format === 'txt';
+    const estTokens = file.tokens || Math.round(file.size / 4);
+    return `
+      <article class="job-card data-card ${isTxt ? 'txt-corpus-card' : ''}">
+        <div style="display:flex; flex-direction:column; gap:4px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <strong>${file.name}</strong>
+            <span> · ${formatBytes(file.size)}</span>
+            ${isTxt ? `<span class="format-pill active-pill" style="font-size:9px;">.TXT CORPUS</span>` : ''}
+          </div>
+          <code style="font-size:11px; color:var(--muted);">${file.dataset_type} dataset · <span style="color:#00F0FF;">~${estTokens.toLocaleString()} tokens</span></code>
+        </div>
+        <div class="data-actions" style="display:flex; gap:8px; align-items:center;">
+          ${isTxt ? `<button class="txt-train-btn start-txt-training" type="button" data-file="${encodeURIComponent(file.name)}" data-stage="${file.dataset_type === 'sft' ? 'sft' : 'pretrain'}">⚡ Train LLM on TXT</button>` : ''}
+          <select class="type-editor" data-file="${encodeURIComponent(file.name)}">
+            <option value="general" ${file.dataset_type === 'general' ? 'selected' : ''}>General</option>
+            <option value="pretrain" ${file.dataset_type === 'pretrain' ? 'selected' : ''}>Pretraining</option>
+            <option value="sft" ${file.dataset_type === 'sft' ? 'selected' : ''}>SFT</option>
+            <option value="preference" ${file.dataset_type === 'preference' ? 'selected' : ''}>Preference</option>
+            <option value="rl" ${file.dataset_type === 'rl' ? 'selected' : ''}>RL prompts</option>
+          </select>
+          <button class="danger-button delete-data" type="button" data-file="${encodeURIComponent(file.name)}">Delete</button>
+        </div>
+      </article>
+    `;
+  }).join('') : '<span class="muted">No datasets match this filter.</span>';
 }
 
 function formatBytes(bytes) { return bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`; }
@@ -178,16 +303,27 @@ document.getElementById('upload-form').addEventListener('submit', async (event) 
   event.preventDefault();
   const status = document.getElementById('upload-status');
   uploadButton.disabled = true;
-  status.textContent = 'Uploading locally...';
+  status.textContent = 'Ingesting and processing dataset locally...';
   try {
     for (const file of selectedFiles) {
-      const form = new FormData();
-      form.append('file', file);
-      form.append('dataset_type', document.getElementById('dataset-type').value);
-      const response = await fetch(`${backend}/api/data/upload`, { method: 'POST', body: form });
+      let content = '';
+      if (file.name.endsWith('.txt') || file.size < 500000) {
+        try { content = await file.text(); } catch (_) {}
+      }
+      const payload = {
+        name: file.name,
+        size: file.size,
+        dataset_type: document.getElementById('dataset-type').value,
+        content: content,
+      };
+      const response = await fetch(`${backend}/api/data/upload`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
       if (!response.ok) throw new Error((await response.json()).detail || 'Upload failed');
     }
-    status.textContent = `${selectedFiles.length} file${selectedFiles.length === 1 ? '' : 's'} uploaded to your local workspace.`;
+    status.textContent = `${selectedFiles.length} dataset file${selectedFiles.length === 1 ? '' : 's'} ingested into local PyTorch workspace.`;
     setFiles([]);
     fileInput.value = '';
     await loadDataFiles();
@@ -205,6 +341,27 @@ document.getElementById('data-file-list').addEventListener('change', async (even
   await loadDataFiles();
 });
 document.getElementById('data-file-list').addEventListener('click', async (event) => {
+  const trainBtn = event.target.closest('.start-txt-training');
+  if (trainBtn) {
+    const filename = decodeURIComponent(trainBtn.dataset.file);
+    const targetStage = trainBtn.dataset.stage || 'pretrain';
+    selectView('training');
+    const stageSelect = document.getElementById('stage-select');
+    if (stageSelect) {
+      stageSelect.value = targetStage;
+      await loadConfigEditor();
+      await loadMetrics(targetStage);
+      // Pre-fill dataset field if present
+      const datasetInput = document.querySelector('[data-config="dataset"]') || document.querySelector('[data-config="data_path"]');
+      if (datasetInput) {
+        datasetInput.value = filename;
+        datasetInput.style.borderColor = '#00F0FF';
+        datasetInput.style.boxShadow = '0 0 10px rgba(0, 240, 255, 0.4)';
+      }
+    }
+    return;
+  }
+
   const button = event.target.closest('.delete-data');
   if (!button) return;
   const filename = decodeURIComponent(button.dataset.file);
@@ -213,6 +370,38 @@ document.getElementById('data-file-list').addEventListener('click', async (event
   if (!response.ok) document.getElementById('upload-status').textContent = 'Could not delete that dataset.';
   await loadDataFiles();
 });
+
+// Interactive flowchart handlers
+document.querySelectorAll('.stage-node').forEach((node) => {
+  node.addEventListener('click', async () => {
+    const stage = node.dataset.flowStage;
+    if (!stage) return;
+    document.querySelectorAll('.stage-node').forEach((n) => n.classList.remove('active-stage'));
+    node.classList.add('active-stage');
+    selectView('training');
+    const stageSelect = document.getElementById('stage-select');
+    if (stageSelect) {
+      stageSelect.value = stage;
+      await loadConfigEditor();
+      await loadMetrics(stage);
+    }
+  });
+});
+
+const quickSmokeFlowBtn = document.getElementById('quick-smoke-flow-btn');
+if (quickSmokeFlowBtn) {
+  quickSmokeFlowBtn.addEventListener('click', async () => {
+    selectView('training');
+    const stageSelect = document.getElementById('stage-select');
+    const smokeCheck = document.getElementById('smoke-check');
+    if (stageSelect) stageSelect.value = 'pretrain';
+    if (smokeCheck) smokeCheck.checked = true;
+    await loadConfigEditor();
+    await loadMetrics('pretrain');
+    const form = document.getElementById('training-form');
+    if (form) form.scrollIntoView({ behavior: 'smooth' });
+  });
+}
 
 async function loadModels() {
   const models = await fetch(`${backend}/api/models`).then((response) => response.json());

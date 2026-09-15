@@ -62,10 +62,12 @@ let evaluations = [
 ];
 
 let dataFiles = [
-  { name: 'openassistant_conversations.jsonl', size: 14200000, dataset_type: 'sft', uploaded: Date.now() - 86400000 },
-  { name: 'dpo_hh_rlhf_pairs.jsonl', size: 28400000, dataset_type: 'preference', uploaded: Date.now() - 72000000 },
-  { name: 'gsm8k_math_prompts.jsonl', size: 4100000, dataset_type: 'rl', uploaded: Date.now() - 48000000 },
-  { name: 'pretrain_pile_sample.h5', size: 68900000, dataset_type: 'pretrain', uploaded: Date.now() - 108000000 },
+  { name: 'sovereign_ai_corpus.txt', size: 2450000, dataset_type: 'pretrain', format: 'txt', tokens: 612500, uploaded: Date.now() - 3600000 },
+  { name: 'domain_knowledge_manual.txt', size: 1200000, dataset_type: 'sft', format: 'txt', tokens: 300000, uploaded: Date.now() - 14400000 },
+  { name: 'openassistant_conversations.jsonl', size: 14200000, dataset_type: 'sft', format: 'jsonl', uploaded: Date.now() - 86400000 },
+  { name: 'dpo_hh_rlhf_pairs.jsonl', size: 28400000, dataset_type: 'preference', format: 'jsonl', uploaded: Date.now() - 72000000 },
+  { name: 'gsm8k_math_prompts.jsonl', size: 4100000, dataset_type: 'rl', format: 'jsonl', uploaded: Date.now() - 48000000 },
+  { name: 'pretrain_pile_sample.h5', size: 68900000, dataset_type: 'pretrain', format: 'h5', uploaded: Date.now() - 108000000 },
 ];
 
 let models = [
@@ -331,15 +333,24 @@ const server = http.createServer(async (req, res) => {
   }
 
   if (pathname === '/api/data/upload' && req.method === 'POST') {
-    // Simulated upload handler
+    const body = await parseBody(req);
+    const fileName = body.name || `corpus_${Date.now().toString(36)}.txt`;
+    const ext = path.extname(fileName).toLowerCase().replace('.', '') || 'txt';
+    const size = Number(body.size) || (body.content ? Buffer.byteLength(body.content, 'utf8') : Math.floor(Math.random() * 8000000) + 500000);
+    const isTxt = ext === 'txt' || ext === 'text';
+    const tokens = isTxt ? Math.round(size / 4) : Math.round(size / 5);
+
     const newFile = {
-      name: `dataset_${Date.now().toString(36)}.jsonl`,
-      size: Math.floor(Math.random() * 20000000) + 1000000,
-      dataset_type: 'general',
+      name: fileName,
+      size,
+      dataset_type: body.dataset_type || (isTxt ? 'pretrain' : 'general'),
+      format: ext,
+      tokens,
       uploaded: Date.now(),
+      sample_preview: isTxt && body.content ? body.content.slice(0, 300) : `Loaded ${tokens.toLocaleString()} tokens ready for BPE context windowing.`,
     };
     dataFiles.unshift(newFile);
-    return sendJson(res, 200, { status: 'ok', file: newFile });
+    return sendJson(res, 200, { status: 'ok', file: newFile, message: isTxt ? `Text corpus processed (${tokens.toLocaleString()} tokens ready for training).` : 'Dataset uploaded successfully.' });
   }
 
   const dataFileMatch = pathname.match(/^\/api\/data\/files\/([^/]+)$/);

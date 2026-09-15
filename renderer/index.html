@@ -52,8 +52,294 @@
       <article><span class="metric-label">WORKSPACE</span><strong>Ready</strong><small>CloudNex Studio</small></article>
     </section>
     <section id="view-panel" class="workspace-panel">
-      <div id="overview-content"><div><span class="panel-kicker">PIPELINE</span><h2>Your next run starts here.</h2><p>Choose a stage to configure a focused experiment. Existing PyTorch scripts and checkpoints stay in the local workspace.</p></div><div class="pipeline"><span class="complete">01 Data</span><span>02 Train</span><span>03 Evaluate</span></div></div>
-      <div id="data-content" class="hidden training-content"><div><span class="panel-kicker">DATA WORKSPACE</span><h2>Bring your data in.</h2><p>Drop text, JSONL, CSV, or HDF5 files here. CloudNex keeps them local and labels them for the next preparation step.</p></div><form id="upload-form"><input id="file-input" class="sr-only" type="file" multiple accept=".txt,.json,.jsonl,.csv,.h5,.hdf5,.zst"><div id="drop-zone" class="drop-zone" tabindex="0"><strong>Drop dataset files here</strong><span>or click to browse from your computer</span><small>TXT · JSONL · CSV · HDF5 · ZST</small></div><div class="upload-options"><label for="dataset-type">Dataset type<select id="dataset-type"><option value="general">General text</option><option value="pretrain">Pretraining corpus</option><option value="sft">Instruction / SFT</option><option value="preference">Preference pairs</option><option value="rl">RL prompts</option></select></label><button id="upload-button" class="primary" type="submit" disabled>Upload files <span>↑</span></button></div></form><div class="data-toolbar"><label for="data-filter">Show<select id="data-filter"><option value="all">All datasets</option><option value="pretrain">Pretraining</option><option value="sft">SFT</option><option value="preference">Preference</option><option value="rl">RL prompts</option><option value="general">General</option></select></label><span id="data-count"></span></div><div id="upload-status" class="upload-status" aria-live="polite"></div><div id="data-file-list" class="job-list"></div></div>
+      <div id="overview-content" class="overview-deck">
+        <div class="deck-header">
+          <div class="deck-title-area">
+            <span class="cyber-badge-live"><span class="pulse-beacon"></span> COMMAND DECK ONLINE</span>
+            <h2 class="deck-title">PyTorch Local Neural Operations</h2>
+            <p class="deck-subtitle">Sovereign post-training telemetry, GPU tensor streaming, and multi-stage alignment pipeline.</p>
+          </div>
+          <div class="accelerator-chip-badge" id="hud-chip-badge">
+            <div class="chip-logo-icon">AMD</div>
+            <div class="chip-specs">
+              <strong id="hud-chip-name">ROCm 6.2 · Radeon RX 9070 XT</strong>
+              <small id="hud-chip-detail">RDNA 4 Navi 48 · 16 GB VRAM · gfx1200</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- TELEMETRY HUD GAUGES -->
+        <div class="telemetry-hud-grid">
+          <!-- VRAM Ring Gauge -->
+          <div class="telemetry-card">
+            <div class="hud-card-top">
+              <span class="hud-metric-title">VRAM HEADROOM</span>
+              <span class="hud-tag" id="hud-vram-tag">ROCm ALLOCATED</span>
+            </div>
+            <div class="gauge-ring-wrapper">
+              <svg class="ring-svg" viewBox="0 0 100 100">
+                <circle class="ring-bg" cx="50" cy="50" r="40"></circle>
+                <circle class="ring-fg vram-fg" id="hud-vram-ring" cx="50" cy="50" r="40" stroke-dasharray="251.2" stroke-dashoffset="65"></circle>
+              </svg>
+              <div class="ring-inner">
+                <strong id="hud-vram-value">74%</strong>
+                <small id="hud-vram-caption">11.8 / 16 GB</small>
+              </div>
+            </div>
+            <div class="hud-card-foot">
+              <span>Tensor Buffers: <strong>Protected</strong></span>
+              <span>Headroom: <strong>4.2 GB Free</strong></span>
+            </div>
+          </div>
+
+          <!-- CPU Compute Threads Gauge -->
+          <div class="telemetry-card">
+            <div class="hud-card-top">
+              <span class="hud-metric-title">COMPUTE THREADS</span>
+              <span class="hud-tag">PARALLEL WORKERS</span>
+            </div>
+            <div class="gauge-ring-wrapper">
+              <svg class="ring-svg" viewBox="0 0 100 100">
+                <circle class="ring-bg" cx="50" cy="50" r="40"></circle>
+                <circle class="ring-fg cpu-fg" id="hud-cpu-ring" cx="50" cy="50" r="40" stroke-dasharray="251.2" stroke-dashoffset="100"></circle>
+              </svg>
+              <div class="ring-inner">
+                <strong id="hud-cpu-value">60%</strong>
+                <small id="hud-cpu-caption">4 / 8 Cores Active</small>
+              </div>
+            </div>
+            <div class="hud-card-foot">
+              <span>Intra-op: <strong>torch.set_num_threads</strong></span>
+              <span>Thermal: <strong>Nominal</strong></span>
+            </div>
+          </div>
+
+          <!-- Host Memory Ceiling -->
+          <div class="telemetry-card">
+            <div class="hud-card-top">
+              <span class="hud-metric-title">MEMORY CEILING</span>
+              <span class="hud-tag">HOST RAM</span>
+            </div>
+            <div class="gauge-ring-wrapper">
+              <svg class="ring-svg" viewBox="0 0 100 100">
+                <circle class="ring-bg" cx="50" cy="50" r="40"></circle>
+                <circle class="ring-fg ram-fg" id="hud-ram-ring" cx="50" cy="50" r="40" stroke-dasharray="251.2" stroke-dashoffset="125"></circle>
+              </svg>
+              <div class="ring-inner">
+                <strong id="hud-ram-value">50%</strong>
+                <small id="hud-ram-caption">16 GB Limit</small>
+              </div>
+            </div>
+            <div class="hud-card-foot">
+              <span>OS Margin: <strong>Preserved</strong></span>
+              <span>Cache Page: <strong>Clean</strong></span>
+            </div>
+          </div>
+
+          <!-- Neural Engine Heartbeat Waveform -->
+          <div class="telemetry-card waveform-card">
+            <div class="hud-card-top">
+              <span class="hud-metric-title">ENGINE OSCILLOGRAM</span>
+              <span class="hud-tag-active"><span class="pulse-beacon"></span> ZERO TELEMETRY</span>
+            </div>
+            <div class="waveform-display">
+              <svg class="waveform-svg" viewBox="0 0 320 60" preserveAspectRatio="none">
+                <defs>
+                  <linearGradient id="waveGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#00F0FF" stop-opacity="0.3"/>
+                    <stop offset="50%" stop-color="#00F0FF" stop-opacity="1"/>
+                    <stop offset="100%" stop-color="#00E5A3" stop-opacity="0.6"/>
+                  </linearGradient>
+                </defs>
+                <path class="wave-bg-line" d="M0,30 L40,30 L55,10 L70,50 L85,25 L100,35 L115,30 L160,30 L175,8 L190,52 L205,22 L220,38 L235,30 L320,30" />
+                <path class="wave-pulse-line" d="M0,30 L40,30 L55,10 L70,50 L85,25 L100,35 L115,30 L160,30 L175,8 L190,52 L205,22 L220,38 L235,30 L320,30" stroke="url(#waveGrad)" />
+              </svg>
+            </div>
+            <div class="hud-card-foot">
+              <span>State: <strong class="glow-cyan" id="hud-engine-state">STANDBY · READY</strong></span>
+              <span>Throughput: <strong id="hud-tokens-rate">0.0 tok/s</strong></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- INTERACTIVE POST-TRAINING STAGE FLOWCHART -->
+        <div class="flowchart-section">
+          <div class="flowchart-header">
+            <div>
+              <span class="panel-kicker">POST-TRAINING ARCHITECTURE</span>
+              <h3 class="flowchart-title">Interactive Alignment &amp; Reasoning Flowchart</h3>
+              <p class="flowchart-desc">Click any illuminated stage node to immediately prime its configuration, verify required input tensors, and execute training.</p>
+            </div>
+            <div class="flowchart-actions">
+              <button class="flowchart-quick-run-btn" id="quick-smoke-flow-btn" type="button">Quick Pipeline Verification</button>
+            </div>
+          </div>
+
+          <div class="flowchart-graph">
+            <!-- Node 1: Pretrain -->
+            <div class="stage-node active-stage" data-flow-stage="pretrain">
+              <div class="node-glow"></div>
+              <div class="node-head">
+                <span class="node-num">01</span>
+                <span class="node-status-dot ready"></span>
+              </div>
+              <strong class="node-title">Pretraining</strong>
+              <span class="node-badge">RAW TOKENS / .TXT</span>
+              <p class="node-desc">Train base transformer on raw text documents (.txt) or shards.</p>
+              <div class="node-foot">
+                <span>Loss: Cross-Entropy</span>
+                <button class="node-jump-btn" type="button">Configure →</button>
+              </div>
+            </div>
+
+            <div class="node-connector"><span class="connector-arrow">➔</span></div>
+
+            <!-- Node 2: SFT -->
+            <div class="stage-node" data-flow-stage="sft">
+              <div class="node-glow"></div>
+              <div class="node-head">
+                <span class="node-num">02</span>
+                <span class="node-status-dot ready"></span>
+              </div>
+              <strong class="node-title">Supervised SFT</strong>
+              <span class="node-badge">INSTRUCTION PAIRS</span>
+              <p class="node-desc">Adapt base model to follow instructions and answer queries cleanly.</p>
+              <div class="node-foot">
+                <span>Prompt + Target</span>
+                <button class="node-jump-btn" type="button">Configure →</button>
+              </div>
+            </div>
+
+            <div class="node-connector"><span class="connector-arrow">➔</span></div>
+
+            <!-- Node 3: Reward -->
+            <div class="stage-node" data-flow-stage="reward">
+              <div class="node-glow"></div>
+              <div class="node-head">
+                <span class="node-num">03</span>
+                <span class="node-status-dot"></span>
+              </div>
+              <strong class="node-title">Reward Model</strong>
+              <span class="node-badge">SCALAR SCORING</span>
+              <p class="node-desc">Train judge head to score chosen vs rejected responses.</p>
+              <div class="node-foot">
+                <span>Pairwise Ranking</span>
+                <button class="node-jump-btn" type="button">Configure →</button>
+              </div>
+            </div>
+
+            <div class="node-connector"><span class="connector-arrow">➔</span></div>
+
+            <!-- Node 4: DPO -->
+            <div class="stage-node" data-flow-stage="dpo">
+              <div class="node-glow"></div>
+              <div class="node-head">
+                <span class="node-num">04</span>
+                <span class="node-status-dot"></span>
+              </div>
+              <strong class="node-title">DPO Alignment</strong>
+              <span class="node-badge">DIRECT PREFERENCE</span>
+              <p class="node-desc">Align model directly to human feedback without actor-critic loops.</p>
+              <div class="node-foot">
+                <span>Implicit Reward</span>
+                <button class="node-jump-btn" type="button">Configure →</button>
+              </div>
+            </div>
+
+            <div class="node-connector"><span class="connector-arrow">➔</span></div>
+
+            <!-- Node 5: GRPO -->
+            <div class="stage-node" data-flow-stage="grpo">
+              <div class="node-glow"></div>
+              <div class="node-head">
+                <span class="node-num">05</span>
+                <span class="node-status-dot"></span>
+              </div>
+              <strong class="node-title">GRPO Reasoning</strong>
+              <span class="node-badge">DEEPSEEK-STYLE RL</span>
+              <p class="node-desc">Group relative policy optimization with rule-based math/code verifiers.</p>
+              <div class="node-foot">
+                <span>Group Scoring</span>
+                <button class="node-jump-btn" type="button">Configure →</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- QUICK ACTION DECK FOOTER -->
+        <div class="deck-bottom-actions">
+          <div class="deck-stat-pill">
+            <span class="stat-pill-label">ACTIVE CHECKPOINT:</span>
+            <strong id="deck-active-ckpt">sft_final.pt (3,820 MB)</strong>
+          </div>
+          <div class="deck-action-buttons">
+            <button class="primary glow-btn" type="button" data-view="data"><span>Upload .TXT / Ingest Data</span> →</button>
+            <button class="secondary" type="button" data-view="training">Open Training Studio</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="data-content" class="hidden training-content">
+        <div class="section-title-row">
+          <div>
+            <span class="panel-kicker">DATA ENGINE &amp; TEXT INGESTION</span>
+            <h2>Ingest Training Data &amp; Create LLMs</h2>
+            <p>Upload plain text (.txt), JSONL conversation trees, or binary shards. CloudNex converts raw .txt files into tokenized BPE context windows for training custom models.</p>
+          </div>
+          <div class="txt-creator-banner">
+            <div class="txt-badge-icon">.TXT</div>
+            <div>
+              <strong>Train Custom LLMs from Plain Text</strong>
+              <small>Upload articles, research, manuals, or codebases to create a sovereign LLM.</small>
+            </div>
+          </div>
+        </div>
+
+        <form id="upload-form">
+          <input id="file-input" class="sr-only" type="file" multiple accept=".txt,.text,.json,.jsonl,.csv,.h5,.hdf5,.zst">
+          <div id="drop-zone" class="drop-zone cyber-drop-zone" tabindex="0">
+            <div class="drop-icon-neon">✦</div>
+            <strong>Drop Plain Text (.txt) or Dataset Files Here</strong>
+            <span>or click to browse from your local storage</span>
+            <div class="supported-formats-pills">
+              <span class="format-pill active-pill">.TXT (Raw Text Corpus)</span>
+              <span class="format-pill">.JSONL (Chat &amp; SFT)</span>
+              <span class="format-pill">.CSV (Tabular QA)</span>
+              <span class="format-pill">.H5 (Pre-tokenized Shards)</span>
+            </div>
+          </div>
+
+          <div class="upload-options">
+            <label for="dataset-type">Intended Training Stage
+              <select id="dataset-type">
+                <option value="pretrain">Pretraining Corpus (.txt / book / docs)</option>
+                <option value="sft">Instruction / SFT Tuning (.jsonl / QA)</option>
+                <option value="preference">Preference Pairs (DPO / chosen vs rejected)</option>
+                <option value="rl">RL Prompts (GRPO / GSM8K)</option>
+                <option value="general">General Knowledge Text</option>
+              </select>
+            </label>
+            <button id="upload-button" class="primary" type="submit" disabled>Process &amp; Ingest File <span>↑</span></button>
+          </div>
+        </form>
+
+        <div class="data-toolbar">
+          <label for="data-filter">Filter
+            <select id="data-filter">
+              <option value="all">All Datasets</option>
+              <option value="pretrain">Pretraining &amp; .TXT</option>
+              <option value="sft">Supervised SFT</option>
+              <option value="preference">Preference Pairs</option>
+              <option value="rl">RL Reasoning</option>
+              <option value="general">General</option>
+            </select>
+          </label>
+          <span id="data-count"></span>
+        </div>
+
+        <div id="upload-status" class="upload-status" aria-live="polite"></div>
+        <div id="data-file-list" class="job-list"></div>
+      </div>
       <div id="training-content" class="hidden training-content"><div><span class="panel-kicker">TRAINING RUN</span><h2>Launch a local experiment.</h2><p>The backend runs the existing PyTorch stage scripts and keeps their logs in your CloudNex workspace.</p></div><form id="training-form"><div class="training-toolbar"><label for="stage-select">Stage<select id="stage-select"></select></label><label class="check-row"><input id="smoke-check" type="checkbox" checked> Use smoke configuration</label></div><div id="config-editor" class="config-editor"></div><button class="primary" type="submit">Start training <span>→</span></button></form><div class="chart-panel"><div class="chart-heading"><span class="panel-kicker">METRICS</span><span id="chart-summary">Waiting for metrics</span></div><div id="metrics-chart" class="metrics-chart"></div></div><div id="job-list" class="job-list"></div></div>
       <div id="models-content" class="hidden training-content"><div><span class="panel-kicker">CHECKPOINTS</span><h2>Your local model shelf.</h2><p>Checkpoints are read from the CloudNex workspace and the existing training output folder.</p></div><div id="model-list" class="job-list"></div></div>
       <div id="chat-content" class="hidden training-content"><div><span class="panel-kicker">LOCAL INFERENCE</span><h2>Talk to a checkpoint.</h2><p>Choose a local model and send prompts through the private Python engine.</p></div><form id="chat-form"><label for="model-select">Model<select id="model-select"></select></label><label for="prompt-input">Prompt<textarea id="prompt-input" rows="4" placeholder="Ask your local model something..."></textarea></label><button class="primary" type="submit">Send prompt <span>→</span></button></form><pre id="chat-output" class="chat-output">Your response will appear here.</pre></div>

@@ -32,21 +32,42 @@ function registerWindowControls() {
 
 function backendPaths() {
   const root = app.isPackaged ? process.resourcesPath : __dirname;
-  const directory = path.join(root, 'backend');
-  const engine = app.isPackaged ? path.join(root, 'engine') : root;
-  const executableName = process.platform === 'win32' ? 'cloudnex-backend.exe' : 'cloudnex-backend';
+  const isWin = process.platform === 'win32';
+  const binDir = path.join(root, 'bin');
+  const backendDir = path.join(root, 'backend');
+  const engineDir = app.isPackaged ? path.join(root, 'engine') : root;
+
+  // Candidates in order of precedence:
+  // 1. Packaged standalone binary in resources/bin/cloudnex-engine
+  // 2. Packaged standalone binary in resources/backend/cloudnex-backend
+  // 3. Development binary in backend/dist/
+  const candidates = [
+    path.join(binDir, isWin ? 'cloudnex-engine.exe' : 'cloudnex-engine'),
+    path.join(binDir, isWin ? 'cloudnex-backend.exe' : 'cloudnex-backend'),
+    path.join(backendDir, isWin ? 'cloudnex-backend.exe' : 'cloudnex-backend'),
+    path.join(__dirname, 'backend', 'dist', isWin ? 'cloudnex-backend.exe' : 'cloudnex-backend'),
+  ];
+
+  let resolvedExecutable = null;
+  for (const cand of candidates) {
+    if (fs.existsSync(cand)) {
+      resolvedExecutable = cand;
+      break;
+    }
+  }
+
   return {
-    directory,
-    engine,
-    executable: path.join(directory, executableName),
-    script: path.join(directory, 'app.py'),
+    directory: fs.existsSync(backendDir) ? backendDir : root,
+    engine: engineDir,
+    executable: resolvedExecutable,
+    script: path.join(__dirname, 'backend', 'app.py'),
   };
 }
 
 function startBackend() {
   const paths = backendPaths();
   const python = process.env.CLOUDNEX_PYTHON || (process.platform === 'win32' ? 'python' : 'python3');
-  const useExecutable = fs.existsSync(paths.executable);
+  const useExecutable = Boolean(paths.executable && fs.existsSync(paths.executable));
   const command = useExecutable ? paths.executable : python;
   const args = useExecutable ? [] : [paths.script];
 
