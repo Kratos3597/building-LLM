@@ -13,6 +13,7 @@ import subprocess
 import sys
 import time
 import uuid
+from dataclasses import asdict, fields
 from pathlib import Path
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
@@ -68,6 +69,7 @@ class JobRequest(BaseModel):
     stage: str
     smoke: bool = True
     nproc: int = Field(default=1, ge=1, le=8)
+    overrides: dict[str, object] = Field(default_factory=dict)
 
 
 class ChatRequest(BaseModel):
@@ -158,10 +160,9 @@ def _start_job(job_id: str, request: JobRequest) -> dict:
     if not script.exists() or not config.exists():
         raise HTTPException(status_code=503, detail="Training engine resources are not bundled in this build.")
 
-    if getattr(sys, "frozen", False):
-        command = [sys.executable, "--run-script", str(script), "--config", str(config)]
-    else:
-        command = [sys.executable, str(script), "--config", str(config)]
+    command = [sys.executable, "--run-script", str(script), "--config", str(config)] if getattr(sys, "frozen", False) else [sys.executable, str(script), "--config", str(config)]
+    for key, value in request.overrides.items():
+        command.extend([f"--{key}", str(value).lower() if isinstance(value, bool) else str(value)])
     log_file = _log_path(job_id).open("ab")
     creationflags = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0) if os.name == "nt" else 0
     process = subprocess.Popen(
@@ -202,6 +203,31 @@ def system_info() -> dict[str, str]:
 @app.get("/api/stages")
 def stages() -> list[dict[str, str]]:
     return [{"key": key, **stage} for key, stage in STAGES.items()]
+
+
+@app.get("/api/stages/{stage}/config")
+def stage_config(stage: str, smoke: bool = True) -> dict:
+    config_classes = {
+        "pretrain": "PretrainConfig", "sft": "SFTConfig", "reward": "RewardConfig",
+        "dpo": "DPOConfig", "ppo": "PPOConfig", "grpo": "GRPOConfig",
+    }
+    if stage not in config_classes:
+        raise HTTPException(status_code=404, detail="Unknown training stage")
+    from config import post_training_config as config_module
+    from config.loader import load_config
+
+    cfg_cls = getattr(config_module, config_classes[stage])
+    path = _engine_root / "configs" / ("smoke" if smoke else "") / f"{stage}.json"
+    if not smoke:
+        path = _engine_root / "configs" / f"{stage}.json"
+    cfg = load_config(cfg_cls, str(path))
+    values = asdict(cfg)
+    fields_out = []
+    for field in fields(cfg):
+        value = values[field.name]
+        kind = "boolean" if isinstance(value, bool) else "number" if isinstance(value, (int, float)) else "text"
+        fields_out.append({"name": field.name, "value": value, "kind": kind})
+    return {"stage": stage, "smoke": smoke, "fields": fields_out}
 
 
 @app.get("/api/data/files")
@@ -315,6 +341,15 @@ def jobs() -> list[dict]:
 def create_job(request: JobRequest) -> dict:
     if request.stage not in STAGES:
         raise HTTPException(status_code=400, detail=f"Unknown training stage: {request.stage}")
+    config_classes = {
+        "pretrain": "PretrainConfig", "sft": "SFTConfig", "reward": "RewardConfig",
+        "dpo": "DPOConfig", "ppo": "PPOConfig", "grpo": "GRPOConfig",
+    }
+    from config import post_training_config as config_module
+    allowed = {field.name for field in fields(getattr(config_module, config_classes[request.stage])())}
+    unknown = set(request.overrides) - allowed
+    if unknown:
+        raise HTTPException(status_code=400, detail=f"Unknown config fields: {', '.join(sorted(unknown))}")
     if any(record.get("status") == "running" for record in jobs()):
         raise HTTPException(status_code=409, detail="A training job is already running.")
     return _start_job(uuid.uuid4().hex[:12], request)

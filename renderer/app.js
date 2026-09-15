@@ -51,8 +51,32 @@ async function loadTraining() {
   ]);
   const select = document.getElementById('stage-select');
   if (!select.options.length) stages.forEach((stage) => select.add(new Option(stage.title, stage.key)));
+  await loadConfigEditor();
   document.getElementById('job-list').innerHTML = jobs.length ? jobs.map((job) => `<article class="job-card ${job.status}"><strong>${job.title}</strong> · ${job.status}<code>${job.log_tail || 'Waiting for output...'}</code></article>`).join('') : '<span class="muted">No training runs yet.</span>';
 }
+
+async function loadConfigEditor() {
+  const stage = document.getElementById('stage-select').value || 'pretrain';
+  const smoke = document.getElementById('smoke-check').checked;
+  const config = await fetch(`${backend}/api/stages/${stage}/config?smoke=${smoke}`).then((response) => response.json());
+  document.getElementById('config-editor').innerHTML = config.fields.map((field) => {
+    if (field.kind === 'boolean') return `<label class="config-field check-row"><input type="checkbox" data-config="${field.name}" ${field.value ? 'checked' : ''}><span>${field.name}</span></label>`;
+    return `<label class="config-field"><span>${field.name}</span><input data-config="${field.name}" type="${field.kind === 'number' ? 'number' : 'text'}" step="any" value="${field.value ?? ''}"></label>`;
+  }).join('');
+}
+
+function collectOverrides() {
+  const values = {};
+  document.querySelectorAll('[data-config]').forEach((input) => {
+    if (input.type === 'checkbox') values[input.dataset.config] = input.checked;
+    else if (input.type === 'number') values[input.dataset.config] = input.value.includes('.') ? Number.parseFloat(input.value) : Number.parseInt(input.value, 10);
+    else if (input.value !== '') values[input.dataset.config] = input.value;
+  });
+  return values;
+}
+
+document.getElementById('stage-select').addEventListener('change', loadConfigEditor);
+document.getElementById('smoke-check').addEventListener('change', loadConfigEditor);
 
 let selectedFiles = [];
 const dropZone = document.getElementById('drop-zone');
@@ -137,7 +161,7 @@ async function loadChatModels() {
 
 document.getElementById('training-form').addEventListener('submit', async (event) => {
   event.preventDefault();
-  const response = await fetch(`${backend}/api/jobs`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ stage: document.getElementById('stage-select').value, smoke: document.getElementById('smoke-check').checked }) });
+  const response = await fetch(`${backend}/api/jobs`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ stage: document.getElementById('stage-select').value, smoke: document.getElementById('smoke-check').checked, overrides: collectOverrides() }) });
   if (!response.ok) window.alert((await response.json()).detail || 'Could not start training.');
   await loadTraining();
 });
