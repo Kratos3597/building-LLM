@@ -14,13 +14,15 @@ window.cloudnex.window.onMaximizedState((maximized) => {
 
 function selectView(view) {
   document.querySelectorAll('.nav-item').forEach((button) => button.classList.toggle('active', button.dataset.view === view));
-  const titles = { overview: 'Your next run starts here.', training: 'Configure a focused training run.', models: 'Your local model shelf.', chat: 'Talk to a local checkpoint.', settings: 'Workspace settings.' };
+  const titles = { overview: 'Your next run starts here.', data: 'Prepare a clean local dataset.', training: 'Configure a focused training run.', models: 'Your local model shelf.', chat: 'Talk to a local checkpoint.', settings: 'Workspace settings.' };
   document.querySelector('.workspace-panel h2').textContent = titles[view] || titles.overview;
   document.getElementById('overview-content').classList.toggle('hidden', view !== 'overview');
+  document.getElementById('data-content').classList.toggle('hidden', view !== 'data');
   document.getElementById('training-content').classList.toggle('hidden', view !== 'training');
   document.getElementById('models-content').classList.toggle('hidden', view !== 'models');
   document.getElementById('chat-content').classList.toggle('hidden', view !== 'chat');
   if (view === 'training') loadTraining();
+  if (view === 'data') loadDataFiles();
   if (view === 'models') loadModels();
   if (view === 'chat') loadChatModels();
 }
@@ -51,6 +53,55 @@ async function loadTraining() {
   if (!select.options.length) stages.forEach((stage) => select.add(new Option(stage.title, stage.key)));
   document.getElementById('job-list').innerHTML = jobs.length ? jobs.map((job) => `<article class="job-card ${job.status}"><strong>${job.title}</strong> · ${job.status}<code>${job.log_tail || 'Waiting for output...'}</code></article>`).join('') : '<span class="muted">No training runs yet.</span>';
 }
+
+let selectedFiles = [];
+const dropZone = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+const uploadButton = document.getElementById('upload-button');
+
+function setFiles(files) {
+  selectedFiles = [...files];
+  uploadButton.disabled = selectedFiles.length === 0;
+  dropZone.querySelector('strong').textContent = selectedFiles.length ? `${selectedFiles.length} file${selectedFiles.length === 1 ? '' : 's'} ready` : 'Drop dataset files here';
+  dropZone.querySelector('span').textContent = selectedFiles.length ? selectedFiles.map((file) => file.name).join(' · ') : 'or click to browse from your computer';
+}
+
+dropZone.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') fileInput.click(); });
+fileInput.addEventListener('change', () => setFiles(fileInput.files));
+['dragenter', 'dragover'].forEach((eventName) => dropZone.addEventListener(eventName, (event) => { event.preventDefault(); dropZone.classList.add('dragging'); }));
+['dragleave', 'drop'].forEach((eventName) => dropZone.addEventListener(eventName, (event) => { event.preventDefault(); dropZone.classList.remove('dragging'); }));
+dropZone.addEventListener('drop', (event) => setFiles(event.dataTransfer.files));
+
+async function loadDataFiles() {
+  const files = await fetch(`${backend}/api/data/files`).then((response) => response.json());
+  document.getElementById('data-file-list').innerHTML = files.length ? files.map((file) => `<article class="job-card"><strong>${file.name}</strong><span> · ${formatBytes(file.size)}</span><code>${file.dataset_type} dataset</code></article>`).join('') : '<span class="muted">No datasets uploaded yet.</span>';
+}
+
+function formatBytes(bytes) { return bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`; }
+
+document.getElementById('upload-form').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const status = document.getElementById('upload-status');
+  uploadButton.disabled = true;
+  status.textContent = 'Uploading locally...';
+  try {
+    for (const file of selectedFiles) {
+      const form = new FormData();
+      form.append('file', file);
+      form.append('dataset_type', document.getElementById('dataset-type').value);
+      const response = await fetch(`${backend}/api/data/upload`, { method: 'POST', body: form });
+      if (!response.ok) throw new Error((await response.json()).detail || 'Upload failed');
+    }
+    status.textContent = `${selectedFiles.length} file${selectedFiles.length === 1 ? '' : 's'} uploaded to your local workspace.`;
+    setFiles([]);
+    fileInput.value = '';
+    await loadDataFiles();
+  } catch (error) {
+    status.textContent = error.message;
+    uploadButton.disabled = selectedFiles.length === 0;
+  }
+});
 
 async function loadModels() {
   const models = await fetch(`${backend}/api/models`).then((response) => response.json());

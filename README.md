@@ -56,6 +56,8 @@ Build on the target operating system and architecture. The repository includes a
 
 The PyTorch model and training stages remain available under `src/`, `data_loader/`, `scripts/`, and `configs/`. Smoke configurations in `configs/smoke/` provide small CPU-friendly runs.
 
+The Data workspace accepts local TXT, JSONL, CSV, HDF5, and Zstandard files by click or drag and drop. Each upload is stored under the user's CloudNex data folder with a type label such as pretraining, SFT, preference, or RL prompts. The selected files remain local and can be used by the preparation and training workflow.
+
 Focused checks:
 
 ```bash

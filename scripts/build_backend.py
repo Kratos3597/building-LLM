@@ -49,6 +49,7 @@ def main() -> None:
         "--collect-all", "numpy",
         "--collect-all", "tiktoken",
         "--collect-all", "h5py",
+        "--collect-all", "multipart",
     ])
     subprocess.run(command, cwd=ROOT, check=True)
 

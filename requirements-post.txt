@@ -19,3 +19,4 @@ datasets          # HuggingFace dataset downloads (Alpaca, HH-RLHF, GSM8K, ...)
 wandb             # optional experiment logging (every script also writes JSONL)
 fastapi           # local desktop API
 uvicorn           # ASGI server for the local desktop API
+python-multipart  # multipart file uploads from the desktop UI

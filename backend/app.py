@@ -6,14 +6,16 @@ import json
 import os
 import platform
 import runpy
+import re
 import signal
+import shutil
 import subprocess
 import sys
 import time
 import uuid
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
@@ -43,6 +45,8 @@ else:
     _engine_root = Path(__file__).resolve().parents[1]
 _job_dir = Path(os.environ.get("CLOUDNEX_JOB_DIR", Path.home() / "CloudNex Local LLM Studio" / "jobs"))
 _job_dir.mkdir(parents=True, exist_ok=True)
+_data_dir = Path(os.environ.get("CLOUDNEX_DATA_DIR", Path.home() / "CloudNex Local LLM Studio" / "data"))
+_data_dir.mkdir(parents=True, exist_ok=True)
 _processes: dict[str, subprocess.Popen] = {}
 _checkpoint_dirs = [
     Path(os.environ.get("CLOUDNEX_CHECKPOINT_DIR", Path.home() / "CloudNex Local LLM Studio" / "checkpoints")),
@@ -80,6 +84,12 @@ def _registry_path(job_id: str) -> Path:
 
 def _log_path(job_id: str) -> Path:
     return _job_dir / f"{job_id}.log"
+
+
+def _safe_filename(filename: str | None) -> str:
+    name = Path(filename or "upload.bin").name
+    name = re.sub(r"[^A-Za-z0-9._-]", "_", name).strip(".")
+    return name[:180] or "upload.bin"
 
 
 def _checkpoint_path(name: str) -> Path:
@@ -181,6 +191,37 @@ def system_info() -> dict[str, str]:
 @app.get("/api/stages")
 def stages() -> list[dict[str, str]]:
     return [{"key": key, **stage} for key, stage in STAGES.items()]
+
+
+@app.get("/api/data/files")
+def data_files() -> list[dict]:
+    metadata_path = _data_dir / "uploads.json"
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8")) if metadata_path.exists() else {}
+    files = []
+    for path in sorted(_data_dir.iterdir(), key=lambda item: item.stat().st_mtime, reverse=True):
+        if not path.is_file() or path.name == "uploads.json":
+            continue
+        item = metadata.get(path.name, {})
+        files.append({"name": path.name, "size": path.stat().st_size, "dataset_type": item.get("dataset_type", "general"), "uploaded": item.get("uploaded", path.stat().st_mtime)})
+    return files
+
+
+@app.post("/api/data/upload")
+def upload_data(file: UploadFile = File(...), dataset_type: str = Form("general")) -> dict:
+    allowed_types = {"pretrain", "sft", "preference", "rl", "general"}
+    if dataset_type not in allowed_types:
+        raise HTTPException(status_code=400, detail="Unsupported dataset type")
+    filename = _safe_filename(file.filename)
+    destination = _data_dir / filename
+    if destination.exists():
+        destination = _data_dir / f"{destination.stem}_{int(time.time())}{destination.suffix}"
+    with destination.open("wb") as output:
+        shutil.copyfileobj(file.file, output)
+    metadata_path = _data_dir / "uploads.json"
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8")) if metadata_path.exists() else {}
+    metadata[destination.name] = {"dataset_type": dataset_type, "uploaded": time.time()}
+    metadata_path.write_text(json.dumps(metadata), encoding="utf-8")
+    return {"name": destination.name, "size": destination.stat().st_size, "dataset_type": dataset_type}
 
 
 @app.get("/api/models")
