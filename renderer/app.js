@@ -5,6 +5,13 @@ const platformLabel = document.getElementById('platform-label');
 const dot = document.querySelector('.status-dot');
 const backend = window.cloudnex.backendUrl;
 
+document.getElementById('minimize-window').addEventListener('click', () => window.cloudnex.window.minimize());
+document.getElementById('maximize-window').addEventListener('click', () => window.cloudnex.window.toggleMaximize());
+document.getElementById('close-window').addEventListener('click', () => window.cloudnex.window.close());
+window.cloudnex.window.onMaximizedState((maximized) => {
+  document.getElementById('maximize-window').textContent = maximized ? '❐' : '□';
+});
+
 function selectView(view) {
   document.querySelectorAll('.nav-item').forEach((button) => button.classList.toggle('active', button.dataset.view === view));
   const titles = { overview: 'Your next run starts here.', training: 'Configure a focused training run.', models: 'Your local model shelf.', chat: 'Talk to a local checkpoint.', settings: 'Workspace settings.' };

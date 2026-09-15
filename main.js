@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog } = require('electron');
+const { app, BrowserWindow, dialog, ipcMain } = require('electron');
 const { spawn, execFile } = require('child_process');
 const fs = require('fs');
 const http = require('http');
@@ -10,6 +10,17 @@ const BACKEND_URL = `http://${BACKEND_HOST}:${BACKEND_PORT}`;
 let backendProcess = null;
 let mainWindow = null;
 let shuttingDown = false;
+
+function registerWindowControls() {
+  ipcMain.on('window:minimize', (event) => BrowserWindow.fromWebContents(event.sender)?.minimize());
+  ipcMain.on('window:toggle-maximize', (event) => {
+    const window = BrowserWindow.fromWebContents(event.sender);
+    if (window?.isMaximized()) window.unmaximize();
+    else window?.maximize();
+    event.sender.send('window:maximized-state', window?.isMaximized() || false);
+  });
+  ipcMain.on('window:close', (event) => BrowserWindow.fromWebContents(event.sender)?.close());
+}
 
 function backendPaths() {
   const root = app.isPackaged ? process.resourcesPath : __dirname;
@@ -92,6 +103,11 @@ async function createWindow() {
     minWidth: 1024,
     minHeight: 680,
     backgroundColor: '#0b1118',
+    frame: false,
+    titleBarStyle: 'hidden',
+    resizable: true,
+    maximizable: true,
+    minimizable: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -107,6 +123,7 @@ async function createWindow() {
 }
 
 app.whenReady().then(async () => {
+  registerWindowControls();
   try {
     await createWindow();
   } catch (error) {
