@@ -1088,14 +1088,18 @@ Copyright (c) 2026 Mohammed Sheik. All rights reserved.</pre>
             </li>
             <li id="wiz-step-2" class="wizard-step-item">
               <span class="step-circle">2</span>
-              <span class="step-label">Architecture &amp; Readme</span>
+              <span class="step-label">1-Click Dependencies</span>
             </li>
             <li id="wiz-step-3" class="wizard-step-item">
               <span class="step-circle">3</span>
-              <span class="step-label">Terms &amp; Conditions</span>
+              <span class="step-label">Architecture &amp; Readme</span>
             </li>
             <li id="wiz-step-4" class="wizard-step-item">
               <span class="step-circle">4</span>
+              <span class="step-label">Terms &amp; Conditions</span>
+            </li>
+            <li id="wiz-step-5" class="wizard-step-item">
+              <span class="step-circle">5</span>
               <span class="step-label">Ready &amp; Finish</span>
             </li>
           </ol>
@@ -1132,11 +1136,70 @@ Copyright (c) 2026 Mohammed Sheik. All rights reserved.</pre>
                 </div>
               </div>
             </div>
-            <p class="wizard-prompt-text">Click <strong>Next</strong> to review the system Readme and technical architecture.</p>
+            <p class="wizard-prompt-text">Click <strong>Next</strong> to configure the 1-click automated dependency installer.</p>
           </div>
 
-          <!-- STEP 2: README & SYSTEM ARCHITECTURE -->
+          <!-- STEP 2: 1-CLICK AUTOMATED DEPENDENCY INSTALLER & RUNTIME -->
           <div id="wizard-pane-2" class="wizard-pane hidden">
+            <div class="wizard-pane-header">
+              <h3>1-Click Automated Dependency Installer</h3>
+              <p>Keep your download package under 5 MB while effortlessly bootstrapping all dependencies.</p>
+            </div>
+            
+            <div class="wizard-dep-options-container">
+              <div class="dep-choice-card active" id="card-choice-batch">
+                <div class="dep-choice-head">
+                  <span class="dep-badge-recom">RECOMMENDED</span>
+                  <h4>⚡ Native Automated Bootstrap (.bat / .sh)</h4>
+                </div>
+                <p>Double-click <code>setup-and-run.bat</code> (Windows) or <code>setup-and-run.sh</code> (macOS/Linux) in your extracted folder. It automatically downloads and configures all dependencies natively without bloated zip files.</p>
+                <div class="dep-details-box">
+                  <div class="dep-detail-row">
+                    <span>Download Size:</span>
+                    <strong class="highlight-green">~4.8 MB (Instant download, zero timeouts)</strong>
+                  </div>
+                  <div class="dep-detail-row">
+                    <span>Dependencies Handled:</span>
+                    <strong>100% of Node.js, Electron, and Python AI PyTorch packages</strong>
+                  </div>
+                  <div class="dep-detail-row">
+                    <span>Platform Native:</span>
+                    <strong>Compiles native C++ binary modules directly for your OS</strong>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Interactive Simulated Installer Runner in Window -->
+              <div class="embedded-terminal-window">
+                <div class="terminal-bar">
+                  <span class="term-dot"></span><span class="term-dot"></span><span class="term-dot"></span>
+                  <span class="term-title">Installer Terminal — setup-and-run.bat</span>
+                  <button type="button" id="btn-run-sim-installer" class="btn-term-action">▶ Test Run in Window</button>
+                </div>
+                <div class="terminal-body" id="installer-term-body">
+[CloudNex Installer Ready]
+Target Script: setup-and-run.bat (Windows) / setup-and-run.sh (macOS/Linux)
+Click "Test Run in Window" above to simulate the automated dependency installation process.
+                </div>
+              </div>
+
+              <div class="dep-config-options">
+                <label class="check-row">
+                  <input type="checkbox" id="check-auto-pip" checked>
+                  Auto-create Python virtual environment (<code>venv</code>) for PyTorch &amp; ROCm/CUDA
+                </label>
+                <label class="check-row">
+                  <input type="checkbox" id="check-auto-desktop-icon" checked>
+                  Create Desktop and Start Menu launcher shortcut
+                </label>
+              </div>
+            </div>
+
+            <p class="wizard-prompt-text">Click <strong>Next</strong> to review technical architecture &amp; documentation.</p>
+          </div>
+
+          <!-- STEP 3: README & SYSTEM ARCHITECTURE -->
+          <div id="wizard-pane-3" class="wizard-pane hidden">
             <div class="wizard-pane-header">
               <h3>System Architecture &amp; Readme</h3>
               <p>Please review the engine specifications and hardware requirements before continuing.</p>
@@ -1187,8 +1250,8 @@ Copyright (c) 2026 Mohammed Sheik. All rights reserved.</div>
             <p class="wizard-prompt-text">Click <strong>Next</strong> to review the Software License Agreement &amp; Terms.</p>
           </div>
 
-          <!-- STEP 3: TERMS & CONDITIONS (EULA) -->
-          <div id="wizard-pane-3" class="wizard-pane hidden">
+          <!-- STEP 4: TERMS & CONDITIONS (EULA) -->
+          <div id="wizard-pane-4" class="wizard-pane hidden">
             <div class="wizard-pane-header">
               <h3>End User License Agreement &amp; Terms</h3>
               <p>Please review the terms of service and local privacy guarantee before installing.</p>
@@ -1274,8 +1337,8 @@ Copyright (c) 2026 Mohammed Sheik. All rights reserved.</div>
             </div>
           </div>
 
-          <!-- STEP 4: READY / FINISHED -->
-          <div id="wizard-pane-4" class="wizard-pane hidden">
+          <!-- STEP 5: READY / FINISHED -->
+          <div id="wizard-pane-5" class="wizard-pane hidden">
             <div class="wizard-pane-header">
               <h3>Setup Ready &amp; Verified</h3>
               <p>CloudNex Local LLM Studio is ready to deploy on your machine.</p>
@@ -1285,6 +1348,8 @@ Copyright (c) 2026 Mohammed Sheik. All rights reserved.</div>
               <h4>Zero-Setup Installation Complete</h4>
               <p>All core components, PyTorch binaries, and hardware detection modules are verified.</p>
               <div class="finish-details-grid">
+                <div><span>Launcher:</span><strong>setup-and-run.bat / .sh (Included)</strong></div>
+                <div><span>Dependencies:</span><strong>Auto-Bootstrapped (Zero bloated zip)</strong></div>
                 <div><span>Engine:</span><strong>Embedded Python 3.12 + PyTorch 2.4</strong></div>
                 <div><span>Acceleration:</span><strong>AMD ROCm / NVIDIA CUDA / MPS</strong></div>
                 <div><span>Creator:</span><strong>Mohammed Sheik (<a href="https://cloudnex.co.za" target="_blank" rel="noopener noreferrer">cloudnex.co.za</a>)</strong></div>

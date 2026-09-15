@@ -14,6 +14,15 @@ Electron main process
 
 The desktop shell owns the application window and sidecar lifecycle. The Python service owns model operations, training jobs, checkpoints, and hardware access. The renderer communicates with the service through the preload bridge and a local HTTP API; it never receives unrestricted Node.js or filesystem access.
 
+## 1-Click Zero Setup & Lightweight Distribution
+
+CloudNex Local LLM Studio includes automated 1-click bootstrap scripts so users can download an ultra-lightweight source package (~5 MB) without bundling heavy pre-compiled modules:
+
+- **Windows**: Double-click `setup-and-run.bat`
+- **macOS / Linux**: Run `./setup-and-run.sh`
+
+The launcher automatically validates the Node.js and Python runtimes, installs missing dependencies on first launch natively for your exact operating system, and starts the Studio at `http://localhost:3000`.
+
 ## Development Setup
 
 Install Python dependencies and the Electron development dependencies:

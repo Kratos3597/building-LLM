@@ -1,5 +1,9 @@
 node_modules/
 dist/
+build/
+*.zip
+*.tar.gz
+*.tgz
 backend/build/
 backend/dist/
 backend/spec/
@@ -9,3 +13,12 @@ visual-artifacts/
 __pycache__/
 *.egg-info/
 *.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+htmlcov/
+.cache/
+.DS_Store
+Thumbs.db
+*.log

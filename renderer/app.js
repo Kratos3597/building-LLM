@@ -927,6 +927,7 @@ function initInstallerWizard() {
   const openTriggers = [
     document.getElementById('open-installer-btn'),
     document.getElementById('about-open-installer-btn'),
+    document.getElementById('hero-installer-btn'),
   ];
   const closeBtn = document.getElementById('close-installer-modal');
   const cancelBtn = document.getElementById('wiz-cancel-btn');
@@ -937,7 +938,7 @@ function initInstallerWizard() {
   const licenseBox = document.getElementById('wizard-license-content');
 
   let currentStep = 1;
-  const maxSteps = 4;
+  const maxSteps = 5;
 
   function setStep(step) {
     currentStep = step;
@@ -963,10 +964,10 @@ function initInstallerWizard() {
 
     // Update Next / Finish button
     if (nextBtn) {
-      if (currentStep === 4) {
+      if (currentStep === 5) {
         nextBtn.textContent = 'Finish & Launch';
         nextBtn.disabled = false;
-      } else if (currentStep === 3) {
+      } else if (currentStep === 4) {
         nextBtn.textContent = 'Next >';
         nextBtn.disabled = !agreeCheck.checked;
       } else {
@@ -976,19 +977,56 @@ function initInstallerWizard() {
     }
 
     // Load async contents with instant fallback
-    if (currentStep === 2 && readmeBox) {
+    if (currentStep === 3 && readmeBox) {
       readmeBox.textContent = cachedReadme || FALLBACK_README;
       loadReadmeDoc().then((text) => {
         if (text) readmeBox.textContent = text;
       });
     }
 
-    if (currentStep === 3 && licenseBox) {
+    if (currentStep === 4 && licenseBox) {
       licenseBox.textContent = cachedLicense || FALLBACK_LICENSE;
       loadLicenseDocs().then((text) => {
         if (text) licenseBox.textContent = text;
       });
     }
+  }
+
+  // Simulated in-window dependency installer run
+  const testRunBtn = document.getElementById('btn-run-sim-installer');
+  const termBody = document.getElementById('installer-term-body');
+  if (testRunBtn && termBody) {
+    testRunBtn.addEventListener('click', () => {
+      termBody.textContent = 'Executing: setup-and-run.bat ...\n';
+      testRunBtn.disabled = true;
+      testRunBtn.textContent = '⏳ Installing...';
+
+      const logLines = [
+        '[1/4] Checking Node.js runtime environment... Node v20.18.0 detected (OK)',
+        '[2/4] Verifying application dependencies... First-time setup detected.',
+        '      Running: npm install --no-audit (fetching express, ws, electron, @google/genai)...',
+        '      ✔ Installed 48 packages in 4.2s (Zero timeouts)',
+        '[3/4] Checking Python backend engine for local LoRA/DPO training...',
+        '      Python 3.12 detected. Creating local venv and verifying PyTorch / ROCm / CUDA...',
+        '      ✔ Python AI sidecar environment validated.',
+        '[4/4] Starting CloudNex Local LLM Studio on http://localhost:3000 ...',
+        '========================================================================',
+        '✔ SUCCESS: All dependencies are ready! Launching studio window now.',
+      ];
+
+      let idx = 0;
+      const interval = setInterval(() => {
+        if (idx < logLines.length) {
+          termBody.textContent += logLines[idx] + '\n';
+          termBody.scrollTop = termBody.scrollHeight;
+          idx++;
+        } else {
+          clearInterval(interval);
+          testRunBtn.disabled = false;
+          testRunBtn.textContent = '✔ Verification Complete';
+        }
+      }, 350);
+    });
   }
 
   function openWizard() {
@@ -1011,7 +1049,7 @@ function initInstallerWizard() {
 
   if (agreeCheck) {
     agreeCheck.addEventListener('change', () => {
-      if (currentStep === 3 && nextBtn) {
+      if (currentStep === 4 && nextBtn) {
         nextBtn.disabled = !agreeCheck.checked;
       }
     });
@@ -1019,7 +1057,7 @@ function initInstallerWizard() {
 
   if (nextBtn) {
     nextBtn.addEventListener('click', () => {
-      if (currentStep === 4) {
+      if (currentStep === 5) {
         closeWizard();
         selectView('overview');
         return;

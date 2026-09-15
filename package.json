@@ -10,6 +10,8 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
+    "clean": "rm -rf dist build backend/build backend/dist *.zip *.tar.gz *.tgz",
+    "zip:clean": "npm run clean && zip -r -9 cloudnex-studio.zip . -x 'node_modules/*' -x 'dist/*' -x '.git/*'",
     "electron": "electron .",
     "electron:dev": "electron .",
     "backend": "python backend/app.py",
