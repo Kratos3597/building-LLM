@@ -84,6 +84,15 @@ class DatasetUpdate(BaseModel):
     dataset_type: str
 
 
+class EvaluationRequest(BaseModel):
+    checkpoint: str
+    split: str = "test"
+    limit: int = Field(default=200, ge=1, le=10000)
+    max_new_tokens: int = Field(default=300, ge=1, le=2048)
+    samples: int = Field(default=3, ge=0, le=20)
+    device: str = "auto"
+
+
 def _registry_path(job_id: str) -> Path:
     return _job_dir / f"{job_id}.json"
 
@@ -185,6 +194,25 @@ def _start_job(job_id: str, request: JobRequest) -> dict:
         "started": time.time(),
         "status": "running",
     }
+    _processes[job_id] = process
+    _write_job(record)
+    return record
+
+
+def _start_evaluation(job_id: str, request: EvaluationRequest) -> dict:
+    checkpoint = _checkpoint_path(request.checkpoint)
+    script = _engine_root / "scripts" / "eval_post_training.py"
+    if not script.exists():
+        raise HTTPException(status_code=503, detail="Evaluation engine is not bundled in this build.")
+    device = request.device
+    if device == "auto":
+        device = "cuda" if _cuda_available() else "cpu"
+    args = ["--ckpt", str(checkpoint), "--label", checkpoint.stem, "--limit", str(request.limit), "--split", request.split, "--max_new_tokens", str(request.max_new_tokens), "--samples", str(request.samples), "--device", device]
+    command = [sys.executable, "--run-script", str(script), *args] if getattr(sys, "frozen", False) else [sys.executable, str(script), *args]
+    log_file = _log_path(job_id).open("ab")
+    creationflags = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0) if os.name == "nt" else 0
+    process = subprocess.Popen(command, cwd=_engine_root, env={**os.environ, "PYTHONPATH": str(_engine_root)}, stdout=log_file, stderr=subprocess.STDOUT, start_new_session=os.name != "nt", creationflags=creationflags)
+    record = {"job_id": job_id, "kind": "evaluation", "stage": "evaluation", "title": f"GSM8K · {checkpoint.name}", "checkpoint": checkpoint.name, "pid": process.pid, "command": command, "log": str(_log_path(job_id)), "started": time.time(), "status": "running"}
     _processes[job_id] = process
     _write_job(record)
     return record
@@ -379,6 +407,27 @@ def stop_job(job_id: str) -> dict[str, str]:
     record["status"] = "stopped"
     _write_job(record)
     return {"status": "stopped"}
+
+
+@app.get("/api/evaluations")
+def evaluations() -> list[dict]:
+    records = []
+    for record in jobs():
+        if record.get("kind") != "evaluation":
+            continue
+        log_path = _log_path(record["job_id"])
+        record["log_tail"] = log_path.read_text(encoding="utf-8", errors="replace")[-12000:] if log_path.exists() else ""
+        records.append(record)
+    return records
+
+
+@app.post("/api/evaluations")
+def create_evaluation(request: EvaluationRequest) -> dict:
+    if request.split not in {"train", "test"}:
+        raise HTTPException(status_code=400, detail="Evaluation split must be train or test")
+    if any(record.get("status") == "running" for record in evaluations()):
+        raise HTTPException(status_code=409, detail="An evaluation is already running.")
+    return _start_evaluation(uuid.uuid4().hex[:12], request)
 
 
 if __name__ == "__main__":

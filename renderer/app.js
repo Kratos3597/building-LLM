@@ -14,17 +14,19 @@ window.cloudnex.window.onMaximizedState((maximized) => {
 
 function selectView(view) {
   document.querySelectorAll('.nav-item').forEach((button) => button.classList.toggle('active', button.dataset.view === view));
-  const titles = { overview: 'Your next run starts here.', data: 'Prepare a clean local dataset.', training: 'Configure a focused training run.', models: 'Your local model shelf.', chat: 'Talk to a local checkpoint.', settings: 'Workspace settings.' };
+  const titles = { overview: 'Your next run starts here.', data: 'Prepare a clean local dataset.', training: 'Configure a focused training run.', models: 'Your local model shelf.', chat: 'Talk to a local checkpoint.', evaluation: 'Measure a local checkpoint.', settings: 'Workspace settings.' };
   document.querySelector('.workspace-panel h2').textContent = titles[view] || titles.overview;
   document.getElementById('overview-content').classList.toggle('hidden', view !== 'overview');
   document.getElementById('data-content').classList.toggle('hidden', view !== 'data');
   document.getElementById('training-content').classList.toggle('hidden', view !== 'training');
   document.getElementById('models-content').classList.toggle('hidden', view !== 'models');
   document.getElementById('chat-content').classList.toggle('hidden', view !== 'chat');
+  document.getElementById('evaluation-content').classList.toggle('hidden', view !== 'evaluation');
   if (view === 'training') loadTraining();
   if (view === 'data') loadDataFiles();
   if (view === 'models') loadModels();
   if (view === 'chat') loadChatModels();
+  if (view === 'evaluation') loadEvaluation();
 }
 
 document.querySelectorAll('[data-view]').forEach((button) => button.addEventListener('click', () => selectView(button.dataset.view)));
@@ -159,6 +161,17 @@ async function loadChatModels() {
   if (!models.length) select.add(new Option('No checkpoints found', ''));
 }
 
+async function loadEvaluation() {
+  const [models, evaluations] = await Promise.all([
+    fetch(`${backend}/api/models`).then((response) => response.json()),
+    fetch(`${backend}/api/evaluations`).then((response) => response.json()),
+  ]);
+  const select = document.getElementById('evaluation-model');
+  select.replaceChildren(...models.map((model) => new Option(model.name, model.path)));
+  if (!models.length) select.add(new Option('No checkpoints found', ''));
+  document.getElementById('evaluation-list').innerHTML = evaluations.length ? evaluations.map((item) => `<article class="job-card ${item.status}"><strong>${item.title}</strong> · ${item.status}<code>${item.log_tail || 'Waiting for output...'}</code></article>`).join('') : '<span class="muted">No evaluations run yet.</span>';
+}
+
 document.getElementById('training-form').addEventListener('submit', async (event) => {
   event.preventDefault();
   const response = await fetch(`${backend}/api/jobs`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ stage: document.getElementById('stage-select').value, smoke: document.getElementById('smoke-check').checked, overrides: collectOverrides() }) });
@@ -173,6 +186,13 @@ document.getElementById('chat-form').addEventListener('submit', async (event) =>
   const response = await fetch(`${backend}/api/chat`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ checkpoint: document.getElementById('model-select').value, prompt: document.getElementById('prompt-input').value }) });
   const payload = await response.json();
   output.textContent = response.ok ? payload.reply : (payload.detail || 'Could not generate a response.');
+});
+
+document.getElementById('evaluation-form').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const response = await fetch(`${backend}/api/evaluations`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ checkpoint: document.getElementById('evaluation-model').value, split: document.getElementById('evaluation-split').value, limit: Number(document.getElementById('evaluation-limit').value), max_new_tokens: Number(document.getElementById('evaluation-tokens').value), samples: Number(document.getElementById('evaluation-samples').value) }) });
+  if (!response.ok) window.alert((await response.json()).detail || 'Could not start evaluation.');
+  await loadEvaluation();
 });
 
 connect();
