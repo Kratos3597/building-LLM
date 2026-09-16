@@ -196,43 +196,89 @@ function updateHudTelemetry(system, hardware) {
   const chipName = document.getElementById('hud-chip-name');
   const chipDetail = document.getElementById('hud-chip-detail');
   const chipLogo = document.querySelector('.chip-logo-icon');
-  if (hardware && hardware.accelerator_summary) {
-    const acc = hardware.accelerator_summary;
-    if (chipName) chipName.textContent = acc.label || acc.name || 'PyTorch Tensor Engine';
-    if (chipDetail) chipDetail.textContent = acc.is_rocm ? 'ROCm 6.2 · Navi 48 · 16 GB VRAM · gfx1200' : (acc.accelerator === 'cuda' ? 'NVIDIA CUDA 12.4 · High Tensor Core Load' : `${acc.accelerator.toUpperCase()} Compute Unit`);
-    if (chipLogo) chipLogo.textContent = acc.is_rocm ? 'AMD' : (acc.accelerator === 'cuda' ? 'NV' : 'ACC');
+
+  const acc = hardware?.accelerator_summary;
+  const isRocm = acc?.is_rocm || acc?.accelerator === 'rocm' || system?.is_rocm;
+  const isCuda = acc?.accelerator === 'cuda';
+  const isMps = acc?.accelerator === 'mps';
+
+  if (chipName) chipName.textContent = acc?.label || acc?.name || (isRocm ? 'AMD Radeon RX 9070 / 7900' : 'Host Multicore Tensor Engine');
+  if (chipDetail) {
+    if (isRocm) chipDetail.textContent = 'ROCm 6.2 · Navi 48 · 16 GB VRAM · gfx1200';
+    else if (isCuda) chipDetail.textContent = 'NVIDIA CUDA 12.4 · Tensor Core Active';
+    else if (isMps) chipDetail.textContent = 'Apple Metal 3.1 · Unified Memory';
+    else chipDetail.textContent = 'Host CPU Multicore Engine · Nominal Thermal';
   }
+  if (chipLogo) chipLogo.textContent = isRocm ? 'AMD' : (isCuda ? 'NV' : (isMps ? 'APL' : 'CPU'));
 
   const circ = 251.2; // 2 * PI * 40
-  // VRAM Gauge
+
+  // 1. VRAM HEADROOM (ROCm ALLOCATED)
+  // 74%, 11.8 / 16 GB, Tensor Buffers: Protected, Headroom: 4.2 GB Free
+  const vramTag = document.getElementById('hud-vram-tag');
   const vramRing = document.getElementById('hud-vram-ring');
   const vramVal = document.getElementById('hud-vram-value');
   const vramCap = document.getElementById('hud-vram-caption');
+  const vramBuffers = document.getElementById('hud-vram-buffers');
+  const vramHeadroom = document.getElementById('hud-vram-headroom');
+
+  const totalVramGb = hardware?.gpus?.[0]?.vram_gb || 16.0;
   const vramPct = 74;
+  const allocatedVram = (totalVramGb * (vramPct / 100)).toFixed(1);
+  const freeVram = (totalVramGb - Number(allocatedVram)).toFixed(1);
+
+  if (vramTag) {
+    vramTag.textContent = isRocm ? 'ROCm ALLOCATED' : (isCuda ? 'CUDA ALLOCATED' : (isMps ? 'MPS ALLOCATED' : 'ROCm ALLOCATED'));
+  }
   if (vramRing) vramRing.style.strokeDashoffset = (circ * (1 - vramPct / 100)).toFixed(1);
   if (vramVal) vramVal.textContent = `${vramPct}%`;
-  if (vramCap) vramCap.textContent = '11.8 / 16 GB';
+  if (vramCap) vramCap.textContent = `${allocatedVram} / ${totalVramGb} GB`;
+  if (vramBuffers) vramBuffers.textContent = 'Protected';
+  if (vramHeadroom) vramHeadroom.textContent = `${freeVram} GB Free`;
 
-  // CPU Cores Gauge
+  // 2. COMPUTE THREADS (PARALLEL WORKERS)
+  // 100%, 2 / 2 Cores (or actual host cores), Intra-op: torch.set_num_threads, Thermal: Nominal
   const cpuRing = document.getElementById('hud-cpu-ring');
   const cpuVal = document.getElementById('hud-cpu-value');
   const cpuCap = document.getElementById('hud-cpu-caption');
-  const cores = system?.allocated_cores || 4;
-  const totalCores = hardware?.cpu?.total_cores || 8;
-  const cpuPct = Math.min(100, Math.round((cores / totalCores) * 100));
+  const cpuIntra = document.getElementById('hud-cpu-intra');
+  const cpuThermal = document.getElementById('hud-cpu-thermal');
+
+  const hostCores = hardware?.cpu?.total_cores || 2;
+  const activeCores = system?.allocated_cores || hostCores;
+  const cpuPct = Math.min(100, Math.round((activeCores / hostCores) * 100));
+
   if (cpuRing) cpuRing.style.strokeDashoffset = (circ * (1 - cpuPct / 100)).toFixed(1);
   if (cpuVal) cpuVal.textContent = `${cpuPct}%`;
-  if (cpuCap) cpuCap.textContent = `${cores} / ${totalCores} Cores`;
+  if (cpuCap) cpuCap.textContent = `${activeCores} / ${hostCores} Cores`;
+  if (cpuIntra) cpuIntra.textContent = 'torch.set_num_threads';
+  if (cpuThermal) cpuThermal.textContent = 'Nominal';
 
-  // Memory Ceiling Gauge
+  // 3. MEMORY CEILING (HOST RAM)
+  // 13%, 4 GB Limit (pulls from hardware/settings), OS Margin: Preserved, Cache Page: Clean
   const ramRing = document.getElementById('hud-ram-ring');
   const ramVal = document.getElementById('hud-ram-value');
   const ramCap = document.getElementById('hud-ram-caption');
-  const ramLimit = system?.ram_limit_gb || 16;
-  const ramPct = system?.ram_unlimited ? 85 : Math.min(100, Math.round((ramLimit / 32) * 100));
-  if (ramRing) ramRing.style.strokeDashoffset = (circ * (1 - ramPct / 100)).toFixed(1);
-  if (ramVal) ramVal.textContent = `${ramPct}%`;
-  if (ramCap) ramCap.textContent = system?.ram_unlimited ? 'Uncapped RAM' : `${ramLimit} GB Limit`;
+  const ramMargin = document.getElementById('hud-ram-margin');
+  const ramCache = document.getElementById('hud-ram-cache');
+
+  const ramLimitGb = system?.ram_limit_gb || (hardware?.memory?.total_ram_gb ? Math.min(4, Math.round(hardware.memory.total_ram_gb)) : 4);
+  const actualRamPct = hardware?.memory?.percent !== undefined ? hardware.memory.percent : 13;
+  // Display target percentage
+  const displayRamPct = actualRamPct > 0 ? actualRamPct : 13;
+
+  if (ramRing) ramRing.style.strokeDashoffset = (circ * (1 - displayRamPct / 100)).toFixed(1);
+  if (ramVal) ramVal.textContent = `${displayRamPct}%`;
+  if (ramCap) ramCap.textContent = system?.ram_unlimited ? 'Uncapped RAM' : `${ramLimitGb} GB Limit`;
+  if (ramMargin) ramMargin.textContent = 'Preserved';
+  if (ramCache) ramCache.textContent = 'Clean';
+
+  // 4. ENGINE OSCILLOGRAM (ZERO TELEMETRY)
+  // State: STANDBY · READY, Throughput: 0.0 tok/s
+  const engineState = document.getElementById('hud-engine-state');
+  const tokensRate = document.getElementById('hud-tokens-rate');
+  if (engineState) engineState.textContent = 'STANDBY · READY';
+  if (tokensRate) tokensRate.textContent = '0.0 tok/s';
 }
 
 async function loadTraining() {
@@ -556,11 +602,33 @@ async function loadModels() {
   const models = await fetch(`${backend}/api/models`).then((response) => response.json()).catch(() => []);
   const modelList = document.getElementById('model-list');
   if (modelList) {
-    modelList.innerHTML = models.length ? models.map((model) => `<article class="job-card model-card"><div><strong>${model.name}</strong><span> · ${model.size_mb} MB</span><code>${model.path}</code></div><button class="secondary export-model" type="button" data-model="${encodeURIComponent(model.path)}">Export</button></article>`).join('') : '<span class="muted">No checkpoints found. Complete a training run first.</span>';
+    modelList.innerHTML = models.length ? models.map((model) => {
+      const isGguf = model.format === 'gguf' || model.name.endsWith('.gguf');
+      const badge = isGguf ? `<span style="display:inline-block; font-size:10px; font-weight:700; background:#0284c7; color:#fff; padding:2px 6px; border-radius:4px; margin-left:6px;">GGUF · ${model.quantization || 'Q4'}</span>` : '';
+      return `
+      <article class="job-card model-card" style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+        <div>
+          <strong style="display:inline-flex; align-items:center;">${model.name} ${badge}</strong>
+          <span> · ${model.size_mb} MB</span>
+          <code>${model.path}</code>
+        </div>
+        <div style="display:flex; gap:8px; align-items:center;">
+          ${!isGguf ? `<button class="primary convert-gguf-btn" type="button" data-model="${encodeURIComponent(model.path)}" style="padding:6px 12px; font-size:12px; font-weight:600;">Convert to GGUF</button>` : ''}
+          <button class="secondary export-model" type="button" data-model="${encodeURIComponent(model.path)}" style="padding:6px 12px; font-size:12px;">Export</button>
+        </div>
+      </article>`;
+    }).join('') : '<span class="muted">No checkpoints found. Complete a training run first.</span>';
   }
 }
 
 document.getElementById('model-list')?.addEventListener('click', async (event) => {
+  const convertBtn = event.target.closest('.convert-gguf-btn');
+  if (convertBtn) {
+    const checkpointPath = decodeURIComponent(convertBtn.dataset.model);
+    openGgufModal(checkpointPath);
+    return;
+  }
+
   const button = event.target.closest('.export-model');
   if (!button) return;
   const destination = await window.cloudnex.chooseCheckpointExportPath();
@@ -570,6 +638,87 @@ document.getElementById('model-list')?.addEventListener('click', async (event) =
   const notice = response.ok ? `Exported ${payload.name}` : (payload.detail || 'Could not export checkpoint.');
   console.log(notice);
 });
+
+let selectedGgufCheckpoint = 'checkpoints/sft_final.pt';
+
+function openGgufModal(checkpointPath) {
+  selectedGgufCheckpoint = checkpointPath;
+  const modal = document.getElementById('gguf-convert-modal');
+  const sourceElem = document.getElementById('gguf-source-name');
+  const outNameInput = document.getElementById('gguf-out-name');
+  const statusPanel = document.getElementById('gguf-status-panel');
+  const quantSelect = document.getElementById('gguf-quant-type');
+
+  if (sourceElem) sourceElem.textContent = checkpointPath;
+  const baseName = checkpointPath.split('/').pop().replace(/\.[^/.]+$/, '');
+  const quant = quantSelect ? quantSelect.value : 'q4_k_m';
+  if (outNameInput) outNameInput.value = `${baseName}-${quant}.gguf`;
+  if (statusPanel) statusPanel.style.display = 'none';
+
+  if (modal) modal.classList.remove('hidden');
+}
+
+function initGgufModal() {
+  const modal = document.getElementById('gguf-convert-modal');
+  const closeBtn = document.getElementById('close-gguf-modal-btn');
+  const cancelBtn = document.getElementById('cancel-gguf-btn');
+  const convertBtn = document.getElementById('start-gguf-convert-btn');
+  const quantSelect = document.getElementById('gguf-quant-type');
+  const outNameInput = document.getElementById('gguf-out-name');
+  const statusPanel = document.getElementById('gguf-status-panel');
+  const statusText = document.getElementById('gguf-status-text');
+
+  const hideModal = () => {
+    if (modal) modal.classList.add('hidden');
+  };
+
+  closeBtn?.addEventListener('click', hideModal);
+  cancelBtn?.addEventListener('click', hideModal);
+
+  quantSelect?.addEventListener('change', () => {
+    const baseName = selectedGgufCheckpoint.split('/').pop().replace(/\.[^/.]+$/, '');
+    if (outNameInput) outNameInput.value = `${baseName}-${quantSelect.value}.gguf`;
+  });
+
+  convertBtn?.addEventListener('click', async () => {
+    if (!convertBtn || convertBtn.disabled) return;
+    convertBtn.disabled = true;
+    convertBtn.textContent = 'Quantizing weights...';
+    if (statusPanel) statusPanel.style.display = 'block';
+    if (statusText) statusText.innerHTML = `[llama.cpp Engine] Parsing ${selectedGgufCheckpoint}...<br/>Generating Q4_K_M quant tensors...`;
+
+    try {
+      const resp = await fetch(`${backend}/api/models/convert-gguf`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          checkpoint: selectedGgufCheckpoint,
+          quantization: quantSelect?.value || 'q4_k_m',
+          output_name: outNameInput?.value || 'model-q4_k_m.gguf',
+        }),
+      });
+      const data = await resp.json();
+      if (resp.ok) {
+        if (statusText) statusText.innerHTML = `<strong>Conversion Complete!</strong><br/>Saved: ${data.model.name} (${data.model.size_mb} MB)<br/>Llama.cpp &amp; Ollama compatible.`;
+        setTimeout(async () => {
+          hideModal();
+          convertBtn.disabled = false;
+          convertBtn.textContent = 'Start GGUF Conversion →';
+          await loadModels();
+          await loadChatModels();
+        }, 1200);
+      } else {
+        if (statusText) statusText.textContent = `Error: ${data.detail || 'Conversion failed'}`;
+        convertBtn.disabled = false;
+        convertBtn.textContent = 'Start GGUF Conversion →';
+      }
+    } catch (err) {
+      if (statusText) statusText.textContent = `Error: ${err.message}`;
+      convertBtn.disabled = false;
+      convertBtn.textContent = 'Start GGUF Conversion →';
+    }
+  });
+}
 
 async function loadChatModels() {
   const models = await fetch(`${backend}/api/models`).then((response) => response.json()).catch(() => []);
@@ -1509,6 +1658,7 @@ function bindChassisControls() {
 
 
 initAppleGlassSuite();
+initGgufModal();
 
 selectView('overview');
 

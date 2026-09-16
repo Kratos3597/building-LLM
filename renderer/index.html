@@ -196,7 +196,7 @@
         <!-- TELEMETRY HUD GAUGES -->
         <div class="telemetry-hud-grid">
           <!-- VRAM Ring Gauge -->
-          <div class="telemetry-card">
+          <div class="telemetry-card" id="hud-card-vram">
             <div class="hud-card-top">
               <span class="hud-metric-title">VRAM HEADROOM</span>
               <span class="hud-tag" id="hud-vram-tag">ROCm ALLOCATED</span>
@@ -212,60 +212,60 @@
               </div>
             </div>
             <div class="hud-card-foot">
-              <span>Tensor Buffers: <strong>Protected</strong></span>
-              <span>Headroom: <strong>4.2 GB Free</strong></span>
+              <span>Tensor Buffers: <strong id="hud-vram-buffers">Protected</strong></span>
+              <span>Headroom: <strong id="hud-vram-headroom">4.2 GB Free</strong></span>
             </div>
           </div>
 
           <!-- CPU Compute Threads Gauge -->
-          <div class="telemetry-card">
+          <div class="telemetry-card" id="hud-card-cpu">
             <div class="hud-card-top">
               <span class="hud-metric-title">COMPUTE THREADS</span>
-              <span class="hud-tag">PARALLEL WORKERS</span>
+              <span class="hud-tag" id="hud-cpu-tag">PARALLEL WORKERS</span>
             </div>
             <div class="gauge-ring-wrapper">
               <svg class="ring-svg" viewBox="0 0 100 100">
                 <circle class="ring-bg" cx="50" cy="50" r="40"></circle>
-                <circle class="ring-fg cpu-fg" id="hud-cpu-ring" cx="50" cy="50" r="40" stroke-dasharray="251.2" stroke-dashoffset="100"></circle>
+                <circle class="ring-fg cpu-fg" id="hud-cpu-ring" cx="50" cy="50" r="40" stroke-dasharray="251.2" stroke-dashoffset="0"></circle>
               </svg>
               <div class="ring-inner">
-                <strong id="hud-cpu-value">60%</strong>
-                <small id="hud-cpu-caption">4 / 8 Cores Active</small>
+                <strong id="hud-cpu-value">100%</strong>
+                <small id="hud-cpu-caption">2 / 2 Cores</small>
               </div>
             </div>
             <div class="hud-card-foot">
-              <span>Intra-op: <strong>torch.set_num_threads</strong></span>
-              <span>Thermal: <strong>Nominal</strong></span>
+              <span>Intra-op: <strong id="hud-cpu-intra">torch.set_num_threads</strong></span>
+              <span>Thermal: <strong id="hud-cpu-thermal">Nominal</strong></span>
             </div>
           </div>
 
           <!-- Host Memory Ceiling -->
-          <div class="telemetry-card">
+          <div class="telemetry-card" id="hud-card-ram">
             <div class="hud-card-top">
               <span class="hud-metric-title">MEMORY CEILING</span>
-              <span class="hud-tag">HOST RAM</span>
+              <span class="hud-tag" id="hud-ram-tag">HOST RAM</span>
             </div>
             <div class="gauge-ring-wrapper">
               <svg class="ring-svg" viewBox="0 0 100 100">
                 <circle class="ring-bg" cx="50" cy="50" r="40"></circle>
-                <circle class="ring-fg ram-fg" id="hud-ram-ring" cx="50" cy="50" r="40" stroke-dasharray="251.2" stroke-dashoffset="125"></circle>
+                <circle class="ring-fg ram-fg" id="hud-ram-ring" cx="50" cy="50" r="40" stroke-dasharray="251.2" stroke-dashoffset="218"></circle>
               </svg>
               <div class="ring-inner">
-                <strong id="hud-ram-value">50%</strong>
-                <small id="hud-ram-caption">16 GB Limit</small>
+                <strong id="hud-ram-value">13%</strong>
+                <small id="hud-ram-caption">4 GB Limit</small>
               </div>
             </div>
             <div class="hud-card-foot">
-              <span>OS Margin: <strong>Preserved</strong></span>
-              <span>Cache Page: <strong>Clean</strong></span>
+              <span>OS Margin: <strong id="hud-ram-margin">Preserved</strong></span>
+              <span>Cache Page: <strong id="hud-ram-cache">Clean</strong></span>
             </div>
           </div>
 
           <!-- Neural Engine Heartbeat Waveform -->
-          <div class="telemetry-card waveform-card">
+          <div class="telemetry-card waveform-card" id="hud-card-engine">
             <div class="hud-card-top">
               <span class="hud-metric-title">ENGINE OSCILLOGRAM</span>
-              <span class="hud-tag-active"><span class="pulse-beacon"></span> ZERO TELEMETRY</span>
+              <span class="hud-tag-active" id="hud-telemetry-tag"><span class="pulse-beacon"></span> ZERO TELEMETRY</span>
             </div>
             <div class="waveform-display">
               <svg class="waveform-svg" viewBox="0 0 320 60" preserveAspectRatio="none">
@@ -1052,6 +1052,61 @@ Copyright (c) 2026 Mohammed Sheik. All rights reserved.</pre>
         <div class="dialog-actions-footer">
           <button type="button" class="apple-btn-solid-white" id="help-test-run-btn">Run Pipeline Verification</button>
           <button type="button" class="apple-btn-glass-secondary" id="help-view-eula-btn">View EULA License</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GGUF QUANTIZATION & EXPORT MODAL -->
+  <div id="gguf-convert-modal" class="apple-glass-modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="gguf-modal-title">
+    <div class="apple-glass-dialog-box" style="width: min(580px, 95vw);">
+      <div class="dialog-header">
+        <div class="dialog-brand">
+          <span class="dialog-glyph">⚙</span>
+          <h3 id="gguf-modal-title">Convert Checkpoint to GGUF (llama.cpp)</h3>
+        </div>
+        <button type="button" class="dialog-close-btn" id="close-gguf-modal-btn" aria-label="Close dialog">&times;</button>
+      </div>
+      <div class="dialog-content-body">
+        <div>
+          <label style="font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px;">Selected PyTorch Checkpoint</label>
+          <div style="padding: 10px 14px; background: #f8fafc; border: 1px solid var(--line); border-radius: 6px; font-family: monospace; font-size: 13px; color: var(--ink-bright); margin-top: 4px;" id="gguf-source-name">
+            checkpoints/sft_final.pt
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+          <div>
+            <label for="gguf-quant-type" style="font-size: 12px; font-weight: 600; color: var(--ink-bright); display: block; margin-bottom: 4px;">Target Quantization</label>
+            <select id="gguf-quant-type" style="width: 100%;">
+              <option value="q4_k_m" selected>Q4_K_M (Recommended · Balanced)</option>
+              <option value="q5_k_m">Q5_K_M (High Precision · Low loss)</option>
+              <option value="q8_0">Q8_0 (Near FP16 Accuracy)</option>
+              <option value="f16">F16 (Unquantized Full Float)</option>
+              <option value="q2_k">Q2_K (Ultra Low Memory · 2-bit)</option>
+            </select>
+          </div>
+          <div>
+            <label for="gguf-out-name" style="font-size: 12px; font-weight: 600; color: var(--ink-bright); display: block; margin-bottom: 4px;">Output File Name</label>
+            <input type="text" id="gguf-out-name" value="model-q4_k_m.gguf" style="width: 100%;" />
+          </div>
+        </div>
+
+        <div class="hud-feature-card" style="background: #f1f5f9; border-left: 3px solid var(--accent);">
+          <span class="card-kicker">LLAMA.CPP COMPATIBILITY</span>
+          <strong style="font-size: 12.5px;">100% Offline Local Inference</strong>
+          <p style="font-size: 11.5px; margin-top: 2px;">Produces standard single-file binary weights (.gguf) loadable in Ollama, llama.cpp, LM Studio, or CloudNex embedded engine.</p>
+        </div>
+
+        <div id="gguf-status-panel" style="display: none; padding: 10px 12px; border-radius: 6px; font-size: 12px; font-family: monospace; background: #0f172a; color: #38bdf8; line-height: 1.4;">
+          <span id="gguf-status-text">Ready to convert...</span>
+        </div>
+
+        <div class="dialog-actions-footer">
+          <button type="button" class="secondary" id="cancel-gguf-btn">Cancel</button>
+          <button type="button" class="primary" id="start-gguf-convert-btn">
+            <span>Start GGUF Conversion</span> &rarr;
+          </button>
         </div>
       </div>
     </div>
