@@ -28,6 +28,13 @@ function registerWindowControls() {
     });
     return result.canceled ? null : result.filePath;
   });
+  ipcMain.handle('workspace:select-folder', async () => {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      title: 'Select Workspace & Storage Folder',
+      properties: ['openDirectory', 'createDirectory'],
+    });
+    return result.canceled || !result.filePaths.length ? null : result.filePaths[0];
+  });
 }
 
 function backendPaths() {

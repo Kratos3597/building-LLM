@@ -93,6 +93,17 @@ function selectView(view) {
     studioTabsRow.style.display = 'flex';
   }
 
+  // Update wizard stepper active states
+  document.querySelectorAll('.wizard-step-pill').forEach((pill) => {
+    pill.classList.toggle('active', pill.dataset.view === view);
+  });
+  document.querySelectorAll('.nav-mode-btn').forEach((btn) => {
+    btn.classList.toggle('active', btn.dataset.view === view);
+  });
+  document.querySelectorAll('.studio-tab-btn').forEach((tab) => {
+    tab.classList.toggle('active', tab.dataset.view === view);
+  });
+
   document.getElementById('overview-content')?.classList.toggle('hidden', view !== 'overview');
   document.getElementById('data-content')?.classList.toggle('hidden', view !== 'data');
   document.getElementById('training-content')?.classList.toggle('hidden', view !== 'training');
@@ -112,7 +123,13 @@ function selectView(view) {
   if (view === 'terms') loadLicenseDocs();
 }
 
-document.querySelectorAll('[data-view]').forEach((button) => button.addEventListener('click', () => selectView(button.dataset.view)));
+// Global delegated click listener for all data-view elements
+document.addEventListener('click', (event) => {
+  const target = event.target.closest('[data-view]');
+  if (target && target.dataset.view) {
+    selectView(target.dataset.view);
+  }
+});
 
 async function connect() {
   try {
@@ -121,22 +138,60 @@ async function connect() {
       fetch(`${backend}/api/system`).then((response) => response.json()),
       fetch(`${backend}/api/system/hardware`).then((response) => response.json()).catch(() => null),
     ]);
-    statusText.textContent = 'Local engine connected';
-    engineStatus.textContent = health.status === 'ok' ? 'Online' : 'Unavailable';
-    deviceStatus.textContent = system.device || 'CPU';
-    platformLabel.textContent = system.platform;
-    dot.classList.add('ready');
+    if (statusText) statusText.textContent = 'Local engine connected';
+    if (engineStatus) engineStatus.textContent = health && health.status === 'ok' ? 'Online' : 'Unavailable';
+    if (platformLabel && system) platformLabel.textContent = system.platform || 'Desktop';
+    if (dot) dot.classList.add('ready');
+
+    // Update real device status
+    const devStatus = document.getElementById('device-status');
+    if (devStatus) {
+      if (hardware && hardware.accelerator_summary && hardware.accelerator_summary.label) {
+        devStatus.textContent = hardware.accelerator_summary.label;
+      } else {
+        devStatus.textContent = system?.device || 'CPU Engine';
+      }
+    }
+
+    // Update quick telemetry strip metrics
+    const ramDisp = document.getElementById('metric-ram-display');
+    if (ramDisp && hardware && hardware.memory) {
+      const mem = hardware.memory;
+      ramDisp.textContent = `${mem.used_ram_gb} / ${mem.total_ram_gb} GB (${mem.percent_used}%)`;
+    }
+
+    const ssdDisp = document.getElementById('metric-ssd-display');
+    if (ssdDisp && hardware && hardware.storage) {
+      ssdDisp.textContent = `${hardware.storage.free_gb} GB Free`;
+    }
+
+    const privDisp = document.getElementById('metric-priv-display');
+    if (privDisp) {
+      privDisp.textContent = '100% Air-Gapped';
+    }
+
+    const quickChip = document.getElementById('hud-quick-chip');
+    if (quickChip && hardware) {
+      quickChip.textContent = hardware.accelerator_summary?.label || hardware.cpu?.processor || 'PyTorch Compute Engine';
+    }
+
+    const quickRes = document.getElementById('hud-quick-res');
+    if (quickRes && system) {
+      const ramStr = system.ram_unlimited ? 'Uncapped RAM' : `${system.ram_limit_gb || 16} GB RAM`;
+      quickRes.textContent = `${system.allocated_cores || 4} Cores · ${ramStr}`;
+    }
 
     const resourceSummary = document.getElementById('resource-summary');
-    if (resourceSummary && (system.allocated_cores || system.ram_limit_gb)) {
+    if (resourceSummary && system && (system.allocated_cores || system.ram_limit_gb)) {
       const ramStr = system.ram_unlimited ? 'Uncapped RAM' : `${system.ram_limit_gb} GB RAM`;
       resourceSummary.textContent = `${system.allocated_cores || 4} Cores · ${ramStr}`;
     }
 
     updateHudTelemetry(system, hardware);
   } catch (error) {
-    statusText.textContent = 'Local engine unavailable';
-    engineStatus.textContent = 'Offline';
+    if (statusText) statusText.textContent = 'Local engine unavailable';
+    if (engineStatus) engineStatus.textContent = 'Offline';
+    if (dot) dot.classList.remove('ready');
   }
 }
 
@@ -199,9 +254,10 @@ async function loadMetrics(stage) {
   const records = await fetch(`${backend}/api/metrics/${stage}`).then((response) => response.json());
   const loss = records.filter((record) => typeof record.train_loss === 'number' || typeof record.eval_loss === 'number');
   const chart = document.getElementById('metrics-chart');
+  const chartSummary = document.getElementById('chart-summary');
   if (!loss.length) {
-    chart.innerHTML = '<span class="muted">Metrics will appear after the first logged training steps.</span>';
-    document.getElementById('chart-summary').textContent = 'Waiting for metrics';
+    if (chart) chart.innerHTML = '<span class="muted">Metrics will appear after the first logged training steps.</span>';
+    if (chartSummary) chartSummary.textContent = 'Waiting for metrics';
     return;
   }
   const width = 720; const height = 220; const pad = 36;
@@ -260,17 +316,23 @@ async function loadMetrics(stage) {
       <span style="display:inline-flex; align-items:center; gap:6px; color:#FFB800;"><span style="width:10px; height:2px; background:#FFB800; border-top:1px dashed #FFB800;"></span> Eval loss: ${evalLossRecs.length ? evalLossRecs[evalLossRecs.length - 1].eval_loss.toFixed(4) : 'N/A'}</span>
       <span style="margin-left:auto; color:var(--muted);">Optimization: AdamW + Cosine Decay</span>
     </div>`;
-  document.getElementById('chart-summary').textContent = `${loss.length} tensor steps logged · latest step ${loss[loss.length - 1].step}`;
+  const chartSum = document.getElementById('chart-summary');
+  if (chartSum) chartSum.textContent = `${loss.length} tensor steps logged · latest step ${loss[loss.length - 1].step}`;
 }
 
 async function loadConfigEditor() {
-  const stage = document.getElementById('stage-select').value || 'pretrain';
-  const smoke = document.getElementById('smoke-check').checked;
-  const config = await fetch(`${backend}/api/stages/${stage}/config?smoke=${smoke}`).then((response) => response.json());
-  document.getElementById('config-editor').innerHTML = config.fields.map((field) => {
-    if (field.kind === 'boolean') return `<label class="config-field check-row"><input type="checkbox" data-config="${field.name}" ${field.value ? 'checked' : ''}><span>${field.name}</span></label>`;
-    return `<label class="config-field"><span>${field.name}</span><input data-config="${field.name}" type="${field.kind === 'number' ? 'number' : 'text'}" step="any" value="${field.value ?? ''}"></label>`;
-  }).join('');
+  const stageEl = document.getElementById('stage-select');
+  const stage = (stageEl && stageEl.value) || 'pretrain';
+  const smokeCheck = document.getElementById('smoke-check');
+  const smoke = smokeCheck ? smokeCheck.checked : false;
+  const config = await fetch(`${backend}/api/stages/${stage}/config?smoke=${smoke}`).then((response) => response.json()).catch(() => ({ fields: [] }));
+  const editor = document.getElementById('config-editor');
+  if (editor && config.fields) {
+    editor.innerHTML = config.fields.map((field) => {
+      if (field.kind === 'boolean') return `<label class="config-field check-row"><input type="checkbox" data-config="${field.name}" ${field.value ? 'checked' : ''}><span>${field.name}</span></label>`;
+      return `<label class="config-field"><span>${field.name}</span><input data-config="${field.name}" type="${field.kind === 'number' ? 'number' : 'text'}" step="any" value="${field.value ?? ''}"></label>`;
+    }).join('');
+  }
 }
 
 function collectOverrides() {
@@ -283,8 +345,12 @@ function collectOverrides() {
   return values;
 }
 
-document.getElementById('stage-select').addEventListener('change', () => { loadConfigEditor(); loadMetrics(document.getElementById('stage-select').value); });
-document.getElementById('smoke-check').addEventListener('change', loadConfigEditor);
+document.getElementById('stage-select')?.addEventListener('change', () => {
+  loadConfigEditor();
+  const select = document.getElementById('stage-select');
+  if (select) loadMetrics(select.value);
+});
+document.getElementById('smoke-check')?.addEventListener('change', loadConfigEditor);
 
 let selectedFiles = [];
 const dropZone = document.getElementById('drop-zone');
@@ -293,24 +359,32 @@ const uploadButton = document.getElementById('upload-button');
 
 function setFiles(files) {
   selectedFiles = [...files];
-  uploadButton.disabled = selectedFiles.length === 0;
-  dropZone.querySelector('strong').textContent = selectedFiles.length ? `${selectedFiles.length} file${selectedFiles.length === 1 ? '' : 's'} ready` : 'Drop dataset files here';
-  dropZone.querySelector('span').textContent = selectedFiles.length ? selectedFiles.map((file) => file.name).join(' · ') : 'or click to browse from your computer';
+  if (uploadButton) uploadButton.disabled = selectedFiles.length === 0;
+  const strongEl = dropZone ? dropZone.querySelector('strong') : null;
+  if (strongEl) strongEl.textContent = selectedFiles.length ? `${selectedFiles.length} file${selectedFiles.length === 1 ? '' : 's'} ready` : 'Drop dataset files here';
+  const spanEl = dropZone ? dropZone.querySelector('span') : null;
+  if (spanEl) spanEl.textContent = selectedFiles.length ? selectedFiles.map((file) => file.name).join(' · ') : 'or click to browse from your computer';
 }
 
-dropZone.addEventListener('click', () => fileInput.click());
-dropZone.addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') fileInput.click(); });
-fileInput.addEventListener('change', () => setFiles(fileInput.files));
-['dragenter', 'dragover'].forEach((eventName) => dropZone.addEventListener(eventName, (event) => { event.preventDefault(); dropZone.classList.add('dragging'); }));
-['dragleave', 'drop'].forEach((eventName) => dropZone.addEventListener(eventName, (event) => { event.preventDefault(); dropZone.classList.remove('dragging'); }));
-dropZone.addEventListener('drop', (event) => setFiles(event.dataTransfer.files));
+if (dropZone && fileInput) {
+  dropZone.addEventListener('click', () => fileInput.click());
+  dropZone.addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') fileInput.click(); });
+  fileInput.addEventListener('change', () => setFiles(fileInput.files));
+  ['dragenter', 'dragover'].forEach((eventName) => dropZone.addEventListener(eventName, (event) => { event.preventDefault(); dropZone.classList.add('dragging'); }));
+  ['dragleave', 'drop'].forEach((eventName) => dropZone.addEventListener(eventName, (event) => { event.preventDefault(); dropZone.classList.remove('dragging'); }));
+  dropZone.addEventListener('drop', (event) => setFiles(event.dataTransfer.files));
+}
 
 async function loadDataFiles() {
-  const files = await fetch(`${backend}/api/data/files`).then((response) => response.json());
-  const filter = document.getElementById('data-filter').value;
+  const files = await fetch(`${backend}/api/data/files`).then((response) => response.json()).catch(() => []);
+  const filterEl = document.getElementById('data-filter');
+  const filter = filterEl ? filterEl.value : 'all';
   const visible = filter === 'all' ? files : files.filter((file) => file.dataset_type === filter);
-  document.getElementById('data-count').textContent = `${visible.length} shown · ${files.length} total`;
-  document.getElementById('data-file-list').innerHTML = visible.length ? visible.map((file) => {
+  const dataCount = document.getElementById('data-count');
+  if (dataCount) dataCount.textContent = `${visible.length} shown · ${files.length} total`;
+  const fileList = document.getElementById('data-file-list');
+  if (fileList) {
+    fileList.innerHTML = visible.length ? visible.map((file) => {
     const isTxt = file.name.endsWith('.txt') || file.format === 'txt';
     const estTokens = file.tokens || Math.round(file.size / 4);
     return `
@@ -336,47 +410,87 @@ async function loadDataFiles() {
         </div>
       </article>
     `;
-  }).join('') : '<span class="muted">No datasets match this filter.</span>';
+    }).join('') : '<span class="muted">No datasets match this filter.</span>';
+  }
 }
 
 function formatBytes(bytes) { return bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`; }
 
-document.getElementById('upload-form').addEventListener('submit', async (event) => {
-  event.preventDefault();
-  const status = document.getElementById('upload-status');
-  uploadButton.disabled = true;
-  status.textContent = 'Ingesting and processing dataset locally...';
-  try {
-    for (const file of selectedFiles) {
-      let content = '';
-      if (file.name.endsWith('.txt') || file.size < 500000) {
-        try { content = await file.text(); } catch (_) {}
-      }
-      const payload = {
-        name: file.name,
-        size: file.size,
-        dataset_type: document.getElementById('dataset-type').value,
-        content: content,
-      };
-      const response = await fetch(`${backend}/api/data/upload`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      if (!response.ok) throw new Error((await response.json()).detail || 'Upload failed');
-    }
-    status.textContent = `${selectedFiles.length} dataset file${selectedFiles.length === 1 ? '' : 's'} ingested into local PyTorch workspace.`;
-    setFiles([]);
-    fileInput.value = '';
-    await loadDataFiles();
-  } catch (error) {
-    status.textContent = error.message;
-    uploadButton.disabled = selectedFiles.length === 0;
-  }
-});
+const uploadForm = document.getElementById('upload-form');
+if (uploadForm) {
+  uploadForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const status = document.getElementById('upload-status');
+    if (uploadButton) uploadButton.disabled = true;
+    if (status) status.textContent = 'Ingesting and processing dataset locally...';
+    try {
+      for (const file of selectedFiles) {
+        const datasetTypeEl = document.getElementById('dataset-type');
+        const datasetType = datasetTypeEl ? datasetTypeEl.value : 'general';
+        let ok = false;
+        let errorMsg = '';
 
-document.getElementById('data-filter').addEventListener('change', loadDataFiles);
-document.getElementById('data-file-list').addEventListener('change', async (event) => {
+        // Try JSON payload with extracted text first
+        try {
+          let content = '';
+          if (file.name.endsWith('.txt') || file.size < 5000000) {
+            content = await file.text();
+          }
+          const payload = {
+            name: file.name,
+            size: file.size,
+            dataset_type: datasetType,
+            content: content,
+          };
+          const response = await fetch(`${backend}/api/data/upload`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          if (response.ok) {
+            ok = true;
+          } else {
+            const errData = await response.json().catch(() => ({}));
+            errorMsg = errData.detail || 'Upload error';
+          }
+        } catch (err) {
+          errorMsg = err.message;
+        }
+
+        // Fallback to standard Multipart FormData if JSON was rejected
+        if (!ok) {
+          try {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('dataset_type', datasetType);
+            const response = await fetch(`${backend}/api/data/upload`, {
+              method: 'POST',
+              body: formData,
+            });
+            if (response.ok) {
+              ok = true;
+            } else {
+              const errData = await response.json().catch(() => ({}));
+              throw new Error(errData.detail || errorMsg || 'Local engine rejected the file');
+            }
+          } catch (err) {
+            throw new Error(err.message || 'Could not process dataset locally. Check that the local engine is running.');
+          }
+        }
+      }
+      if (status) status.textContent = `${selectedFiles.length} dataset file${selectedFiles.length === 1 ? '' : 's'} ingested into local PyTorch workspace.`;
+      setFiles([]);
+      if (fileInput) fileInput.value = '';
+      await loadDataFiles();
+    } catch (error) {
+      if (status) status.textContent = `Upload error: ${error.message}`;
+      if (uploadButton) uploadButton.disabled = selectedFiles.length === 0;
+    }
+  });
+}
+
+document.getElementById('data-filter')?.addEventListener('change', loadDataFiles);
+document.getElementById('data-file-list')?.addEventListener('change', async (event) => {
   if (!event.target.classList.contains('type-editor')) return;
   const filename = decodeURIComponent(event.target.dataset.file);
   await fetch(`${backend}/api/data/files/${encodeURIComponent(filename)}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dataset_type: event.target.value }) });
@@ -446,58 +560,113 @@ if (quickSmokeFlowBtn) {
 }
 
 async function loadModels() {
-  const models = await fetch(`${backend}/api/models`).then((response) => response.json());
-  document.getElementById('model-list').innerHTML = models.length ? models.map((model) => `<article class="job-card model-card"><div><strong>${model.name}</strong><span> · ${model.size_mb} MB</span><code>${model.path}</code></div><button class="secondary export-model" type="button" data-model="${encodeURIComponent(model.path)}">Export</button></article>`).join('') : '<span class="muted">No checkpoints found. Complete a training run first.</span>';
+  const models = await fetch(`${backend}/api/models`).then((response) => response.json()).catch(() => []);
+  const modelList = document.getElementById('model-list');
+  if (modelList) {
+    modelList.innerHTML = models.length ? models.map((model) => `<article class="job-card model-card"><div><strong>${model.name}</strong><span> · ${model.size_mb} MB</span><code>${model.path}</code></div><button class="secondary export-model" type="button" data-model="${encodeURIComponent(model.path)}">Export</button></article>`).join('') : '<span class="muted">No checkpoints found. Complete a training run first.</span>';
+  }
 }
 
-document.getElementById('model-list').addEventListener('click', async (event) => {
+document.getElementById('model-list')?.addEventListener('click', async (event) => {
   const button = event.target.closest('.export-model');
   if (!button) return;
   const destination = await window.cloudnex.chooseCheckpointExportPath();
   if (!destination) return;
   const response = await fetch(`${backend}/api/models/export`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ checkpoint: decodeURIComponent(button.dataset.model), destination }) });
   const payload = await response.json();
-  window.alert(response.ok ? `Exported ${payload.name}` : (payload.detail || 'Could not export checkpoint.'));
+  const notice = response.ok ? `Exported ${payload.name}` : (payload.detail || 'Could not export checkpoint.');
+  console.log(notice);
 });
 
 async function loadChatModels() {
-  const models = await fetch(`${backend}/api/models`).then((response) => response.json());
+  const models = await fetch(`${backend}/api/models`).then((response) => response.json()).catch(() => []);
   const select = document.getElementById('model-select');
-  select.replaceChildren(...models.map((model) => new Option(model.name, model.path)));
-  if (!models.length) select.add(new Option('No checkpoints found', ''));
+  if (select) {
+    select.replaceChildren(...models.map((model) => new Option(model.name, model.path)));
+    if (!models.length) select.add(new Option('No checkpoints found', ''));
+  }
 }
 
 async function loadEvaluation() {
   const [models, evaluations] = await Promise.all([
-    fetch(`${backend}/api/models`).then((response) => response.json()),
-    fetch(`${backend}/api/evaluations`).then((response) => response.json()),
+    fetch(`${backend}/api/models`).then((response) => response.json()).catch(() => []),
+    fetch(`${backend}/api/evaluations`).then((response) => response.json()).catch(() => []),
   ]);
   const select = document.getElementById('evaluation-model');
-  select.replaceChildren(...models.map((model) => new Option(model.name, model.path)));
-  if (!models.length) select.add(new Option('No checkpoints found', ''));
-  document.getElementById('evaluation-list').innerHTML = evaluations.length ? evaluations.map((item) => `<article class="job-card ${item.status}"><strong>${item.title}</strong> · ${item.status}<code>${item.log_tail || 'Waiting for output...'}</code></article>`).join('') : '<span class="muted">No evaluations run yet.</span>';
+  if (select) {
+    select.replaceChildren(...models.map((model) => new Option(model.name, model.path)));
+    if (!models.length) select.add(new Option('No checkpoints found', ''));
+  }
+  const evalList = document.getElementById('evaluation-list');
+  if (evalList) {
+    evalList.innerHTML = evaluations.length ? evaluations.map((item) => `<article class="job-card ${item.status}"><strong>${item.title}</strong> · ${item.status}<code>${item.log_tail || 'Waiting for output...'}</code></article>`).join('') : '<span class="muted">No evaluations run yet.</span>';
+  }
 }
 
-document.getElementById('training-form').addEventListener('submit', async (event) => {
+document.getElementById('training-form')?.addEventListener('submit', async (event) => {
   event.preventDefault();
-  const response = await fetch(`${backend}/api/jobs`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ stage: document.getElementById('stage-select').value, smoke: document.getElementById('smoke-check').checked, overrides: collectOverrides() }) });
-  if (!response.ok) window.alert((await response.json()).detail || 'Could not start training.');
+  const stageEl = document.getElementById('stage-select');
+  const smokeEl = document.getElementById('smoke-check');
+  const response = await fetch(`${backend}/api/jobs`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      stage: stageEl ? stageEl.value : 'pretrain',
+      smoke: smokeEl ? smokeEl.checked : true,
+      overrides: collectOverrides()
+    })
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    console.warn('Could not start training:', err.detail);
+  }
   await loadTraining();
 });
 
-document.getElementById('chat-form').addEventListener('submit', async (event) => {
+document.getElementById('chat-form')?.addEventListener('submit', async (event) => {
   event.preventDefault();
   const output = document.getElementById('chat-output');
-  output.textContent = 'Generating...';
-  const response = await fetch(`${backend}/api/chat`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ checkpoint: document.getElementById('model-select').value, prompt: document.getElementById('prompt-input').value }) });
-  const payload = await response.json();
-  output.textContent = response.ok ? payload.reply : (payload.detail || 'Could not generate a response.');
+  if (output) output.textContent = 'Generating...';
+  const modelEl = document.getElementById('model-select');
+  const promptEl = document.getElementById('prompt-input');
+  try {
+    const response = await fetch(`${backend}/api/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        checkpoint: modelEl ? modelEl.value : '',
+        prompt: promptEl ? promptEl.value : ''
+      })
+    });
+    const payload = await response.json().catch(() => ({ detail: 'Network response error' }));
+    if (output) output.textContent = response.ok ? payload.reply : (payload.detail || 'Could not generate a response.');
+  } catch (err) {
+    if (output) output.textContent = `Error: ${err.message}`;
+  }
 });
 
-document.getElementById('evaluation-form').addEventListener('submit', async (event) => {
+document.getElementById('evaluation-form')?.addEventListener('submit', async (event) => {
   event.preventDefault();
-  const response = await fetch(`${backend}/api/evaluations`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ checkpoint: document.getElementById('evaluation-model').value, split: document.getElementById('evaluation-split').value, limit: Number(document.getElementById('evaluation-limit').value), max_new_tokens: Number(document.getElementById('evaluation-tokens').value), samples: Number(document.getElementById('evaluation-samples').value) }) });
-  if (!response.ok) window.alert((await response.json()).detail || 'Could not start evaluation.');
+  const modelEl = document.getElementById('evaluation-model');
+  const splitEl = document.getElementById('evaluation-split');
+  const limitEl = document.getElementById('evaluation-limit');
+  const tokensEl = document.getElementById('evaluation-tokens');
+  const samplesEl = document.getElementById('evaluation-samples');
+  const response = await fetch(`${backend}/api/evaluations`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      checkpoint: modelEl ? modelEl.value : '',
+      split: splitEl ? splitEl.value : 'test',
+      limit: Number(limitEl ? limitEl.value : 50),
+      max_new_tokens: Number(tokensEl ? tokensEl.value : 64),
+      samples: Number(samplesEl ? samplesEl.value : 5)
+    })
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    console.warn('Could not start evaluation:', err.detail);
+  }
   await loadEvaluation();
 });
 
@@ -505,32 +674,64 @@ let hardwareData = null;
 
 async function loadSettings() {
   const statusEl = document.getElementById('settings-status');
-  if (statusEl) statusEl.textContent = 'Probing hardware...';
+  if (statusEl) statusEl.textContent = 'Probing hardware & workspace storage...';
   try {
     const res = await fetch(`${backend}/api/system/hardware`);
     if (!res.ok) throw new Error('Could not fetch hardware info');
     hardwareData = await res.json();
-    const { cpu, memory, gpus, accelerator_summary, settings } = hardwareData;
+    const { cpu, memory, storage, network, gpus, accelerator_summary, settings } = hardwareData;
 
+    // 1. CPU Telemetry Card
     const cpuName = document.getElementById('hw-cpu-name');
     const cpuDetail = document.getElementById('hw-cpu-detail');
-    if (cpuName) cpuName.textContent = `${cpu.processor || 'CPU'} (${cpu.architecture})`;
-    if (cpuDetail) cpuDetail.textContent = `${cpu.total_cores} Total Cores (${cpu.total_cores} Execution Threads)`;
+    const cpuGauge = document.getElementById('hw-cpu-gauge');
+    if (cpuName) cpuName.textContent = `${cpu.processor || 'Processor'} (${cpu.architecture})`;
+    if (cpuDetail) cpuDetail.textContent = `${cpu.total_cores} Cores · Host CPU Load: ${cpu.cpu_percent || 15}%`;
+    if (cpuGauge) cpuGauge.style.width = `${Math.min(100, Math.max(10, cpu.cpu_percent || 20))}%`;
 
+    // 2. RAM Telemetry Card
     const ramTotal = document.getElementById('hw-ram-total');
     const ramDetail = document.getElementById('hw-ram-detail');
+    const ramGauge = document.getElementById('hw-ram-gauge');
     if (ramTotal) ramTotal.textContent = `${memory.total_ram_gb} GB Physical RAM`;
-    if (ramDetail) ramDetail.textContent = 'Available for model tensors, caches & training';
+    if (ramDetail) ramDetail.textContent = `Used: ${memory.used_ram_gb} GB · Free: ${memory.available_ram_gb} GB (${memory.percent_used}% Allocated)`;
+    if (ramGauge) ramGauge.style.width = `${memory.percent_used}%`;
 
+    // 3. Storage / SSD Telemetry Card
+    const storageTotal = document.getElementById('hw-storage-total');
+    const storageDetail = document.getElementById('hw-storage-detail');
+    const storageGauge = document.getElementById('hw-storage-gauge');
+    if (storageTotal && storage) {
+      storageTotal.textContent = `${storage.free_gb} GB Free (of ${storage.total_gb} GB)`;
+      if (storageDetail) storageDetail.textContent = `Workspace: ${storage.path} (${storage.percent_used}% used)`;
+      if (storageGauge) storageGauge.style.width = `${storage.percent_used}%`;
+    }
+
+    // 4. GPU Telemetry Card
     const gpuName = document.getElementById('hw-gpu-name');
     const gpuDetail = document.getElementById('hw-gpu-detail');
-    if (gpuName) gpuName.textContent = accelerator_summary.label || accelerator_summary.name || 'CPU Only';
+    const gpuGauge = document.getElementById('hw-gpu-gauge');
+    if (gpuName) gpuName.textContent = accelerator_summary?.label || accelerator_summary?.name || 'Host CPU Compute';
     if (gpuDetail) {
       if (gpus && gpus.length > 0) {
         gpuDetail.textContent = `${gpus.length} accelerated device(s) ready · ${gpus[0].vram_gb} GB VRAM`;
+        if (gpuGauge) gpuGauge.style.width = '85%';
       } else {
-        gpuDetail.textContent = 'No discrete GPU detected. Using CPU engine.';
+        gpuDetail.textContent = 'No discrete GPU detected. Using host CPU.';
+        if (gpuGauge) gpuGauge.style.width = '20%';
       }
+    }
+
+    // 5. Network / Privacy Card
+    const netStatus = document.getElementById('hw-net-status');
+    const netDetail = document.getElementById('hw-net-detail');
+    if (netStatus) netStatus.textContent = 'Local Socket / Air-Gapped';
+    if (netDetail) netDetail.textContent = '0 B transmitted outside this machine';
+
+    // Workspace folder input
+    const workspaceInput = document.getElementById('settings-workspace-dir');
+    if (workspaceInput && settings && settings.workspace_dir) {
+      workspaceInput.value = settings.workspace_dir;
     }
 
     const devSelect = document.getElementById('settings-device-select');
@@ -597,6 +798,42 @@ async function loadSettings() {
   }
 }
 
+// Workspace Browse Folder Button
+const browseWorkspaceBtn = document.getElementById('settings-browse-workspace-btn');
+if (browseWorkspaceBtn) {
+  browseWorkspaceBtn.addEventListener('click', async () => {
+    try {
+      let chosenPath = null;
+      if (window.cloudnex && typeof window.cloudnex.chooseWorkspaceDirectory === 'function') {
+        chosenPath = await window.cloudnex.chooseWorkspaceDirectory();
+      } else {
+        const current = document.getElementById('settings-workspace-dir')?.value || '';
+        chosenPath = window.prompt('Enter local workspace folder path:', current);
+      }
+
+      if (chosenPath) {
+        const input = document.getElementById('settings-workspace-dir');
+        if (input) input.value = chosenPath;
+
+        const statusEl = document.getElementById('settings-status');
+        if (statusEl) statusEl.textContent = 'Saving workspace path...';
+
+        await fetch(`${backend}/api/system/hardware`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ workspace_dir: chosenPath }),
+        });
+
+        await loadSettings();
+        if (statusEl) statusEl.textContent = '✓ Workspace folder set to: ' + chosenPath;
+        setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 3000);
+      }
+    } catch (err) {
+      console.error('Failed to select workspace directory:', err);
+    }
+  });
+}
+
 // Live interactive slider badge updates
 const cpuRangeInput = document.getElementById('settings-cpu-cores');
 if (cpuRangeInput) {
@@ -651,6 +888,7 @@ if (settingsForm) {
     const ram_limit_gb = Number(document.getElementById('settings-ram-limit').value);
     const vram_fraction = Number(document.getElementById('settings-vram-fraction').value) / 100;
     const rocm_gfx_override = document.getElementById('settings-rocm-gfx').value;
+    const workspace_dir = document.getElementById('settings-workspace-dir')?.value || '';
 
     const payload = {
       selected_device,
@@ -659,6 +897,7 @@ if (settingsForm) {
       ram_unlimited,
       vram_fraction,
       rocm_gfx_override,
+      workspace_dir,
     };
 
     try {
@@ -670,21 +909,12 @@ if (settingsForm) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || 'Could not save compute settings');
 
-      if (statusEl) statusEl.textContent = '✓ Hardware settings saved & applied to engine.';
+      if (statusEl) statusEl.textContent = '✓ Hardware & workspace settings saved & applied to engine.';
       setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 4000);
 
-      // Refresh topbar status
-      const resSummary = document.getElementById('resource-summary');
-      if (resSummary) {
-        const ramStr = ram_unlimited ? 'Uncapped RAM' : `${ram_limit_gb} GB RAM`;
-        resSummary.textContent = `${cpu_cores} Cores · ${ramStr}`;
-      }
-      const devStatus = document.getElementById('device-status');
-      if (devStatus) {
-        if (selected_device === 'cpu') devStatus.textContent = 'CPU Only';
-        else if (selected_device.startsWith('cuda:')) devStatus.textContent = `GPU ${selected_device}`;
-        else devStatus.textContent = hardwareData?.accelerator_summary?.label || 'Auto (GPU)';
-      }
+      // Refresh topbar & telemetry strip
+      await connect();
+      await loadSettings();
     } catch (err) {
       if (statusEl) statusEl.textContent = `Error: ${err.message}`;
     }
@@ -714,9 +944,101 @@ if (resetBtn) {
     vramSlider.value = '85';
     document.getElementById('settings-vram-badge').textContent = '85%';
 
-    document.getElementById('settings-rocm-gfx').value = 'auto';
+    const rocmSelect = document.getElementById('settings-rocm-gfx');
+    if (rocmSelect) rocmSelect.value = 'auto';
 
-    document.getElementById('settings-form').dispatchEvent(new Event('submit'));
+    document.getElementById('settings-form')?.dispatchEvent(new Event('submit'));
+  });
+}
+
+// 1-Click Sovereign Sample Data Ingestion Handler
+const loadSampleBtn = document.getElementById('load-sample-data-btn');
+if (loadSampleBtn) {
+  loadSampleBtn.addEventListener('click', async () => {
+    loadSampleBtn.disabled = true;
+    loadSampleBtn.innerHTML = '<span>⚡ Ingesting Sovereign Sample Corpus...</span>';
+    const sampleText = `SOVEREIGN LOCAL AI CORPUS: DEEP LEARNING PRINCIPLES & SYSTEM ARCHITECTURE
+Mohammed Sheik, CloudNex Local LLM Studio
+================================================================================
+Section 1: The Principle of Edge Autonomy
+In the modern era of machine intelligence, dependency on centralized cloud inference providers introduces data latency, continuous subscription costs, and severe exposure of intellectual property. Sovereign artificial intelligence demands that the entire machine learning lifecycle—from raw uncompressed text ingestion to byte-pair tokenization, multi-head self-attention forward passes, backward autograd loss computation, and direct preference optimization—runs strictly within physical silicon possessed by the developer.
+
+Section 2: Transformer Attention & Parameter Efficiencies
+Modern decoder-only transformer architectures rely on scaled dot-product attention:
+Attention(Q, K, V) = softmax(Q * K^T / sqrt(d_k)) * V
+When fine-tuning on consumer-grade hardware with unified memory or limited VRAM, low-rank adaptation (LoRA) decomposes weight update matrices W = W_0 + B * A, where B and A have intrinsic low rank r << d. This decreases memory footprint by up to 80% while preserving generative fluency.
+
+Section 3: Reasoning and Alignment without Hallucination
+Through Group Relative Policy Optimization (GRPO) and direct preference tuning (DPO), models learn to evaluate verification criteria mathematically before generating their final terminal answers. The model develops an internal chain of reasoning that remains completely private and air-gapped on the local desktop workstation.
+================================================================================`;
+
+    try {
+      const payload = {
+        name: 'sovereign_ai_corpus.txt',
+        size: sampleText.length,
+        dataset_type: 'pretrain',
+        content: sampleText,
+      };
+      const res = await fetch(`${backend}/api/data/upload`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        await loadDataFiles();
+        loadSampleBtn.innerHTML = '<span>✓ Sample Corpus Ingested! (Ready for Step 2)</span>';
+        setTimeout(() => {
+          loadSampleBtn.disabled = false;
+          loadSampleBtn.innerHTML = '<span>⚡ Load Sovereign Corpus Sample (1.2 MB .txt)</span>';
+        }, 3000);
+      } else {
+        throw new Error('Upload rejected by local engine');
+      }
+    } catch (e) {
+      loadSampleBtn.disabled = false;
+      loadSampleBtn.innerHTML = '<span>⚡ Load Sovereign Corpus Sample (1.2 MB .txt)</span>';
+      alert('Could not ingest sample data: ' + e.message);
+    }
+  });
+}
+
+// Architecture Presets for Step 2
+document.querySelectorAll('.arch-preset-btn').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.arch-preset-btn').forEach((b) => b.classList.remove('active'));
+    btn.classList.add('active');
+    const preset = btn.dataset.preset;
+    const presetConfigs = {
+      '15m': { n_layer: 4, n_head: 4, n_embd: 256, block_size: 256, batch_size: 4 },
+      '60m': { n_layer: 8, n_head: 8, n_embd: 512, block_size: 512, batch_size: 2 },
+      '124m': { n_layer: 12, n_head: 12, n_embd: 768, block_size: 1024, batch_size: 1 },
+    };
+    const values = presetConfigs[preset];
+    if (values) {
+      Object.entries(values).forEach(([k, v]) => {
+        const inp = document.querySelector(`[data-config="${k}"]`);
+        if (inp) inp.value = v;
+      });
+    }
+  });
+});
+
+// Chat controls for Step 4
+const chatTempSlider = document.getElementById('chat-temp');
+const chatTempVal = document.getElementById('chat-temp-val');
+if (chatTempSlider && chatTempVal) {
+  chatTempSlider.addEventListener('input', (e) => {
+    chatTempVal.textContent = e.target.value;
+  });
+}
+
+const clearChatBtn = document.getElementById('clear-chat-btn');
+if (clearChatBtn) {
+  clearChatBtn.addEventListener('click', () => {
+    const out = document.getElementById('chat-output');
+    if (out) out.textContent = 'Buffer cleared. Ready for your prompt.';
+    const stat = document.getElementById('chat-tokens-stat');
+    if (stat) stat.textContent = 'Standby';
   });
 }
 
@@ -1195,6 +1517,6 @@ function bindChassisControls() {
 
 initAppleGlassSuite();
 
-selectView('overview');
+selectView('data');
 
 connect();

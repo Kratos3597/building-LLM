@@ -42,26 +42,23 @@
 
     <!-- Center 4-Step Personal LLM Workflow Navigation -->
     <div class="nav-mode-switcher" role="tablist">
-      <button class="nav-mode-btn active nav-item" type="button" data-view="overview">
-        <span>⚡ Studio Deck</span>
+      <button class="nav-mode-btn active nav-item" type="button" data-view="data" id="nav-btn-step1">
+        <span>🗎 Step 1: Ingest Data</span>
       </button>
-      <button class="nav-mode-btn nav-item" type="button" data-view="data">
-        <span>🗎 1. Ingest .TXT</span>
+      <button class="nav-mode-btn nav-item" type="button" data-view="training" id="nav-btn-step2">
+        <span>⚙ Step 2: Model Setup</span>
       </button>
-      <button class="nav-mode-btn nav-item" type="button" data-view="training">
-        <span>🏋 2. Train Model</span>
+      <button class="nav-mode-btn nav-item" type="button" data-view="models" id="nav-btn-step3">
+        <span>⚡ Step 3: Train &amp; Monitor</span>
       </button>
-      <button class="nav-mode-btn nav-item" type="button" data-view="models">
-        <span>💾 3. Checkpoints</span>
+      <button class="nav-mode-btn nav-item" type="button" data-view="chat" id="nav-btn-step4">
+        <span>💬 Step 4: Chat &amp; Test</span>
       </button>
-      <button class="nav-mode-btn nav-item" type="button" data-view="chat">
-        <span>💬 4. Local Chat</span>
+      <button class="nav-mode-btn nav-item" type="button" data-view="settings" id="nav-btn-settings">
+        <span>🛠 Hardware &amp; Folder Config</span>
       </button>
       <button class="nav-mode-btn nav-item" type="button" data-view="evaluation">
         <span>📊 Benchmarks</span>
-      </button>
-      <button class="nav-mode-btn nav-item" type="button" data-view="settings">
-        <span>⚙ Hardware</span>
       </button>
       <button class="nav-mode-btn nav-item" type="button" data-view="about">
         <span>👤 Founder</span>
@@ -102,98 +99,81 @@
         <div class="window-header-meta">
           <div class="window-engine-pill">
             <span class="status-dot ready"></span>
-            <span id="connection-status">Engine Ready</span>
+            <span id="engine-status">Engine Ready</span>
           </div>
           <button class="glass-icon-btn nav-item" type="button" data-view="settings" title="Hardware Settings">⚙</button>
         </div>
       </div>
 
-      <!-- Studio View Switcher Tabs (Shown for Studio Navigation) -->
-      <div class="apple-studio-tabs-row" id="studio-tabs-row" aria-label="Studio Modes">
-        <button class="studio-tab-btn nav-item active" type="button" data-view="overview">⊞ Overview Deck</button>
-        <button class="studio-tab-btn nav-item" type="button" data-view="data">🗎 1. Ingest Plain .TXT</button>
-        <button class="studio-tab-btn nav-item" type="button" data-view="training">⚡ 2. Train Studio</button>
-        <button class="studio-tab-btn nav-item" type="button" data-view="models">💾 3. Checkpoints &amp; Export</button>
-        <button class="studio-tab-btn nav-item" type="button" data-view="chat">💬 4. Local Chat</button>
-        <button class="studio-tab-btn nav-item" type="button" data-view="evaluation">📊 Leaderboard</button>
-        <button class="studio-tab-btn nav-item" type="button" data-view="settings">⚙ Hardware Rack</button>
-        <button class="studio-tab-btn nav-item" type="button" data-view="about">👤 Architect</button>
-        <button class="studio-tab-btn nav-item" type="button" data-view="terms">📜 License</button>
-      </div>
+      <!-- LINEAR 4-STEP WIZARD NAVIGATION BAR (Clean, Guided Flow) -->
+      <nav class="linear-step-wizard" id="step-wizard-bar" aria-label="Step-by-Step Training Workflow">
+        <button type="button" class="wizard-step-pill nav-item active" data-view="data" id="step-btn-data">
+          <span class="step-badge">1</span>
+          <div class="step-meta">
+            <strong>1. Ingest Data</strong>
+            <small>Upload .TXT / Datasets</small>
+          </div>
+        </button>
+        <span class="wizard-step-arrow">→</span>
 
-      <!-- INTERACTIVE APPLE GLASS ACCELERATOR & HARDWARE CONTROL CHASSIS -->
-      <section class="apple-hardware-chassis-bar" id="hardware-chassis-bar" aria-label="Hardware Acceleration Chassis">
-        <div class="chassis-glow-bar"></div>
-        
-        <!-- 1. Compute Backend 4-Way Segmented Switcher -->
-        <div class="chassis-block accelerator-block">
-          <div class="chassis-label-row">
-            <span class="chassis-eyebrow">ACCELERATION BACKEND</span>
-            <span class="chassis-badge live-pulse" id="chassis-acc-badge">ROCm 6.2 ACTIVE</span>
+        <button type="button" class="wizard-step-pill nav-item" data-view="training" id="step-btn-training">
+          <span class="step-badge">2</span>
+          <div class="step-meta">
+            <strong>2. Model Setup</strong>
+            <small>Presets &amp; Parameters</small>
           </div>
-          <div class="chassis-segmented-slider" id="accelerator-switcher" role="radiogroup">
-            <button type="button" class="acc-mode-btn active" data-acc="rocm" role="radio" aria-checked="true">
-              <span class="acc-logo rocm-logo">🟣</span>
-              <span class="acc-text">AMD ROCm</span>
-            </button>
-            <button type="button" class="acc-mode-btn" data-acc="cuda" role="radio" aria-checked="false">
-              <span class="acc-logo cuda-logo">🟢</span>
-              <span class="acc-text">NVIDIA CUDA</span>
-            </button>
-            <button type="button" class="acc-mode-btn" data-acc="mps" role="radio" aria-checked="false">
-              <span class="acc-logo mps-logo">⚪</span>
-              <span class="acc-text">Apple Silicon MPS</span>
-            </button>
-            <button type="button" class="acc-mode-btn" data-acc="cpu" role="radio" aria-checked="false">
-              <span class="acc-logo cpu-logo">🔵</span>
-              <span class="acc-text">CPU Multicore</span>
-            </button>
+        </button>
+        <span class="wizard-step-arrow">→</span>
+
+        <button type="button" class="wizard-step-pill nav-item" data-view="models" id="step-btn-models">
+          <span class="step-badge">3</span>
+          <div class="step-meta">
+            <strong>3. Train &amp; Monitor</strong>
+            <small>Loss &amp; Checkpoints</small>
           </div>
+        </button>
+        <span class="wizard-step-arrow">→</span>
+
+        <button type="button" class="wizard-step-pill nav-item" data-view="chat" id="step-btn-chat">
+          <span class="step-badge">4</span>
+          <div class="step-meta">
+            <strong>4. Chat &amp; Test</strong>
+            <small>Prompt Your LLM</small>
+          </div>
+        </button>
+
+        <div class="wizard-hardware-telemetry-pill nav-item" data-view="settings" id="step-hw-telemetry-pill" title="Click to open Hardware Settings, RAM limit, and folder selection">
+          <span class="hw-pill-icon">💻</span>
+          <div class="hw-pill-content">
+            <strong class="hw-pill-name" id="hw-pill-device">Probing Host Hardware...</strong>
+            <small class="hw-pill-stats" id="hw-pill-stats">Loading RAM &amp; SSD Stats...</small>
+          </div>
+          <span class="hw-pill-action">⚙ Settings</span>
         </div>
+      </nav>
 
-        <!-- 2. Interactive VRAM Ceiling Control -->
-        <div class="chassis-block vram-block">
-          <div class="chassis-label-row">
-            <span class="chassis-eyebrow">GPU VRAM CEILING</span>
-            <strong class="chassis-val" id="chassis-vram-label">85% · 13.6 / 16 GB</strong>
-          </div>
-          <div class="chassis-slider-wrap">
-            <input type="range" id="chassis-vram-slider" min="0.3" max="0.95" step="0.05" value="0.85" class="apple-glass-slider chassis-slider" />
-          </div>
-        </div>
-
-        <!-- 3. CPU Threads Budget Toggles -->
-        <div class="chassis-block cores-block">
-          <div class="chassis-label-row">
-            <span class="chassis-eyebrow">CPU THREAD BUDGET</span>
-            <strong class="chassis-val" id="chassis-cores-label">4 Cores</strong>
-          </div>
-          <div class="chassis-cores-pills" id="cores-quick-pills">
-            <button type="button" class="core-pill" data-cores="2">2C</button>
-            <button type="button" class="core-pill active" data-cores="4">4C</button>
-            <button type="button" class="core-pill" data-cores="8">8C</button>
-            <button type="button" class="core-pill" data-cores="16">16C</button>
-          </div>
-        </div>
-
-        <!-- 4. System RAM Limit Toggle -->
-        <div class="chassis-block ram-block">
-          <div class="chassis-label-row">
-            <span class="chassis-eyebrow">RAM CEILING</span>
-            <strong class="chassis-val" id="chassis-ram-label">16 GB Limit</strong>
-          </div>
-          <div class="chassis-ram-controls">
-            <button type="button" class="chassis-toggle-btn" id="chassis-ram-toggle-btn">Uncapped RAM: OFF</button>
-          </div>
-        </div>
-      </section>
-
-      <!-- METRICS STRIP (FROSTED GLASS CARDS) -->
+      <!-- METRICS STRIP (TRUE REAL-TIME TELEMETRY FROM LOCAL HARDWARE) -->
       <section class="metrics apple-glass-metrics" aria-label="Workspace metrics">
-        <article><span class="metric-label">ENGINE</span><strong id="engine-status">Online</strong><small>PyTorch 2.4 Sidecar</small></article>
-        <article><span class="metric-label">DEVICE</span><strong id="device-status">AMD ROCm / CUDA</strong><small id="device-sublabel">Hardware Acceleration</small></article>
-        <article><span class="metric-label">ALLOCATION</span><strong id="resource-summary">4 Cores · 16 GB RAM</strong><small id="resource-sublabel">Thermal Safety Active</small></article>
-        <article><span class="metric-label">PRIVACY</span><strong>100% On-Device</strong><small>Zero Telemetry Sovereign</small></article>
+        <article>
+          <span class="metric-label">ACCELERATOR</span>
+          <strong id="device-status">Detecting...</strong>
+          <small id="device-sublabel">PyTorch Engine</small>
+        </article>
+        <article>
+          <span class="metric-label">HOST RAM</span>
+          <strong id="metric-ram-display">Detecting...</strong>
+          <small id="metric-ram-sublabel">Memory Ceiling Active</small>
+        </article>
+        <article>
+          <span class="metric-label">STORAGE (SSD)</span>
+          <strong id="metric-ssd-display">Detecting...</strong>
+          <small id="metric-ssd-sublabel">Workspace Storage</small>
+        </article>
+        <article>
+          <span class="metric-label">AIR-GAPPED SOVEREIGNTY</span>
+          <strong id="metric-priv-display">100% On-Device</strong>
+          <small id="metric-priv-sublabel">Zero Cloud Telemetry</small>
+        </article>
       </section>
 
       <!-- WORKSPACE PANELS -->
@@ -557,6 +537,16 @@
           </div>
         </form>
 
+        <div class="sample-dataset-strip">
+          <div class="sample-info">
+            <strong>Need a fast start?</strong>
+            <small>Test the end-to-end LLM training pipeline immediately with zero file searching.</small>
+          </div>
+          <button type="button" id="load-sample-data-btn" class="secondary sample-pill">
+            <span>⚡ Load Sovereign Corpus Sample (1.2 MB .txt)</span>
+          </button>
+        </div>
+
         <div class="data-toolbar">
           <label for="data-filter">Filter
             <select id="data-filter">
@@ -573,57 +563,251 @@
 
         <div id="upload-status" class="upload-status" aria-live="polite"></div>
         <div id="data-file-list" class="job-list"></div>
+
+        <div class="step-navigation-footer">
+          <span class="step-footer-hint">Step 1 complete? Datasets ready for tokenizer context windowing.</span>
+          <button type="button" class="primary wizard-next-btn" data-view="training">
+            <span>Continue to Step 2: Model Setup</span> →
+          </button>
+        </div>
       </div>
-      <div id="training-content" class="hidden training-content"><div><span class="panel-kicker">TRAINING RUN</span><h2>Launch a local experiment.</h2><p>The backend runs the existing PyTorch stage scripts and keeps their logs in your CloudNex workspace.</p></div><form id="training-form"><div class="training-toolbar"><label for="stage-select">Stage<select id="stage-select"></select></label><label class="check-row"><input id="smoke-check" type="checkbox" checked> Use smoke configuration</label></div><div id="config-editor" class="config-editor"></div><button class="primary" type="submit">Start training <span>→</span></button></form><div class="chart-panel"><div class="chart-heading"><span class="panel-kicker">METRICS</span><span id="chart-summary">Waiting for metrics</span></div><div id="metrics-chart" class="metrics-chart"></div></div><div id="job-list" class="job-list"></div></div>
-      <div id="models-content" class="hidden training-content"><div><span class="panel-kicker">CHECKPOINTS</span><h2>Your local model shelf.</h2><p>Checkpoints are read from the CloudNex workspace and the existing training output folder.</p></div><div id="model-list" class="job-list"></div></div>
-      <div id="chat-content" class="hidden training-content"><div><span class="panel-kicker">LOCAL INFERENCE</span><h2>Talk to a checkpoint.</h2><p>Choose a local model and send prompts through the private Python engine.</p></div><form id="chat-form"><label for="model-select">Model<select id="model-select"></select></label><label for="prompt-input">Prompt<textarea id="prompt-input" rows="4" placeholder="Ask your local model something..."></textarea></label><button class="primary" type="submit">Send prompt <span>→</span></button></form><pre id="chat-output" class="chat-output">Your response will appear here.</pre></div>
-      <div id="evaluation-content" class="hidden training-content"><div><span class="panel-kicker">MODEL EVALUATION</span><h2>Measure a checkpoint.</h2><p>Run GSM8K locally and compare accuracy, correct answers, and sample generations.</p></div><form id="evaluation-form"><label for="evaluation-model">Checkpoint<select id="evaluation-model"></select></label><div class="evaluation-grid"><label>Split<select id="evaluation-split"><option value="test">Test</option><option value="train">Train</option></select></label><label>Examples<input id="evaluation-limit" type="number" min="1" max="10000" value="200"></label><label>Max tokens<input id="evaluation-tokens" type="number" min="1" max="2048" value="300"></label><label>Samples<input id="evaluation-samples" type="number" min="0" max="20" value="3"></label></div><button class="primary" type="submit">Run evaluation <span>→</span></button></form><div id="evaluation-list" class="job-list"></div></div>
-      <div id="settings-content" class="hidden training-content">
-        <div>
-          <span class="panel-kicker">HARDWARE &amp; COMPUTE</span>
-          <h2>Compute Resource Controls</h2>
-          <p>Allocate CPU thread pools, cap memory usage to keep your desktop responsive, and select which GPU accelerator executes training and inference jobs.</p>
+
+      <!-- STEP 2: MODEL SETUP -->
+      <div id="training-content" class="hidden training-content">
+        <div class="section-title-row">
+          <div>
+            <span class="panel-kicker">STEP 2 OF 4: ARCHITECTURE &amp; HYPERPARAMETERS</span>
+            <h2>Configure Your Local Model</h2>
+            <p>Select a pre-configured architecture scale, choose your post-training alignment stage, and fine-tune hyperparameters for your local hardware.</p>
+          </div>
+          <div class="arch-preset-selector">
+            <span class="preset-label">FAST PRESETS:</span>
+            <div class="preset-btn-group">
+              <button type="button" class="arch-preset-btn active" data-preset="15m" title="4 layers · 4 heads · 256 embedding">⚡ Fast 15M (CPU/Mac)</button>
+              <button type="button" class="arch-preset-btn" data-preset="60m" title="8 layers · 8 heads · 512 embedding">🎯 Balanced 60M</button>
+              <button type="button" class="arch-preset-btn" data-preset="124m" title="12 layers · 12 heads · 768 embedding">🧠 GPT-2 124M</button>
+            </div>
+          </div>
         </div>
 
+        <form id="training-form">
+          <div class="training-toolbar">
+            <label for="stage-select">Training Stage
+              <select id="stage-select">
+                <option value="pretrain">1. Pretraining (Raw .TXT)</option>
+                <option value="sft">2. Supervised SFT (Instruction Tuning)</option>
+                <option value="reward">3. Reward Model (Pairwise Scoring)</option>
+                <option value="dpo">4. DPO (Direct Preference Optimization)</option>
+                <option value="grpo">5. GRPO (Reasoning Verification)</option>
+              </select>
+            </label>
+            <label class="check-row">
+              <input id="smoke-check" type="checkbox" checked>
+              <span>Smoke Test Mode (Fast sanity check before full epoch run)</span>
+            </label>
+          </div>
+          <div id="config-editor" class="config-editor"></div>
+          <div class="training-action-row">
+            <button class="secondary" type="button" data-view="data">← Back to Step 1: Ingest Data</button>
+            <button class="primary glow-btn" type="submit" id="start-training-btn"><span>Launch Training Run (Step 3)</span> ⚡</button>
+          </div>
+        </form>
+
+        <div class="chart-panel">
+          <div class="chart-heading">
+            <span class="panel-kicker">TRAINING RUN TELEMETRY &amp; LOSS</span>
+            <span id="chart-summary">Waiting for training run to start...</span>
+          </div>
+          <div id="metrics-chart" class="metrics-chart"></div>
+        </div>
+
+        <div class="step-navigation-footer">
+          <span class="step-footer-hint">Already have checkpoints? Jump ahead to testing.</span>
+          <button type="button" class="primary wizard-next-btn" data-view="models">
+            <span>View Trained Checkpoints (Step 3)</span> →
+          </button>
+        </div>
+      </div>
+
+      <!-- STEP 3: CHECKPOINTS & MONITORING -->
+      <div id="models-content" class="hidden training-content">
+        <div class="section-title-row">
+          <div>
+            <span class="panel-kicker">STEP 3 OF 4: CHECKPOINT SHELF &amp; EXPORT</span>
+            <h2>Trained Model Checkpoints</h2>
+            <p>Your local model weights saved from pretraining, SFT, and alignment runs. Ready for export or real-time local chat inference.</p>
+          </div>
+        </div>
+        <div id="job-list" class="job-list"></div>
+        <div id="model-list" class="job-list"></div>
+        <div class="step-navigation-footer">
+          <span class="step-footer-hint">Pick any checkpoint to talk to it in real time.</span>
+          <button type="button" class="primary wizard-next-btn" data-view="chat">
+            <span>Continue to Step 4: Chat &amp; Test</span> →
+          </button>
+        </div>
+      </div>
+
+      <!-- STEP 4: CHAT & TEST -->
+      <div id="chat-content" class="hidden training-content">
+        <div class="section-title-row">
+          <div>
+            <span class="panel-kicker">STEP 4 OF 4: LOCAL INFERENCE &amp; CHAT</span>
+            <h2>Talk to Your Sovereign Model</h2>
+            <p>Send prompts and observe responses generated 100% on your local CPU or GPU with zero cloud transmission.</p>
+          </div>
+        </div>
+        <form id="chat-form">
+          <div class="chat-controls-row">
+            <label for="model-select">Active Checkpoint
+              <select id="model-select"></select>
+            </label>
+            <div class="chat-temp-slider">
+              <label for="chat-temp">Temperature: <span id="chat-temp-val">0.7</span></label>
+              <input type="range" id="chat-temp" min="0.1" max="1.5" step="0.1" value="0.7">
+            </div>
+          </div>
+          <label for="prompt-input">Prompt
+            <textarea id="prompt-input" rows="4" placeholder="Enter your prompt to test your model's knowledge or reasoning..."></textarea>
+          </label>
+          <div class="chat-action-row">
+            <button class="primary glow-btn" type="submit">Generate Local Response <span>→</span></button>
+            <button class="secondary" type="button" id="clear-chat-btn">Clear Output</button>
+          </div>
+        </form>
+        <div class="chat-output-card">
+          <div class="output-header">
+            <span>INFERENCE GENERATION BUFFER</span>
+            <span id="chat-tokens-stat">Standby</span>
+          </div>
+          <pre id="chat-output" class="chat-output">Your local model response will stream here...</pre>
+        </div>
+      </div>
+
+      <!-- EVALUATION & BENCHMARKS -->
+      <div id="evaluation-content" class="hidden training-content">
+        <div>
+          <span class="panel-kicker">MODEL EVALUATION</span>
+          <h2>Measure a Checkpoint</h2>
+          <p>Run GSM8K or logic benchmarks locally to compare accuracy and sample generations.</p>
+        </div>
+        <form id="evaluation-form">
+          <label for="evaluation-model">Checkpoint<select id="evaluation-model"></select></label>
+          <div class="evaluation-grid">
+            <label>Split
+              <select id="evaluation-split">
+                <option value="test">Test</option>
+                <option value="train">Train</option>
+              </select>
+            </label>
+            <label>Examples<input id="evaluation-limit" type="number" min="1" max="10000" value="200"></label>
+            <label>Max tokens<input id="evaluation-tokens" type="number" min="1" max="2048" value="300"></label>
+            <label>Samples<input id="evaluation-samples" type="number" min="0" max="20" value="3"></label>
+          </div>
+          <button class="primary" type="submit">Run evaluation <span>→</span></button>
+        </form>
+        <div id="evaluation-list" class="job-list"></div>
+      </div>
+
+      <!-- SETTINGS & HARDWARE TELEMETRY -->
+      <div id="settings-content" class="hidden training-content">
+        <div>
+          <span class="panel-kicker">HARDWARE TELEMETRY &amp; SYSTEM CONFIGURATION</span>
+          <h2>Local Hardware Rack &amp; Workspace Config</h2>
+          <p>Real-time physical telemetry from your machine. Configure local storage directories, adjust RAM and GPU headroom, and tune thread pools.</p>
+        </div>
+
+        <!-- 5 REAL-TIME TELEMETRY HUD CARDS -->
         <div class="hardware-overview-grid">
+          <!-- 1. CPU Card -->
           <div class="hw-summary-card">
-            <span class="hw-card-label">CPU ARCHITECTURE</span>
-            <strong id="hw-cpu-name">Probing processor...</strong>
-            <small id="hw-cpu-detail">Loading thread pool</small>
+            <span class="hw-card-label">PROCESSOR &amp; LOAD</span>
+            <strong id="hw-cpu-name">Probing CPU...</strong>
+            <small id="hw-cpu-detail">Threads &amp; cores</small>
+            <div class="hw-gauge-wrap">
+              <div class="hw-gauge-bar" id="hw-cpu-gauge" style="width: 25%;"></div>
+            </div>
           </div>
+
+          <!-- 2. RAM Card -->
           <div class="hw-summary-card">
-            <span class="hw-card-label">HOST MEMORY</span>
+            <span class="hw-card-label">PHYSICAL RAM</span>
             <strong id="hw-ram-total">Probing RAM...</strong>
-            <small id="hw-ram-detail">Total system physical memory</small>
+            <small id="hw-ram-detail">Memory allocation</small>
+            <div class="hw-gauge-wrap">
+              <div class="hw-gauge-bar" id="hw-ram-gauge" style="width: 40%;"></div>
+            </div>
           </div>
+
+          <!-- 3. Storage (SSD) Card -->
+          <div class="hw-summary-card">
+            <span class="hw-card-label">SSD / DISK STORAGE</span>
+            <strong id="hw-storage-total">Probing Disk...</strong>
+            <small id="hw-storage-detail">Workspace storage</small>
+            <div class="hw-gauge-wrap">
+              <div class="hw-gauge-bar" id="hw-storage-gauge" style="width: 30%;"></div>
+            </div>
+          </div>
+
+          <!-- 4. GPU Card -->
           <div class="hw-summary-card">
             <span class="hw-card-label">GRAPHICS ACCELERATOR</span>
-            <strong id="hw-gpu-name">Detecting accelerator...</strong>
-            <small id="hw-gpu-detail">ROCm / CUDA / MPS engine</small>
+            <strong id="hw-gpu-name">Detecting GPU...</strong>
+            <small id="hw-gpu-detail">Apple MPS / CUDA / ROCm</small>
+            <div class="hw-gauge-wrap">
+              <div class="hw-gauge-bar" id="hw-gpu-gauge" style="width: 85%;"></div>
+            </div>
+          </div>
+
+          <!-- 5. Network / Privacy Card -->
+          <div class="hw-summary-card">
+            <span class="hw-card-label">AIR-GAPPED SOVEREIGNTY</span>
+            <strong id="hw-net-status">Local Socket Only</strong>
+            <small id="hw-net-detail">0 B sent to external servers</small>
+            <div class="hw-gauge-wrap">
+              <div class="hw-gauge-bar" id="hw-net-gauge" style="width: 100%; background: #00E5A3;"></div>
+            </div>
           </div>
         </div>
 
         <form id="settings-form" class="settings-control-form">
+          <!-- 1. Workspace Folder Configuration -->
           <div class="settings-group">
             <div class="settings-group-header">
-              <h3>Compute Target &amp; GPU Selection</h3>
-              <p>Choose which device processes PyTorch tensor operations, checkpoints, and inference.</p>
+              <h3>Workspace &amp; Storage Directory</h3>
+              <p>Specify the local folder where ingested datasets, tokenizer files, and model checkpoints are saved.</p>
+            </div>
+            <div class="settings-row folder-config-row">
+              <div class="folder-input-wrap">
+                <input type="text" id="settings-workspace-dir" placeholder="/Users/.../CloudNex Studio" class="folder-path-input" />
+                <button type="button" id="settings-browse-workspace-btn" class="secondary">Browse Folder...</button>
+              </div>
+              <span class="field-hint" id="settings-workspace-hint">Storage disk telemetry updates automatically based on the chosen path.</span>
+            </div>
+          </div>
+
+          <!-- 2. Compute Target & Acceleration Selection -->
+          <div class="settings-group">
+            <div class="settings-group-header">
+              <h3>Acceleration Backend</h3>
+              <p>Select which physical backend handles tensor execution (Apple MPS, NVIDIA CUDA, AMD ROCm, or Multicore CPU).</p>
             </div>
             <div class="settings-row">
-              <label for="settings-device-select">Target Device
+              <label for="settings-device-select">Target Accelerator
                 <select id="settings-device-select">
                   <option value="auto">Auto-detect (Recommend best accelerator)</option>
-                  <option value="cpu">CPU Only (No GPU acceleration)</option>
+                  <option value="cpu">CPU Only (Strict Multicore Fallback)</option>
                 </select>
               </label>
               <span class="field-hint" id="settings-device-hint">Detecting GPU hardware...</span>
             </div>
           </div>
 
+          <!-- 3. CPU Core Allocation -->
           <div class="settings-group">
             <div class="settings-group-header">
               <h3>CPU Core Allocation</h3>
-              <p>Controls PyTorch intra-op threads (<code>torch.set_num_threads</code>), OpenMP/MKL workers, and data loaders.</p>
+              <p>Controls PyTorch intra-op threads (<code>torch.set_num_threads</code>) and data loader workers.</p>
             </div>
             <div class="settings-row">
               <div class="slider-header">
@@ -635,6 +819,7 @@
             </div>
           </div>
 
+          <!-- 4. System RAM Usage Limit -->
           <div class="settings-group">
             <div class="settings-group-header">
               <h3>System RAM Usage Limit</h3>
@@ -653,6 +838,7 @@
             </div>
           </div>
 
+          <!-- 5. GPU VRAM Fraction Cap -->
           <div class="settings-group">
             <div class="settings-group-header">
               <h3>GPU Memory &amp; VRAM Headroom</h3>
@@ -668,6 +854,7 @@
             </div>
           </div>
 
+          <!-- 6. AMD ROCm Architecture Override -->
           <div class="settings-group">
             <div class="settings-group-header">
               <h3>AMD ROCm / RDNA Architecture Override</h3>
