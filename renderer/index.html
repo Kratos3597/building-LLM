@@ -140,15 +140,15 @@
                 <svg class="neon-chart-svg" viewBox="0 0 1000 240" preserveAspectRatio="none">
                   <defs>
                     <linearGradient id="neonCyanGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stop-color="#00F0FF" stop-opacity="0.32" />
-                      <stop offset="100%" stop-color="#00F0FF" stop-opacity="0.0" />
+                      <stop offset="0%" stop-color="#0284c7" stop-opacity="0.22" />
+                      <stop offset="100%" stop-color="#0284c7" stop-opacity="0.0" />
                     </linearGradient>
                     <linearGradient id="neonBlueGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stop-color="#3B82F6" stop-opacity="0.25" />
-                      <stop offset="100%" stop-color="#3B82F6" stop-opacity="0.0" />
+                      <stop offset="0%" stop-color="#6366f1" stop-opacity="0.18" />
+                      <stop offset="100%" stop-color="#6366f1" stop-opacity="0.0" />
                     </linearGradient>
                     <filter id="neonGlow" x="-20%" y="-20%" width="140%" height="140%">
-                      <feGaussianBlur stdDeviation="3" result="blur" />
+                      <feGaussianBlur stdDeviation="1.5" result="blur" />
                       <feMerge>
                         <feMergeNode in="blur" />
                         <feMergeNode in="SourceGraphic" />
@@ -171,9 +171,9 @@
                   <path class="neon-line-cyan" filter="url(#neonGlow)" d="M 0,190 Q 120,185 240,195 T 480,95 T 720,70 T 940,45 L 1000,60" />
 
                   <!-- Active Glowing Data Nodes -->
-                  <circle class="neon-node" cx="480" cy="95" r="5" fill="#00F0FF" />
-                  <circle class="neon-node" cx="720" cy="70" r="5" fill="#00F0FF" />
-                  <circle class="neon-node" cx="940" cy="45" r="6" fill="#FFFFFF" stroke="#00F0FF" stroke-width="2" />
+                  <circle class="neon-node" cx="480" cy="95" r="5" fill="#0284c7" />
+                  <circle class="neon-node" cx="720" cy="70" r="5" fill="#0284c7" />
+                  <circle class="neon-node" cx="940" cy="45" r="6" fill="#ffffff" stroke="#0284c7" stroke-width="2.5" />
                 </svg>
               </div>
             </div>
@@ -271,9 +271,9 @@
               <svg class="waveform-svg" viewBox="0 0 320 60" preserveAspectRatio="none">
                 <defs>
                   <linearGradient id="waveGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stop-color="#00F0FF" stop-opacity="0.3"/>
-                    <stop offset="50%" stop-color="#00F0FF" stop-opacity="1"/>
-                    <stop offset="100%" stop-color="#00E5A3" stop-opacity="0.6"/>
+                    <stop offset="0%" stop-color="#0284c7" stop-opacity="0.3"/>
+                    <stop offset="50%" stop-color="#0284c7" stop-opacity="1"/>
+                    <stop offset="100%" stop-color="#059669" stop-opacity="0.8"/>
                   </linearGradient>
                 </defs>
                 <path class="wave-bg-line" d="M0,30 L40,30 L55,10 L70,50 L85,25 L100,35 L115,30 L160,30 L175,8 L190,52 L205,22 L220,38 L235,30 L320,30" />

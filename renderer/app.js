@@ -279,38 +279,34 @@ async function loadMetrics(stage) {
   const gridY2 = getY(min + span * 0.75);
 
   chart.innerHTML = `
-    <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Cybernetic training loss chart" class="cyber-chart-svg">
+    <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Training loss chart" class="cyber-chart-svg">
       <defs>
         <linearGradient id="cyberTrainGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#00F0FF" stop-opacity="0.35"/>
-          <stop offset="100%" stop-color="#00F0FF" stop-opacity="0.0"/>
+          <stop offset="0%" stop-color="#0284c7" stop-opacity="0.2"/>
+          <stop offset="100%" stop-color="#0284c7" stop-opacity="0.0"/>
         </linearGradient>
-        <filter id="neonTrainGlow" x="-20%" y="-20%" width="140%" height="140%">
-          <feGaussianBlur stdDeviation="3" result="blur"/>
-          <feComposite in="SourceGraphic" in2="blur" operator="over"/>
-        </filter>
       </defs>
       <!-- Grid lines -->
-      <line x1="${pad}" y1="${gridY1}" x2="${width - pad}" y2="${gridY1}" stroke="rgba(0, 240, 255, 0.08)" stroke-dasharray="3 3"/>
-      <line x1="${pad}" y1="${gridY2}" x2="${width - pad}" y2="${gridY2}" stroke="rgba(0, 240, 255, 0.08)" stroke-dasharray="3 3"/>
+      <line x1="${pad}" y1="${gridY1}" x2="${width - pad}" y2="${gridY1}" stroke="#e2e8f0" stroke-dasharray="3 3"/>
+      <line x1="${pad}" y1="${gridY2}" x2="${width - pad}" y2="${gridY2}" stroke="#e2e8f0" stroke-dasharray="3 3"/>
       <line class="chart-axis" x1="${pad}" y1="${height - pad}" x2="${width - pad}" y2="${height - pad}" stroke="var(--line)"/>
       
       <!-- Area fill under train loss -->
       ${trainAreaPoints ? `<polygon points="${trainAreaPoints}" fill="url(#cyberTrainGrad)"/>` : ''}
 
       <!-- Lines -->
-      <polyline class="chart-line train" points="${trainPoints}" stroke="#00F0FF" stroke-width="2.5" fill="none" filter="url(#neonTrainGlow)"/>
-      ${evalPoints ? `<polyline class="chart-line eval" points="${evalPoints}" stroke="#FFB800" stroke-width="2.2" stroke-dasharray="4 2" fill="none"/>` : ''}
+      <polyline class="chart-line train" points="${trainPoints}" stroke="#0284c7" stroke-width="2.5" fill="none"/>
+      ${evalPoints ? `<polyline class="chart-line eval" points="${evalPoints}" stroke="#d97706" stroke-width="2.2" stroke-dasharray="4 2" fill="none"/>` : ''}
 
       <!-- Labels -->
       <text x="${pad}" y="20" fill="var(--muted)" font-family="monospace" font-size="11">loss ${max.toFixed(3)}</text>
-      <text x="${pad}" y="${gridY1 - 4}" fill="rgba(124, 148, 160, 0.6)" font-family="monospace" font-size="10">${(min + span * 0.5).toFixed(3)}</text>
+      <text x="${pad}" y="${gridY1 - 4}" fill="#64748b" font-family="monospace" font-size="10">${(min + span * 0.5).toFixed(3)}</text>
       <text x="${pad}" y="${height - 10}" fill="var(--muted)" font-family="monospace" font-size="11">step ${loss[0].step}</text>
-      <text x="${width - pad - 60}" y="${height - 10}" fill="#00F0FF" font-family="monospace" font-size="11">step ${loss[loss.length - 1].step}</text>
+      <text x="${width - pad - 60}" y="${height - 10}" fill="#0284c7" font-family="monospace" font-size="11">step ${loss[loss.length - 1].step}</text>
     </svg>
     <div class="chart-legend" style="display:flex; gap:16px; font-family:monospace; font-size:11px; margin-top:8px;">
-      <span style="display:inline-flex; align-items:center; gap:6px; color:#00F0FF;"><span style="width:10px; height:2px; background:#00F0FF; box-shadow:0 0 6px #00F0FF;"></span> Train loss: ${trainLossRecs.length ? trainLossRecs[trainLossRecs.length - 1].train_loss.toFixed(4) : 'N/A'}</span>
-      <span style="display:inline-flex; align-items:center; gap:6px; color:#FFB800;"><span style="width:10px; height:2px; background:#FFB800; border-top:1px dashed #FFB800;"></span> Eval loss: ${evalLossRecs.length ? evalLossRecs[evalLossRecs.length - 1].eval_loss.toFixed(4) : 'N/A'}</span>
+      <span style="display:inline-flex; align-items:center; gap:6px; color:#0284c7;"><span style="width:10px; height:2px; background:#0284c7;"></span> Train loss: ${trainLossRecs.length ? trainLossRecs[trainLossRecs.length - 1].train_loss.toFixed(4) : 'N/A'}</span>
+      <span style="display:inline-flex; align-items:center; gap:6px; color:#d97706;"><span style="width:10px; height:2px; background:#d97706; border-top:1px dashed #d97706;"></span> Eval loss: ${evalLossRecs.length ? evalLossRecs[evalLossRecs.length - 1].eval_loss.toFixed(4) : 'N/A'}</span>
       <span style="margin-left:auto; color:var(--muted);">Optimization: AdamW + Cosine Decay</span>
     </div>`;
   const chartSum = document.getElementById('chart-summary');
@@ -392,7 +388,7 @@ async function loadDataFiles() {
             <span> · ${formatBytes(file.size)}</span>
             ${isTxt ? `<span class="format-pill active-pill" style="font-size:9px;">.TXT CORPUS</span>` : ''}
           </div>
-          <code style="font-size:11px; color:var(--muted);">${file.dataset_type} dataset · <span style="color:#00F0FF;">~${estTokens.toLocaleString()} tokens</span></code>
+          <code style="font-size:11px; color:var(--muted);">${file.dataset_type} dataset · <span style="color:var(--accent); font-weight:600;">~${estTokens.toLocaleString()} tokens</span></code>
         </div>
         <div class="data-actions" style="display:flex; gap:8px; align-items:center;">
           ${isTxt ? `<button class="txt-train-btn start-txt-training" type="button" data-file="${encodeURIComponent(file.name)}" data-stage="${file.dataset_type === 'sft' ? 'sft' : 'pretrain'}">⚡ Train LLM on TXT</button>` : ''}
@@ -508,8 +504,8 @@ document.getElementById('data-file-list').addEventListener('click', async (event
       const datasetInput = document.querySelector('[data-config="dataset"]') || document.querySelector('[data-config="data_path"]');
       if (datasetInput) {
         datasetInput.value = filename;
-        datasetInput.style.borderColor = '#00F0FF';
-        datasetInput.style.boxShadow = '0 0 10px rgba(0, 240, 255, 0.4)';
+        datasetInput.style.borderColor = 'var(--accent)';
+        datasetInput.style.boxShadow = '0 0 0 3px rgba(2, 132, 199, 0.2)';
       }
     }
     return;
