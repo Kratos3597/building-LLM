@@ -11,16 +11,11 @@
   <link rel="stylesheet" href="./styles.css?v=20260916-2">
 </head>
 <body>
-  <!-- COSMIC STARDUST & AMBIENT AURORA GLOWS -->
-  <div class="ambient-glow ambient-glow-top"></div>
-  <div class="ambient-glow ambient-glow-bottom-right"></div>
-  <div class="stardust-field" id="stardust-field" aria-hidden="true"></div>
-
   <!-- COMPACT OS TITLEBAR (ELECTRON / DRAGBAR) -->
   <header class="window-bar apple-window-bar">
     <div class="window-drag-zone">
       <span class="window-brand-glyph">✦</span>
-      <span class="window-title">CloudNex <b>Local LLM Studio · Apple Glass Edition</b></span>
+      <span class="window-title">CloudNex <b>Local LLM Studio</b></span>
     </div>
     <div class="window-engine-pill">
       <span class="status-dot"></span>
@@ -107,30 +102,6 @@
           <button class="glass-icon-btn nav-item" type="button" data-view="settings" title="Hardware Settings">⚙</button>
         </div>
       </div>
-
-      <!-- METRICS STRIP (TRUE REAL-TIME TELEMETRY FROM LOCAL HARDWARE) -->
-      <section class="metrics apple-glass-metrics" aria-label="Workspace metrics">
-        <article>
-          <span class="metric-label">ACCELERATOR</span>
-          <strong id="device-status">Detecting...</strong>
-          <small id="device-sublabel">PyTorch Engine</small>
-        </article>
-        <article>
-          <span class="metric-label">HOST RAM</span>
-          <strong id="metric-ram-display">Detecting...</strong>
-          <small id="metric-ram-sublabel">Memory Ceiling Active</small>
-        </article>
-        <article>
-          <span class="metric-label">STORAGE (SSD)</span>
-          <strong id="metric-ssd-display">Detecting...</strong>
-          <small id="metric-ssd-sublabel">Workspace Storage</small>
-        </article>
-        <article>
-          <span class="metric-label">AIR-GAPPED SOVEREIGNTY</span>
-          <strong id="metric-priv-display">100% On-Device</strong>
-          <small id="metric-priv-sublabel">Zero Cloud Telemetry</small>
-        </article>
-      </section>
 
       <!-- WORKSPACE PANELS -->
       <section id="view-panel" class="workspace-panel apple-glass-inner-panel">
@@ -1045,15 +1016,7 @@ Copyright (c) 2026 Mohammed Sheik. All rights reserved.</pre>
     </div> <!-- /#apple-workspace-window -->
   </div> <!-- /.apple-app-container -->
 
-  <!-- FLOATING APPLE-GLASS QUESTION ORB (VISIONOS STYLE - BOTTOM RIGHT) -->
-  <aside class="floating-help-orb-wrapper" aria-label="Quick Assistance & Guide">
-    <button class="apple-glass-floating-orb" id="floating-help-btn" type="button" aria-label="Open Studio Quick Assist HUD">
-      <span class="orb-pulsing-halo"></span>
-      <span class="orb-glyph">?</span>
-    </button>
-  </aside>
-
-  <!-- APPLE GLASS QUICK ASSIST HUD MODAL -->
+  <!-- QUICK ASSIST HUD MODAL -->
   <div id="apple-help-modal" class="apple-glass-modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="help-hud-title">
     <div class="apple-glass-dialog-box">
       <div class="dialog-header">
