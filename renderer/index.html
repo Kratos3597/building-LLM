@@ -40,30 +40,33 @@
       <span class="apple-brand-name">CloudNex <span class="brand-sub">Studio</span></span>
     </div>
 
-    <!-- Center 4-Step Personal LLM Workflow Navigation -->
+    <!-- Unified Navigation Bar (Single canonical navigation) -->
     <div class="nav-mode-switcher" role="tablist">
-      <button class="nav-mode-btn active nav-item" type="button" data-view="data" id="nav-btn-step1">
-        <span>🗎 Step 1: Ingest Data</span>
+      <button class="nav-mode-btn active nav-item" type="button" data-view="overview" id="nav-btn-overview">
+        <span>⊞ Overview</span>
       </button>
-      <button class="nav-mode-btn nav-item" type="button" data-view="training" id="nav-btn-step2">
-        <span>⚙ Step 2: Model Setup</span>
+      <button class="nav-mode-btn nav-item" type="button" data-view="data" id="nav-btn-data">
+        <span>🗎 Datasets</span>
       </button>
-      <button class="nav-mode-btn nav-item" type="button" data-view="models" id="nav-btn-step3">
-        <span>⚡ Step 3: Train &amp; Monitor</span>
+      <button class="nav-mode-btn nav-item" type="button" data-view="training" id="nav-btn-training">
+        <span>⚡ Training</span>
       </button>
-      <button class="nav-mode-btn nav-item" type="button" data-view="chat" id="nav-btn-step4">
-        <span>💬 Step 4: Chat &amp; Test</span>
+      <button class="nav-mode-btn nav-item" type="button" data-view="models" id="nav-btn-models">
+        <span>💾 Checkpoints</span>
       </button>
-      <button class="nav-mode-btn nav-item" type="button" data-view="settings" id="nav-btn-settings">
-        <span>🛠 Hardware &amp; Folder Config</span>
+      <button class="nav-mode-btn nav-item" type="button" data-view="chat" id="nav-btn-chat">
+        <span>💬 Chat</span>
       </button>
-      <button class="nav-mode-btn nav-item" type="button" data-view="evaluation">
+      <button class="nav-mode-btn nav-item" type="button" data-view="evaluation" id="nav-btn-eval">
         <span>📊 Benchmarks</span>
       </button>
-      <button class="nav-mode-btn nav-item" type="button" data-view="about">
+      <button class="nav-mode-btn nav-item" type="button" data-view="settings" id="nav-btn-settings">
+        <span>⚙ Hardware</span>
+      </button>
+      <button class="nav-mode-btn nav-item" type="button" data-view="about" id="nav-btn-about">
         <span>👤 Founder</span>
       </button>
-      <button class="nav-mode-btn nav-item" type="button" data-view="terms">
+      <button class="nav-mode-btn nav-item" type="button" data-view="terms" id="nav-btn-terms">
         <span>📜 License</span>
       </button>
     </div>
@@ -104,53 +107,6 @@
           <button class="glass-icon-btn nav-item" type="button" data-view="settings" title="Hardware Settings">⚙</button>
         </div>
       </div>
-
-      <!-- LINEAR 4-STEP WIZARD NAVIGATION BAR (Clean, Guided Flow) -->
-      <nav class="linear-step-wizard" id="step-wizard-bar" aria-label="Step-by-Step Training Workflow">
-        <button type="button" class="wizard-step-pill nav-item active" data-view="data" id="step-btn-data">
-          <span class="step-badge">1</span>
-          <div class="step-meta">
-            <strong>1. Ingest Data</strong>
-            <small>Upload .TXT / Datasets</small>
-          </div>
-        </button>
-        <span class="wizard-step-arrow">→</span>
-
-        <button type="button" class="wizard-step-pill nav-item" data-view="training" id="step-btn-training">
-          <span class="step-badge">2</span>
-          <div class="step-meta">
-            <strong>2. Model Setup</strong>
-            <small>Presets &amp; Parameters</small>
-          </div>
-        </button>
-        <span class="wizard-step-arrow">→</span>
-
-        <button type="button" class="wizard-step-pill nav-item" data-view="models" id="step-btn-models">
-          <span class="step-badge">3</span>
-          <div class="step-meta">
-            <strong>3. Train &amp; Monitor</strong>
-            <small>Loss &amp; Checkpoints</small>
-          </div>
-        </button>
-        <span class="wizard-step-arrow">→</span>
-
-        <button type="button" class="wizard-step-pill nav-item" data-view="chat" id="step-btn-chat">
-          <span class="step-badge">4</span>
-          <div class="step-meta">
-            <strong>4. Chat &amp; Test</strong>
-            <small>Prompt Your LLM</small>
-          </div>
-        </button>
-
-        <div class="wizard-hardware-telemetry-pill nav-item" data-view="settings" id="step-hw-telemetry-pill" title="Click to open Hardware Settings, RAM limit, and folder selection">
-          <span class="hw-pill-icon">💻</span>
-          <div class="hw-pill-content">
-            <strong class="hw-pill-name" id="hw-pill-device">Probing Host Hardware...</strong>
-            <small class="hw-pill-stats" id="hw-pill-stats">Loading RAM &amp; SSD Stats...</small>
-          </div>
-          <span class="hw-pill-action">⚙ Settings</span>
-        </div>
-      </nav>
 
       <!-- METRICS STRIP (TRUE REAL-TIME TELEMETRY FROM LOCAL HARDWARE) -->
       <section class="metrics apple-glass-metrics" aria-label="Workspace metrics">
@@ -364,12 +320,12 @@
         <div class="flowchart-section">
           <div class="flowchart-header">
             <div>
-              <span class="panel-kicker">POST-TRAINING ARCHITECTURE</span>
-              <h3 class="flowchart-title">Interactive Alignment &amp; Reasoning Flowchart</h3>
-              <p class="flowchart-desc">Click any illuminated stage node to immediately prime its configuration, verify required input tensors, and execute training.</p>
+              <span class="panel-kicker">PIPELINE ARCHITECTURE</span>
+              <h3 class="flowchart-title">Alignment Stages</h3>
+              <p class="flowchart-desc">Select a stage node to configure parameters and verify inputs.</p>
             </div>
             <div class="flowchart-actions">
-              <button class="flowchart-quick-run-btn" id="quick-smoke-flow-btn" type="button">Quick Pipeline Verification</button>
+              <button class="flowchart-quick-run-btn" id="quick-smoke-flow-btn" type="button">Pipeline Verification</button>
             </div>
           </div>
 
@@ -471,8 +427,8 @@
             <strong id="deck-active-ckpt">sft_final.pt (3,820 MB)</strong>
           </div>
           <div class="deck-action-buttons">
-            <button class="primary glow-btn" type="button" data-view="data"><span>Upload .TXT / Ingest Data</span> →</button>
-            <button class="secondary" type="button" data-view="training">Open Training Studio</button>
+            <button class="primary glow-btn" type="button" data-view="data"><span>Ingest Datasets</span> →</button>
+            <button class="secondary" type="button" data-view="training">Training Studio</button>
           </div>
         </div>
 
@@ -496,16 +452,9 @@
       <div id="data-content" class="hidden training-content">
         <div class="section-title-row">
           <div>
-            <span class="panel-kicker">DATA ENGINE &amp; TEXT INGESTION</span>
-            <h2>Ingest Training Data &amp; Create LLMs</h2>
-            <p>Upload plain text (.txt), JSONL conversation trees, or binary shards. CloudNex converts raw .txt files into tokenized BPE context windows for training custom models.</p>
-          </div>
-          <div class="txt-creator-banner">
-            <div class="txt-badge-icon">.TXT</div>
-            <div>
-              <strong>Train Custom LLMs from Plain Text</strong>
-              <small>Upload articles, research, manuals, or codebases to create a sovereign LLM.</small>
-            </div>
+            <span class="panel-kicker">DATA ENGINE</span>
+            <h2>Training Datasets</h2>
+            <p>Upload raw text (.txt), JSONL instructions, or binary shards for tokenizer context windowing.</p>
           </div>
         </div>
 
@@ -514,23 +463,23 @@
           <div id="drop-zone" class="drop-zone cyber-drop-zone" tabindex="0">
             <div class="drop-icon-neon">✦</div>
             <strong>Drop Plain Text (.txt) or Dataset Files Here</strong>
-            <span>or click to browse from your local storage</span>
+            <span>or click to browse local storage</span>
             <div class="supported-formats-pills">
-              <span class="format-pill active-pill">.TXT (Raw Text Corpus)</span>
+              <span class="format-pill active-pill">.TXT (Raw Text)</span>
               <span class="format-pill">.JSONL (Chat &amp; SFT)</span>
-              <span class="format-pill">.CSV (Tabular QA)</span>
-              <span class="format-pill">.H5 (Pre-tokenized Shards)</span>
+              <span class="format-pill">.CSV (QA Pairs)</span>
+              <span class="format-pill">.H5 (Pre-tokenized)</span>
             </div>
           </div>
 
           <div class="upload-options">
-            <label for="dataset-type">Intended Training Stage
+            <label for="dataset-type">Training Stage
               <select id="dataset-type">
-                <option value="pretrain">Pretraining Corpus (.txt / book / docs)</option>
-                <option value="sft">Instruction / SFT Tuning (.jsonl / QA)</option>
-                <option value="preference">Preference Pairs (DPO / chosen vs rejected)</option>
-                <option value="rl">RL Prompts (GRPO / GSM8K)</option>
-                <option value="general">General Knowledge Text</option>
+                <option value="pretrain">Pretraining (.txt / books / docs)</option>
+                <option value="sft">Instruction / SFT (.jsonl / QA)</option>
+                <option value="preference">Preference Pairs (DPO)</option>
+                <option value="rl">Reasoning Prompts (GRPO)</option>
+                <option value="general">General Corpus</option>
               </select>
             </label>
             <button id="upload-button" class="primary" type="submit" disabled>Process &amp; Ingest File <span>↑</span></button>
@@ -539,11 +488,11 @@
 
         <div class="sample-dataset-strip">
           <div class="sample-info">
-            <strong>Need a fast start?</strong>
-            <small>Test the end-to-end LLM training pipeline immediately with zero file searching.</small>
+            <strong>Sample Corpus Available</strong>
+            <small>Test the end-to-end pipeline immediately with a sample dataset.</small>
           </div>
           <button type="button" id="load-sample-data-btn" class="secondary sample-pill">
-            <span>⚡ Load Sovereign Corpus Sample (1.2 MB .txt)</span>
+            <span>⚡ Load Sample Corpus (1.2 MB .txt)</span>
           </button>
         </div>
 
@@ -565,20 +514,19 @@
         <div id="data-file-list" class="job-list"></div>
 
         <div class="step-navigation-footer">
-          <span class="step-footer-hint">Step 1 complete? Datasets ready for tokenizer context windowing.</span>
           <button type="button" class="primary wizard-next-btn" data-view="training">
-            <span>Continue to Step 2: Model Setup</span> →
+            <span>Continue to Training</span> →
           </button>
         </div>
       </div>
 
-      <!-- STEP 2: MODEL SETUP -->
+      <!-- MODEL SETUP -->
       <div id="training-content" class="hidden training-content">
         <div class="section-title-row">
           <div>
-            <span class="panel-kicker">STEP 2 OF 4: ARCHITECTURE &amp; HYPERPARAMETERS</span>
-            <h2>Configure Your Local Model</h2>
-            <p>Select a pre-configured architecture scale, choose your post-training alignment stage, and fine-tune hyperparameters for your local hardware.</p>
+            <span class="panel-kicker">MODEL CONFIGURATION</span>
+            <h2>Training Setup</h2>
+            <p>Select an architecture scale and configure hyperparameters for local hardware.</p>
           </div>
           <div class="arch-preset-selector">
             <span class="preset-label">FAST PRESETS:</span>
@@ -594,11 +542,11 @@
           <div class="training-toolbar">
             <label for="stage-select">Training Stage
               <select id="stage-select">
-                <option value="pretrain">1. Pretraining (Raw .TXT)</option>
-                <option value="sft">2. Supervised SFT (Instruction Tuning)</option>
-                <option value="reward">3. Reward Model (Pairwise Scoring)</option>
-                <option value="dpo">4. DPO (Direct Preference Optimization)</option>
-                <option value="grpo">5. GRPO (Reasoning Verification)</option>
+                <option value="pretrain">Pretraining (Raw Text Corpus)</option>
+                <option value="sft">Supervised SFT (Instruction Tuning)</option>
+                <option value="reward">Reward Model (Pairwise Scoring)</option>
+                <option value="dpo">DPO (Direct Preference Optimization)</option>
+                <option value="grpo">GRPO (Reasoning Verification)</option>
               </select>
             </label>
             <label class="check-row">
@@ -608,8 +556,8 @@
           </div>
           <div id="config-editor" class="config-editor"></div>
           <div class="training-action-row">
-            <button class="secondary" type="button" data-view="data">← Back to Step 1: Ingest Data</button>
-            <button class="primary glow-btn" type="submit" id="start-training-btn"><span>Launch Training Run (Step 3)</span> ⚡</button>
+            <button class="secondary" type="button" data-view="data">← Datasets</button>
+            <button class="primary glow-btn" type="submit" id="start-training-btn"><span>Start Training</span> ⚡</button>
           </div>
         </form>
 
@@ -622,39 +570,37 @@
         </div>
 
         <div class="step-navigation-footer">
-          <span class="step-footer-hint">Already have checkpoints? Jump ahead to testing.</span>
           <button type="button" class="primary wizard-next-btn" data-view="models">
-            <span>View Trained Checkpoints (Step 3)</span> →
+            <span>View Checkpoints</span> →
           </button>
         </div>
       </div>
 
-      <!-- STEP 3: CHECKPOINTS & MONITORING -->
+      <!-- CHECKPOINTS & MONITORING -->
       <div id="models-content" class="hidden training-content">
         <div class="section-title-row">
           <div>
-            <span class="panel-kicker">STEP 3 OF 4: CHECKPOINT SHELF &amp; EXPORT</span>
-            <h2>Trained Model Checkpoints</h2>
-            <p>Your local model weights saved from pretraining, SFT, and alignment runs. Ready for export or real-time local chat inference.</p>
+            <span class="panel-kicker">CHECKPOINT REGISTRY</span>
+            <h2>Model Checkpoints</h2>
+            <p>Saved local weights from training runs, ready for export or inference.</p>
           </div>
         </div>
         <div id="job-list" class="job-list"></div>
         <div id="model-list" class="job-list"></div>
         <div class="step-navigation-footer">
-          <span class="step-footer-hint">Pick any checkpoint to talk to it in real time.</span>
           <button type="button" class="primary wizard-next-btn" data-view="chat">
-            <span>Continue to Step 4: Chat &amp; Test</span> →
+            <span>Open Chat</span> →
           </button>
         </div>
       </div>
 
-      <!-- STEP 4: CHAT & TEST -->
+      <!-- LOCAL INFERENCE & CHAT -->
       <div id="chat-content" class="hidden training-content">
         <div class="section-title-row">
           <div>
-            <span class="panel-kicker">STEP 4 OF 4: LOCAL INFERENCE &amp; CHAT</span>
-            <h2>Talk to Your Sovereign Model</h2>
-            <p>Send prompts and observe responses generated 100% on your local CPU or GPU with zero cloud transmission.</p>
+            <span class="panel-kicker">LOCAL INFERENCE</span>
+            <h2>Inference Chat</h2>
+            <p>Prompt your sovereign model locally with zero cloud transmission.</p>
           </div>
         </div>
         <form id="chat-form">
@@ -688,8 +634,8 @@
       <div id="evaluation-content" class="hidden training-content">
         <div>
           <span class="panel-kicker">MODEL EVALUATION</span>
-          <h2>Measure a Checkpoint</h2>
-          <p>Run GSM8K or logic benchmarks locally to compare accuracy and sample generations.</p>
+          <h2>Benchmarks</h2>
+          <p>Run GSM8K or logic benchmarks locally to compare accuracy across checkpoints.</p>
         </div>
         <form id="evaluation-form">
           <label for="evaluation-model">Checkpoint<select id="evaluation-model"></select></label>
@@ -712,9 +658,9 @@
       <!-- SETTINGS & HARDWARE TELEMETRY -->
       <div id="settings-content" class="hidden training-content">
         <div>
-          <span class="panel-kicker">HARDWARE TELEMETRY &amp; SYSTEM CONFIGURATION</span>
-          <h2>Local Hardware Rack &amp; Workspace Config</h2>
-          <p>Real-time physical telemetry from your machine. Configure local storage directories, adjust RAM and GPU headroom, and tune thread pools.</p>
+          <span class="panel-kicker">SYSTEM CONFIGURATION</span>
+          <h2>Hardware &amp; Workspace</h2>
+          <p>Local hardware telemetry, storage paths, and resource limits.</p>
         </div>
 
         <!-- 5 REAL-TIME TELEMETRY HUD CARDS -->

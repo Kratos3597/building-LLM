@@ -93,10 +93,7 @@ function selectView(view) {
     studioTabsRow.style.display = 'flex';
   }
 
-  // Update wizard stepper active states
-  document.querySelectorAll('.wizard-step-pill').forEach((pill) => {
-    pill.classList.toggle('active', pill.dataset.view === view);
-  });
+  // Update navigation active states
   document.querySelectorAll('.nav-mode-btn').forEach((btn) => {
     btn.classList.toggle('active', btn.dataset.view === view);
   });
@@ -1517,6 +1514,6 @@ function bindChassisControls() {
 
 initAppleGlassSuite();
 
-selectView('data');
+selectView('overview');
 
 connect();
