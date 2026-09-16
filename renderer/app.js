@@ -1000,7 +1000,7 @@ function initAppleGlassSuite() {
   // Spotlight Item Clicks
   spotlightItems.forEach((item) => {
     item.addEventListener('click', () => {
-      const view = item.dataset.view;
+      const view = item.dataset.actionView || item.dataset.view;
       closeSpotlight();
       if (view) {
         selectView(view);
