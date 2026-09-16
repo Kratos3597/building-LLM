@@ -1,0 +1,6 @@
+{
+  "name": "CloudNex Local LLM Studio",
+  "description": "Studio for local language model workflows, dataset preparation, training runs, checkpoint management, and inference evaluation.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

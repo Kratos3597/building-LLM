@@ -8,7 +8,7 @@
   <meta name="description" content="Studio for local language model workflows, dataset preparation, training runs, checkpoint management, and inference evaluation.">
   <meta property="og:title" content="CloudNex Local LLM Studio">
   <meta property="og:description" content="Studio for local language model workflows, dataset preparation, training runs, checkpoint management, and inference evaluation.">
-  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./styles.css?v=20260916-2">
 </head>
 <body>
   <!-- COSMIC STARDUST & AMBIENT AURORA GLOWS -->
@@ -40,22 +40,22 @@
       <span class="apple-brand-name">CloudNex <span class="brand-sub">Studio</span></span>
     </div>
 
-    <!-- Center Segmented Mode Switcher -->
+    <!-- Center 4-Step Personal LLM Workflow Navigation -->
     <div class="nav-mode-switcher" role="tablist">
       <button class="nav-mode-btn active nav-item" type="button" data-view="overview">
         <span>⚡ Studio Deck</span>
       </button>
-      <button class="nav-mode-btn nav-item" type="button" data-view="training">
-        <span>🏋 Training</span>
-      </button>
       <button class="nav-mode-btn nav-item" type="button" data-view="data">
-        <span>🗎 Datasets</span>
+        <span>🗎 1. Ingest .TXT</span>
+      </button>
+      <button class="nav-mode-btn nav-item" type="button" data-view="training">
+        <span>🏋 2. Train Model</span>
       </button>
       <button class="nav-mode-btn nav-item" type="button" data-view="models">
-        <span>💾 Models</span>
+        <span>💾 3. Checkpoints</span>
       </button>
       <button class="nav-mode-btn nav-item" type="button" data-view="chat">
-        <span>💬 Local Chat</span>
+        <span>💬 4. Local Chat</span>
       </button>
       <button class="nav-mode-btn nav-item" type="button" data-view="evaluation">
         <span>📊 Benchmarks</span>
@@ -110,16 +110,83 @@
 
       <!-- Studio View Switcher Tabs (Shown for Studio Navigation) -->
       <div class="apple-studio-tabs-row" id="studio-tabs-row" aria-label="Studio Modes">
-        <button class="studio-tab-btn nav-item active" type="button" data-view="overview">⊞ Command Deck</button>
-        <button class="studio-tab-btn nav-item" type="button" data-view="training">⚡ Training Studio</button>
-        <button class="studio-tab-btn nav-item" type="button" data-view="data">🗎 Plain .TXT Ingestion</button>
-        <button class="studio-tab-btn nav-item" type="button" data-view="models">💾 Checkpoints</button>
-        <button class="studio-tab-btn nav-item" type="button" data-view="chat">💬 Local Chat</button>
-        <button class="studio-tab-btn nav-item" type="button" data-view="evaluation">📊 Benchmarking</button>
-        <button class="studio-tab-btn nav-item" type="button" data-view="settings">⚙ Hardware</button>
-        <button class="studio-tab-btn nav-item" type="button" data-view="about">👤 Mohammed Sheik</button>
+        <button class="studio-tab-btn nav-item active" type="button" data-view="overview">⊞ Overview Deck</button>
+        <button class="studio-tab-btn nav-item" type="button" data-view="data">🗎 1. Ingest Plain .TXT</button>
+        <button class="studio-tab-btn nav-item" type="button" data-view="training">⚡ 2. Train Studio</button>
+        <button class="studio-tab-btn nav-item" type="button" data-view="models">💾 3. Checkpoints &amp; Export</button>
+        <button class="studio-tab-btn nav-item" type="button" data-view="chat">💬 4. Local Chat</button>
+        <button class="studio-tab-btn nav-item" type="button" data-view="evaluation">📊 Leaderboard</button>
+        <button class="studio-tab-btn nav-item" type="button" data-view="settings">⚙ Hardware Rack</button>
+        <button class="studio-tab-btn nav-item" type="button" data-view="about">👤 Architect</button>
         <button class="studio-tab-btn nav-item" type="button" data-view="terms">📜 License</button>
       </div>
+
+      <!-- INTERACTIVE APPLE GLASS ACCELERATOR & HARDWARE CONTROL CHASSIS -->
+      <section class="apple-hardware-chassis-bar" id="hardware-chassis-bar" aria-label="Hardware Acceleration Chassis">
+        <div class="chassis-glow-bar"></div>
+        
+        <!-- 1. Compute Backend 4-Way Segmented Switcher -->
+        <div class="chassis-block accelerator-block">
+          <div class="chassis-label-row">
+            <span class="chassis-eyebrow">ACCELERATION BACKEND</span>
+            <span class="chassis-badge live-pulse" id="chassis-acc-badge">ROCm 6.2 ACTIVE</span>
+          </div>
+          <div class="chassis-segmented-slider" id="accelerator-switcher" role="radiogroup">
+            <button type="button" class="acc-mode-btn active" data-acc="rocm" role="radio" aria-checked="true">
+              <span class="acc-logo rocm-logo">🟣</span>
+              <span class="acc-text">AMD ROCm</span>
+            </button>
+            <button type="button" class="acc-mode-btn" data-acc="cuda" role="radio" aria-checked="false">
+              <span class="acc-logo cuda-logo">🟢</span>
+              <span class="acc-text">NVIDIA CUDA</span>
+            </button>
+            <button type="button" class="acc-mode-btn" data-acc="mps" role="radio" aria-checked="false">
+              <span class="acc-logo mps-logo">⚪</span>
+              <span class="acc-text">Apple Silicon MPS</span>
+            </button>
+            <button type="button" class="acc-mode-btn" data-acc="cpu" role="radio" aria-checked="false">
+              <span class="acc-logo cpu-logo">🔵</span>
+              <span class="acc-text">CPU Multicore</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 2. Interactive VRAM Ceiling Control -->
+        <div class="chassis-block vram-block">
+          <div class="chassis-label-row">
+            <span class="chassis-eyebrow">GPU VRAM CEILING</span>
+            <strong class="chassis-val" id="chassis-vram-label">85% · 13.6 / 16 GB</strong>
+          </div>
+          <div class="chassis-slider-wrap">
+            <input type="range" id="chassis-vram-slider" min="0.3" max="0.95" step="0.05" value="0.85" class="apple-glass-slider chassis-slider" />
+          </div>
+        </div>
+
+        <!-- 3. CPU Threads Budget Toggles -->
+        <div class="chassis-block cores-block">
+          <div class="chassis-label-row">
+            <span class="chassis-eyebrow">CPU THREAD BUDGET</span>
+            <strong class="chassis-val" id="chassis-cores-label">4 Cores</strong>
+          </div>
+          <div class="chassis-cores-pills" id="cores-quick-pills">
+            <button type="button" class="core-pill" data-cores="2">2C</button>
+            <button type="button" class="core-pill active" data-cores="4">4C</button>
+            <button type="button" class="core-pill" data-cores="8">8C</button>
+            <button type="button" class="core-pill" data-cores="16">16C</button>
+          </div>
+        </div>
+
+        <!-- 4. System RAM Limit Toggle -->
+        <div class="chassis-block ram-block">
+          <div class="chassis-label-row">
+            <span class="chassis-eyebrow">RAM CEILING</span>
+            <strong class="chassis-val" id="chassis-ram-label">16 GB Limit</strong>
+          </div>
+          <div class="chassis-ram-controls">
+            <button type="button" class="chassis-toggle-btn" id="chassis-ram-toggle-btn">Uncapped RAM: OFF</button>
+          </div>
+        </div>
+      </section>
 
       <!-- METRICS STRIP (FROSTED GLASS CARDS) -->
       <section class="metrics apple-glass-metrics" aria-label="Workspace metrics">
@@ -971,6 +1038,6 @@ Copyright (c) 2026 Mohammed Sheik. All rights reserved.</pre>
     </div>
   </div>
 
-  <script src="./app.js"></script>
+  <script src="./app.js?v=20260916-2"></script>
 </body>
 </html>

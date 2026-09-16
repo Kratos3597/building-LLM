@@ -1089,7 +1089,109 @@ function initAppleGlassSuite() {
       node.setAttribute('title', `Measured Latency: ${val} ms`);
     });
   });
+
+  // --- HARDWARE ACCELERATOR CHASSIS CONTROLS ---
+  bindChassisControls();
 }
+
+function bindChassisControls() {
+  const accBtns = document.querySelectorAll('.acc-mode-btn');
+  accBtns.forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const chosenAcc = btn.dataset.acc;
+      accBtns.forEach((b) => {
+        b.classList.remove('active');
+        b.setAttribute('aria-checked', 'false');
+      });
+      btn.classList.add('active');
+      btn.setAttribute('aria-checked', 'true');
+
+      const badge = document.getElementById('chassis-acc-badge');
+      if (badge) {
+        const labels = {
+          rocm: 'ROCm 6.2 ACTIVE',
+          cuda: 'CUDA 12.4 ACTIVE',
+          mps: 'APPLE METAL MPS',
+          cpu: 'HOST MULTICORE'
+        };
+        badge.textContent = labels[chosenAcc] || chosenAcc.toUpperCase();
+      }
+
+      try {
+        await fetch(`${backend}/api/system/allocate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ preferred_accelerator: chosenAcc }),
+        });
+        await connect();
+      } catch (e) {
+        // silent fallback
+      }
+    });
+  });
+
+  // VRAM Slider
+  const chassisVram = document.getElementById('chassis-vram-slider');
+  if (chassisVram) {
+    chassisVram.addEventListener('input', (e) => {
+      const frac = parseFloat(e.target.value);
+      const vramGb = (frac * 16).toFixed(1);
+      const label = document.getElementById('chassis-vram-label');
+      if (label) label.textContent = `${Math.round(frac * 100)}% · ${vramGb} / 16 GB`;
+    });
+    chassisVram.addEventListener('change', async (e) => {
+      const frac = parseFloat(e.target.value);
+      await fetch(`${backend}/api/system/allocate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vram_fraction: frac }),
+      }).catch(() => null);
+      await connect();
+    });
+  }
+
+  // CPU Cores Quick Pills
+  document.querySelectorAll('.chassis-cores-pills .core-pill').forEach((pill) => {
+    pill.addEventListener('click', async () => {
+      document.querySelectorAll('.chassis-cores-pills .core-pill').forEach((p) => p.classList.remove('active'));
+      pill.classList.add('active');
+      const cores = parseInt(pill.dataset.cores, 10);
+      const label = document.getElementById('chassis-cores-label');
+      if (label) label.textContent = `${cores} Cores`;
+
+      await fetch(`${backend}/api/system/allocate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cores }),
+      }).catch(() => null);
+      await connect();
+    });
+  });
+
+  // RAM Limit Toggle
+  const ramToggle = document.getElementById('chassis-ram-toggle-btn');
+  if (ramToggle) {
+    let uncapped = false;
+    ramToggle.addEventListener('click', async () => {
+      uncapped = !uncapped;
+      ramToggle.classList.toggle('active', uncapped);
+      ramToggle.textContent = `Uncapped RAM: ${uncapped ? 'ON' : 'OFF'}`;
+      const label = document.getElementById('chassis-ram-label');
+      if (label) label.textContent = uncapped ? 'Uncapped Host RAM' : '16 GB Limit';
+
+      await fetch(`${backend}/api/system/allocate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ram_unlimited: uncapped,
+          ram_limit_gb: uncapped ? 64 : 16
+        }),
+      }).catch(() => null);
+      await connect();
+    });
+  }
+}
+
 
 initAppleGlassSuite();
 

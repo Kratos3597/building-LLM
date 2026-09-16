@@ -2057,3 +2057,207 @@ input:checked + .slider-round:before {
   color: #94a3b8 !important;
 }
 
+/* =========================================================
+   APPLE STUDIO LIQUID GLASS HARDWARE CHASSIS BAR & ANIMATIONS
+   ========================================================= */
+.apple-hardware-chassis-bar {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 22px;
+  margin: 12px 20px 20px 20px;
+  background: rgba(18, 24, 38, 0.75);
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  overflow: hidden;
+  z-index: 10;
+  transition: all 0.3s ease;
+}
+
+.chassis-glow-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #00f0ff 0%, #3b82f6 50%, #9d4edd 100%);
+  opacity: 0.85;
+}
+
+.chassis-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.chassis-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.chassis-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.chassis-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: rgba(0, 240, 255, 0.15);
+  border: 1px solid rgba(0, 240, 255, 0.4);
+  color: #00f0ff;
+  letter-spacing: 0.04em;
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.25);
+}
+
+.live-pulse {
+  animation: pulseGlow 2.5s infinite ease-in-out;
+}
+
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0, 240, 255, 0.3); }
+  50% { box-shadow: 0 0 14px 3px rgba(0, 240, 255, 0.5); }
+}
+
+.chassis-val {
+  font-size: 12px;
+  color: #ffffff;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* 4-Way Segmented Accelerator Switcher with Liquid Spring Physics */
+.chassis-segmented-slider {
+  position: relative;
+  display: flex;
+  background: rgba(10, 14, 22, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 4px;
+  gap: 4px;
+}
+
+.acc-mode-btn {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 16px;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 12.5px;
+  font-weight: 500;
+  border-radius: 9px;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.acc-mode-btn:hover {
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.acc-mode-btn.active {
+  color: #ffffff;
+  font-weight: 600;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.acc-mode-btn.active[data-acc="rocm"] {
+  border: 1px solid rgba(255, 0, 128, 0.45);
+  background: rgba(255, 0, 128, 0.2);
+  color: #ff99cc;
+}
+
+.acc-mode-btn.active[data-acc="cuda"] {
+  border: 1px solid rgba(0, 255, 136, 0.45);
+  background: rgba(0, 255, 136, 0.2);
+  color: #8affc1;
+}
+
+.acc-mode-btn.active[data-acc="mps"] {
+  border: 1px solid rgba(0, 240, 255, 0.45);
+  background: rgba(0, 240, 255, 0.2);
+  color: #99f5ff;
+}
+
+.acc-mode-btn.active[data-acc="cpu"] {
+  border: 1px solid rgba(59, 130, 246, 0.45);
+  background: rgba(59, 130, 246, 0.2);
+  color: #bfdbfe;
+}
+
+/* VRAM Slider Track */
+.chassis-slider-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 180px;
+}
+
+.chassis-slider {
+  width: 100%;
+  accent-color: #00f0ff;
+  cursor: pointer;
+}
+
+/* Cores Quick Pills */
+.chassis-cores-pills {
+  display: flex;
+  gap: 6px;
+}
+
+.core-pill {
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.core-pill:hover, .core-pill.active {
+  color: #ffffff;
+  background: rgba(0, 240, 255, 0.18);
+  border-color: rgba(0, 240, 255, 0.5);
+  transform: scale(1.04);
+}
+
+.chassis-toggle-btn {
+  padding: 6px 14px;
+  font-size: 11.5px;
+  font-weight: 600;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: #cbd5e1;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.chassis-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+
+.chassis-toggle-btn.active {
+  background: rgba(0, 240, 255, 0.2);
+  border-color: #00f0ff;
+  color: #00f0ff;
+}
+

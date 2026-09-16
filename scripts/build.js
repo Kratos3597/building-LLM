@@ -17,19 +17,14 @@ const path = require('path');
 const rootDir = path.resolve(__dirname, '..');
 const distPath = path.join(rootDir, 'dist');
 
-// Detect if running inside Google AI Studio container
-const isAiStudio = Boolean(process.env.APPLET_ID || process.env.K_SERVICE);
-
-// Detect if desktop build is explicitly requested or running in CI/GitHub Actions
+// Detect if desktop build is explicitly requested
 const isExplicitDesktop =
   process.argv.includes('--desktop') ||
-  process.env.BUILD_DESKTOP === 'true' ||
-  Boolean(process.env.GITHUB_ACTIONS) ||
-  Boolean(process.env.CI);
+  process.env.BUILD_DESKTOP === 'true';
 
-if (isAiStudio && !isExplicitDesktop) {
-  console.log('[build] AI Studio cloud environment detected.');
-  console.log('[build] Validating server and desktop scripts syntax...');
+if (!isExplicitDesktop) {
+  console.log('[build] Web / AI Studio build target detected.');
+  console.log('[build] Validating server and script syntax...');
   execSync('node -c server.js && node -c main.js && node -c preload.js', {
     cwd: rootDir,
     stdio: 'inherit',
