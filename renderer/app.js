@@ -398,6 +398,43 @@ const uploadButton = document.getElementById('upload-button');
 const importTxtBtn = document.getElementById('import-txt-btn');
 
 // Terminal & Ingestion Logger Utilities
+function updateDataTerminalProgress(percent, phaseText, tokenText = '', statusType = 'running') {
+  const percentBadge = document.getElementById('progress-percentage-badge');
+  const phaseLabel = document.getElementById('progress-phase-label');
+  const tokensCount = document.getElementById('progress-tokens-count');
+  const fill = document.getElementById('data-terminal-progress-fill');
+  const track = document.getElementById('data-terminal-progress-track');
+  const beacon = document.getElementById('status-indicator-beacon');
+
+  const clamped = Math.max(0, Math.min(100, Math.round(percent)));
+
+  if (fill) {
+    fill.style.width = `${clamped}%`;
+    fill.className = `terminal-progress-fill ${statusType}`;
+  }
+
+  if (track) {
+    track.setAttribute('aria-valuenow', clamped);
+  }
+
+  if (percentBadge) {
+    percentBadge.textContent = `${clamped}%`;
+    percentBadge.className = `progress-percent-display ${statusType}`;
+  }
+
+  if (phaseLabel && phaseText) {
+    phaseLabel.textContent = phaseText;
+  }
+
+  if (tokensCount && tokenText) {
+    tokensCount.textContent = tokenText;
+  }
+
+  if (beacon) {
+    beacon.className = `status-indicator-beacon ${statusType}`;
+  }
+}
+
 function appendDataLog(text, className = '') {
   const terminal = document.getElementById('data-terminal-output');
   if (!terminal) return;
@@ -432,6 +469,7 @@ function clearDataTerminal() {
     appendDataLog(`[READY] Awaiting text input. Click "📁 Import .txt File" or drop your text corpus above to start tokenization.`, 'log-line-init');
   }
   setDataTerminalStatus('idle', 'ENGINE READY');
+  updateDataTerminalProgress(0, 'Idle (Awaiting plain text corpus)', '0 tokens processed', 'idle');
 }
 
 function setDataTerminalStatus(status, text) {
@@ -456,6 +494,48 @@ async function streamDataLogs(logLines, delayMs = 45) {
   }
 }
 
+async function streamDataProgress(steps, fallbackLogs = [], totalTokens = 0, delayMs = 45) {
+  if (Array.isArray(steps) && steps.length > 0) {
+    for (let i = 0; i < steps.length; i++) {
+      const step = steps[i];
+      const percent = step.percent !== undefined ? step.percent : Math.round(((i + 1) / steps.length) * 100);
+      const phase = step.phase || 'Tokenizing Text Corpus';
+      const tokStr = step.tokensProcessed ? `${step.tokensProcessed.toLocaleString()} / ${totalTokens.toLocaleString()} tokens` : (totalTokens ? `${totalTokens.toLocaleString()} tokens expected` : '');
+      const statusType = percent >= 100 ? 'completed' : 'running';
+
+      updateDataTerminalProgress(percent, phase, tokStr, statusType);
+      appendDataLog(step.message || step.text || step);
+
+      if (delayMs > 0) {
+        await new Promise((r) => setTimeout(r, delayMs));
+      }
+    }
+  } else if (Array.isArray(fallbackLogs) && fallbackLogs.length > 0) {
+    for (let i = 0; i < fallbackLogs.length; i++) {
+      const log = fallbackLogs[i];
+      const percent = Math.round(((i + 1) / fallbackLogs.length) * 100);
+      let phase = 'Tokenizing Text Corpus';
+      if (log.includes('[INIT]')) phase = 'Initializing Engine';
+      else if (log.includes('[FILE]')) phase = 'Verifying Source Bytes';
+      else if (log.includes('[ENCODING]')) phase = 'UTF-8 Normalization';
+      else if (log.includes('[TOKENIZER]')) phase = 'BPE Vocabulary Loading';
+      else if (log.includes('[PROGRESS]')) phase = 'Subword Tokenization';
+      else if (log.includes('[METRICS]')) phase = 'Computing Compression Ratio';
+      else if (log.includes('[VOCAB]')) phase = 'Analyzing Vocabulary Space';
+      else if (log.includes('[SPLIT]')) phase = 'Partitioning Train / Dev Splits';
+      else if (log.includes('[STORAGE]')) phase = 'Writing Shard Arrays';
+      else if (log.includes('[SUCCESS]')) phase = 'Tokenization Complete';
+
+      const statusType = percent >= 100 ? 'completed' : 'running';
+      updateDataTerminalProgress(percent, phase, totalTokens ? `${totalTokens.toLocaleString()} tokens` : '', statusType);
+      appendDataLog(log);
+      if (delayMs > 0) {
+        await new Promise((r) => setTimeout(r, delayMs));
+      }
+    }
+  }
+}
+
 function setFiles(files) {
   selectedFiles = [...files];
   if (uploadButton) uploadButton.disabled = selectedFiles.length === 0;
@@ -472,9 +552,12 @@ function setFiles(files) {
       datasetTypeEl.value = 'pretrain';
     }
     setDataTerminalStatus('idle', 'FILE DETECTED');
+    updateDataTerminalProgress(0, `Staged "${file.name}" (${formatBytes(file.size)})`, 'Ready to tokenize', 'idle');
     const nowStr = new Date().toISOString().slice(11, 19);
     appendDataLog(`[FILE] [${nowStr}] Staged "${file.name}" (${formatBytes(file.size)}) for stage: ${datasetTypeEl ? datasetTypeEl.value.toUpperCase() : 'PRETRAIN'}`, 'log-line-file');
     appendDataLog(`[READY] [${nowStr}] File loaded into buffer. Click "⚡ Ingest & Tokenize (.TXT)" to compile training shards.`, 'log-line-init');
+  } else {
+    updateDataTerminalProgress(0, 'Idle (Awaiting plain text corpus)', '0 tokens processed', 'idle');
   }
 }
 
@@ -591,6 +674,7 @@ if (uploadForm) {
     if (uploadButton) uploadButton.disabled = true;
     setDataTerminalStatus('running', 'TOKENIZING CORPUS...');
     if (status) status.textContent = 'Tokenizing and compiling dataset shards...';
+    updateDataTerminalProgress(5, 'Buffering and reading text stream...', 'Scanning bytes', 'running');
 
     appendDataLog(`═══════════════════════════════════════════════════════════════════`, 'log-line-tok');
     appendDataLog(`>>> BPE TOKENIZATION & PRETRAINING PIPELINE INITIALIZED <<<`, 'log-line-tok');
@@ -602,6 +686,7 @@ if (uploadForm) {
         const datasetType = datasetTypeEl ? datasetTypeEl.value : 'pretrain';
         const isTxt = file.name.endsWith('.txt') || file.type.includes('text');
 
+        updateDataTerminalProgress(12, `Reading "${file.name}" (${formatBytes(file.size)})...`, 'Reading bytes', 'running');
         appendDataLog(`[IO STREAM] [${new Date().toISOString().slice(11, 19)}] Reading bytes from "${file.name}" (${formatBytes(file.size)})...`, 'log-line-file');
 
         let content = '';
@@ -609,6 +694,7 @@ if (uploadForm) {
           if (isTxt || file.size < 12000000) {
             content = await file.text();
             appendDataLog(`[UTF-8 VALIDATED] Loaded ${content.length.toLocaleString()} characters into memory buffer.`, 'log-line-enc');
+            updateDataTerminalProgress(20, `UTF-8 decoded (${content.length.toLocaleString()} chars)`, `${formatBytes(file.size)}`, 'running');
           }
         } catch (readErr) {
           appendDataLog(`[WARN] Could not read directly as UTF-8: ${readErr.message}`, 'log-line-diag');
@@ -621,6 +707,7 @@ if (uploadForm) {
           content: content,
         };
 
+        updateDataTerminalProgress(28, 'Transmitting to Local BPE Tokenizer engine...', 'BPE Pipeline', 'running');
         appendDataLog(`[ENGINE] Dispatching to Local BPE Tokenizer at ${backend}/api/data/upload...`, 'log-line-prog');
 
         const response = await fetch(`${backend}/api/data/upload`, {
@@ -633,6 +720,7 @@ if (uploadForm) {
 
         if (!response.ok) {
           setDataTerminalStatus('error', 'INGESTION ERROR');
+          updateDataTerminalProgress(100, `Halted: ${resData.message || response.statusText}`, '0 tokens compiled', 'error');
           if (resData.logs && Array.isArray(resData.logs)) {
             await streamDataLogs(resData.logs, 40);
           } else {
@@ -642,11 +730,17 @@ if (uploadForm) {
           throw new Error(resData.message || 'Server rejected the file');
         }
 
-        if (resData.logs && Array.isArray(resData.logs)) {
-          await streamDataLogs(resData.logs, 40);
+        const tokens = resData.file?.tokens || (resData.stats?.tokens) || Math.round(file.size / 4);
+
+        if (resData.steps && Array.isArray(resData.steps) && resData.steps.length > 0) {
+          await streamDataProgress(resData.steps, resData.logs, tokens, 45);
+        } else if (resData.logs && Array.isArray(resData.logs)) {
+          await streamDataProgress([], resData.logs, tokens, 40);
         } else {
           appendDataLog(`[SUCCESS] File "${file.name}" ingested successfully!`, 'log-line-succ');
         }
+
+        updateDataTerminalProgress(100, `Tokenization Complete (${tokens.toLocaleString()} tokens ready)`, `${tokens.toLocaleString()} tokens`, 'completed');
 
         // Display Ingestion Ready & Training Quick Launch Callout
         const cta = document.getElementById('data-train-cta');
@@ -654,7 +748,6 @@ if (uploadForm) {
         const ctaFileStats = document.getElementById('cta-file-stats');
         if (cta && ctaFileName && ctaFileStats) {
           ctaFileName.textContent = file.name;
-          const tokens = resData.file?.tokens || Math.round(file.size / 4);
           const trainTok = resData.stats?.trainTokens || Math.round(tokens * 0.9);
           const devTok = resData.stats?.devTokens || Math.round(tokens * 0.1);
           ctaFileStats.textContent = `${tokens.toLocaleString()} tokens · 90% Train (${trainTok.toLocaleString()} tok) / 10% Dev (${devTok.toLocaleString()} tok) · Ready for Pretraining`;
@@ -669,6 +762,7 @@ if (uploadForm) {
       await loadDataFiles();
     } catch (error) {
       setDataTerminalStatus('error', 'ERROR');
+      updateDataTerminalProgress(100, `Error: ${error.message}`, 'Failed', 'error');
       if (status) status.textContent = `Upload error: ${error.message}`;
       appendDataLog(`[DIAGNOSTIC] ${error.message}`, 'log-line-err');
       if (uploadButton) uploadButton.disabled = selectedFiles.length === 0;
@@ -1248,6 +1342,7 @@ if (loadSampleBtn) {
     loadSampleBtn.disabled = true;
     loadSampleBtn.innerHTML = '<span>⚡ Ingesting Sovereign Sample Corpus...</span>';
     setDataTerminalStatus('running', 'TOKENIZING SAMPLE...');
+    updateDataTerminalProgress(8, 'Loading Sovereign AI sample corpus...', '1,717 characters', 'running');
     appendDataLog(`═══════════════════════════════════════════════════════════════════`, 'log-line-tok');
     appendDataLog(`>>> INGESTING SOVEREIGN CORPUS SAMPLE (PRETRAINING) <<<`, 'log-line-tok');
     appendDataLog(`═══════════════════════════════════════════════════════════════════`, 'log-line-tok');
@@ -1257,15 +1352,20 @@ if (loadSampleBtn) {
         method: 'POST',
       });
       const resData = await res.json();
-      if (res.ok && resData.logs) {
-        await streamDataLogs(resData.logs, 35);
+      if (res.ok) {
+        const tokens = resData.file?.tokens || (resData.stats?.tokens) || 738;
+        if (resData.steps && Array.isArray(resData.steps) && resData.steps.length > 0) {
+          await streamDataProgress(resData.steps, resData.logs, tokens, 40);
+        } else if (resData.logs) {
+          await streamDataProgress([], resData.logs, tokens, 40);
+        }
         setDataTerminalStatus('completed', 'SAMPLE READY');
+        updateDataTerminalProgress(100, `Tokenization Complete (${tokens.toLocaleString()} tokens ready)`, `${tokens.toLocaleString()} tokens`, 'completed');
         const cta = document.getElementById('data-train-cta');
         const ctaFileName = document.getElementById('cta-file-name');
         const ctaFileStats = document.getElementById('cta-file-stats');
         if (cta && ctaFileName && ctaFileStats && resData.file) {
           ctaFileName.textContent = resData.file.name;
-          const tokens = resData.file.tokens || 184000;
           const trainTok = resData.stats?.trainTokens || Math.round(tokens * 0.9);
           const devTok = resData.stats?.devTokens || Math.round(tokens * 0.1);
           ctaFileStats.textContent = `${tokens.toLocaleString()} tokens · 90% Train (${trainTok.toLocaleString()} tok) / 10% Dev (${devTok.toLocaleString()} tok) · Ready for Pretraining`;
@@ -1282,6 +1382,7 @@ if (loadSampleBtn) {
       }
     } catch (err) {
       setDataTerminalStatus('error', 'FAILED');
+      updateDataTerminalProgress(100, `Failed: ${err.message}`, 'Error', 'error');
       appendDataLog(`[ERROR] Could not ingest sample: ${err.message}`, 'log-line-err');
       loadSampleBtn.disabled = false;
       loadSampleBtn.innerHTML = '<span>⚡ Load Sample Corpus (1.2 MB .txt)</span>';

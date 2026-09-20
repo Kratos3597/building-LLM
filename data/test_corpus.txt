@@ -1,0 +1,1 @@
+The transformer model relies on self-attention mechanisms to calculate dynamic representation matrices across token sequences in parallel.

@@ -169,19 +169,70 @@ function analyzeAndTokenizeCorpus(text, fileName, datasetType = 'pretrain') {
 
   const now = () => new Date().toISOString().slice(11, 19);
 
-  const logSteps = [
-    `[INIT] [${now()}] Starting Sovereign LLM Data Ingestion Engine for "${fileName}"...`,
-    `[FILE] [${now()}] Source verified: ${chars.toLocaleString()} characters · ${lines.toLocaleString()} lines · ${words.toLocaleString()} words · ${(Buffer.byteLength(text, 'utf8') / 1024).toFixed(1)} KB`,
-    `[ENCODING] [${now()}] UTF-8 byte stream decoded with zero corruption. Newlines normalized to UNIX LF (\\n).`,
-    `[TOKENIZER] [${now()}] Loading Byte-Pair Encoding (BPE) subword tokenizer (GPT-2 vocabulary space: 50,257 tokens)...`,
-    `[PROGRESS] [${now()}] Tokenizing raw text corpus... [████████████████████] 100% complete.`,
-    `[METRICS] [${now()}] Generated ${tokenCount.toLocaleString()} total tokens · Compression ratio: ${compressionRatio} chars/token.`,
-    `[VOCAB] [${now()}] Vocabulary coverage: ${uniqueVocab.toLocaleString()} unique tokens discovered in corpus.`,
-    `[SPLIT] [${now()}] Dataset partitioned: Train Split (90%) = ${trainTokens.toLocaleString()} tokens | Val/Dev Split (10%) = ${devTokens.toLocaleString()} tokens.`,
-    `[STORAGE] [${now()}] Writing persistent tokenized shard: "data/${fileName}" and "data/${fileName}.tokens.json"`,
-    `[PIPELINE] [${now()}] Configured for Pretraining: ${trainBatches8.toLocaleString()} training steps (batch_size: 8, context_length: 256).`,
-    `[SUCCESS] [${now()}] ✓ Dataset "${fileName}" successfully ingested & ready for model training!`,
+  const progress_steps = [
+    {
+      percent: 10,
+      phase: 'Scanning Raw Bytes',
+      message: `[INIT] [${now()}] Starting Sovereign LLM Data Ingestion Engine for "${fileName}"...`,
+      tokensProcessed: 0,
+    },
+    {
+      percent: 22,
+      phase: 'Source & UTF-8 Validation',
+      message: `[FILE] [${now()}] Source verified: ${chars.toLocaleString()} characters · ${lines.toLocaleString()} lines · ${words.toLocaleString()} words · ${(Buffer.byteLength(text, 'utf8') / 1024).toFixed(1)} KB`,
+      tokensProcessed: 0,
+    },
+    {
+      percent: 36,
+      phase: 'LF Normalization',
+      message: `[ENCODING] [${now()}] UTF-8 byte stream decoded with zero corruption. Newlines normalized to UNIX LF (\\n).`,
+      tokensProcessed: Math.round(tokenCount * 0.15),
+    },
+    {
+      percent: 52,
+      phase: 'BPE Tokenizer Loading',
+      message: `[TOKENIZER] [${now()}] Loading Byte-Pair Encoding (BPE) subword tokenizer (GPT-2 vocabulary space: 50,257 tokens)...`,
+      tokensProcessed: Math.round(tokenCount * 0.45),
+    },
+    {
+      percent: 70,
+      phase: 'Subword Segmentation',
+      message: `[PROGRESS] [${now()}] Tokenizing raw text corpus... [████████████████████] 100% complete.`,
+      tokensProcessed: Math.round(tokenCount * 0.85),
+    },
+    {
+      percent: 82,
+      phase: 'Vocabulary Space Analysis',
+      message: `[METRICS] [${now()}] Generated ${tokenCount.toLocaleString()} total tokens · Compression ratio: ${compressionRatio} chars/token.`,
+      tokensProcessed: tokenCount,
+    },
+    {
+      percent: 89,
+      phase: 'Coverage Verification',
+      message: `[VOCAB] [${now()}] Vocabulary coverage: ${uniqueVocab.toLocaleString()} unique tokens discovered in corpus.`,
+      tokensProcessed: tokenCount,
+    },
+    {
+      percent: 94,
+      phase: 'Train / Dev Split Partitioning',
+      message: `[SPLIT] [${now()}] Dataset partitioned: Train Split (90%) = ${trainTokens.toLocaleString()} tokens | Val/Dev Split (10%) = ${devTokens.toLocaleString()} tokens.`,
+      tokensProcessed: tokenCount,
+    },
+    {
+      percent: 97,
+      phase: 'Serializing Shard Arrays',
+      message: `[STORAGE] [${now()}] Writing persistent tokenized shard: "data/${fileName}" and "data/${fileName}.tokens.json"`,
+      tokensProcessed: tokenCount,
+    },
+    {
+      percent: 100,
+      phase: 'Ingestion & Tokenization Ready',
+      message: `[SUCCESS] [${now()}] ✓ Dataset "${fileName}" successfully ingested & ready for model training!`,
+      tokensProcessed: tokenCount,
+    },
   ];
+
+  const logSteps = progress_steps.map((s) => s.message);
 
   try {
     const dataDir = path.join(__dirname, 'data');
@@ -216,6 +267,7 @@ function analyzeAndTokenizeCorpus(text, fileName, datasetType = 'pretrain') {
     devTokens,
     contextWindows256,
     trainBatches8,
+    progress_steps,
     logSteps,
   };
 }
@@ -643,6 +695,7 @@ Through Group Relative Policy Optimization (GRPO) and direct preference tuning (
       status: 'ok',
       file: newFile,
       stats: analysis,
+      steps: analysis.progress_steps || [],
       logs: analysis.logSteps,
       message: `Sovereign sample corpus tokenized (${analysis.tokens.toLocaleString()} tokens ready for pretraining).`,
     });
@@ -719,6 +772,7 @@ Through Group Relative Policy Optimization (GRPO) and direct preference tuning (
       status: 'ok',
       file: newFile,
       stats: analysis,
+      steps: analysis.progress_steps || [],
       logs: analysis.logSteps,
       message: isTxt ? `Text corpus processed (${analysis.tokens.toLocaleString()} tokens ready for training).` : 'Dataset uploaded successfully.',
     });

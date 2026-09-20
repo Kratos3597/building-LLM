@@ -1,0 +1,13 @@
+{
+  "name": "test_corpus.txt",
+  "dataset_type": "pretrain",
+  "tokens": 45,
+  "chars": 138,
+  "lines": 1,
+  "words": 17,
+  "uniqueVocab": 30,
+  "compressionRatio": "3.07",
+  "trainTokens": 41,
+  "devTokens": 4,
+  "uploaded": 1789939297259
+}

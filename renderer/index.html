@@ -482,6 +482,27 @@
               <button type="button" class="btn-term-action" id="btn-clear-data-logs" title="Clear console output">Clear</button>
             </div>
           </div>
+
+          <!-- PROGRESS BAR & STATUS INDICATOR TRACKER -->
+          <div class="terminal-progress-bar-strip" id="terminal-progress-bar-strip">
+            <div class="progress-header-line" id="terminal-progress-header">
+              <div class="progress-status-indicator" id="progress-status-indicator">
+                <span class="status-indicator-beacon idle" id="status-indicator-beacon"></span>
+                <span class="progress-status-title" id="progress-status-title">STATUS:</span>
+                <span class="progress-phase-label" id="progress-phase-label">Idle (Awaiting plain text corpus)</span>
+              </div>
+              <div class="progress-meta-indicator" id="progress-meta-indicator">
+                <span class="progress-token-stat" id="progress-tokens-count">0 tokens processed</span>
+                <span class="progress-percent-display" id="progress-percentage-badge">0%</span>
+              </div>
+            </div>
+            <div class="terminal-progress-track" id="data-terminal-progress-track" role="progressbar" aria-label="Tokenization Progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+              <div class="terminal-progress-fill" id="data-terminal-progress-fill" style="width: 0%;">
+                <div class="progress-fill-sheen" id="progress-fill-sheen"></div>
+              </div>
+            </div>
+          </div>
+
           <div id="data-terminal-output" class="terminal-body data-terminal-body" role="log" aria-live="polite">
 [SYSTEM] Sovereign LLM Data Engine online.
 [READY] Awaiting text input. Click "📁 Import .txt File" or drop your text corpus above to start tokenization.</div>
