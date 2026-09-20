@@ -3,7 +3,7 @@
 >
 > **Creator:** Mohammed Sheik  
 > **Official Website:** [https://cloudnex.co.za](https://cloudnex.co.za)  
-> **Platform Support:** Windows (x64), macOS (Apple Silicon & Intel), Linux (x86_64)  
+> **Platform Support:** Windows (x64), macOS (Apple Silicon), Linux (x86_64)  
 
 ---
 

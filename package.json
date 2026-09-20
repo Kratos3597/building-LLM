@@ -22,7 +22,7 @@
     "build:desktop": "BUILD_DESKTOP=true node scripts/build.js --desktop",
     "build:electron": "BUILD_DESKTOP=true node scripts/build.js --desktop",
     "dist:win": "npm run build:backend && electron-builder --win --publish never",
-    "dist:mac": "npm run build:backend && electron-builder --mac --publish never",
+    "dist:mac": "npm run build:backend && electron-builder --mac --arm64 --publish never",
     "dist:linux": "npm run build:backend && electron-builder --linux --publish never"
   },
   "devDependencies": {
@@ -35,6 +35,7 @@
     "appId": "com.cloudnex.local-llm-studio",
     "productName": "CloudNex Local LLM Studio",
     "asar": true,
+    "compression": "normal",
     "files": [
       "main.js",
       "preload.js",
@@ -81,8 +82,18 @@
     ],
     "mac": {
       "target": [
-        "dmg",
-        "dir"
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64"
+          ]
+        },
+        {
+          "target": "dir",
+          "arch": [
+            "arm64"
+          ]
+        }
       ],
       "category": "public.app-category.developer-tools"
     },
