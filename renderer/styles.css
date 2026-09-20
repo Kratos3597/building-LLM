@@ -1581,6 +1581,178 @@ input:checked + .slider-round:before {
   white-space: pre-wrap;
 }
 
+/* DATASET INGESTION CONSOLE & TERMINAL */
+.upload-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.import-txt-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+.import-txt-btn:hover {
+  background: #f1f5f9;
+  border-color: var(--accent);
+}
+.data-terminal-window {
+  margin: 16px 0 12px;
+  border-radius: 8px;
+  border: 1px solid #334155;
+  background: #090d16;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.12);
+}
+.data-terminal-body {
+  min-height: 140px;
+  max-height: 220px;
+  padding: 14px 16px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #94a3b8;
+  background: #090d16;
+  scrollbar-color: #334155 #090d16;
+}
+.data-terminal-body::-webkit-scrollbar {
+  width: 8px;
+}
+.data-terminal-body::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 4px;
+}
+.term-dots {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.term-dot.dot-red { background: #ef4444; }
+.term-dot.dot-yellow { background: #f59e0b; }
+.term-dot.dot-green { background: #10b981; }
+
+.term-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10.5px;
+  font-family: monospace;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background: rgba(148, 163, 184, 0.12);
+  color: #94a3b8;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  margin-right: 8px;
+}
+.term-status-badge.running {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border-color: rgba(56, 189, 248, 0.4);
+}
+.term-status-badge.completed {
+  background: rgba(74, 222, 128, 0.15);
+  color: #4ade80;
+  border-color: rgba(74, 222, 128, 0.4);
+}
+.term-status-badge.error {
+  background: rgba(248, 113, 113, 0.15);
+  color: #f87171;
+  border-color: rgba(248, 113, 113, 0.4);
+}
+.pulse-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #64748b;
+}
+.pulse-dot.idle { background: #94a3b8; }
+.pulse-dot.running {
+  background: #38bdf8;
+  box-shadow: 0 0 6px #38bdf8;
+  animation: termPulse 1.2s infinite ease-in-out;
+}
+.pulse-dot.completed { background: #4ade80; }
+.pulse-dot.error { background: #f87171; }
+
+@keyframes termPulse {
+  0%, 100% { opacity: 0.4; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+
+/* Data terminal syntax highlight rows */
+.log-line {
+  margin: 1px 0;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+.log-line-init { color: #38bdf8; }
+.log-line-file { color: #f59e0b; }
+.log-line-enc { color: #cbd5e1; }
+.log-line-tok { color: #c084fc; font-weight: 600; }
+.log-line-prog { color: #38bdf8; }
+.log-line-stat { color: #34d399; font-weight: 500; }
+.log-line-vocab { color: #67e8f9; }
+.log-line-split { color: #818cf8; }
+.log-line-save { color: #94a3b8; }
+.log-line-succ { color: #4ade80; font-weight: 700; }
+.log-line-err { color: #f87171; font-weight: 700; background: rgba(239, 68, 68, 0.1); padding: 2px 4px; border-radius: 3px; }
+.log-line-diag { color: #fb923c; font-weight: 500; }
+
+/* Ingestion CTA card */
+.data-train-cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: #ffffff;
+  border: 1px solid var(--accent);
+  border-left: 4px solid var(--accent);
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin: 14px 0;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.08);
+  transition: all 0.2s ease;
+}
+.data-train-cta.hidden { display: none !important; }
+.cta-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.cta-badge {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--accent);
+  background: rgba(2, 132, 199, 0.08);
+  border: 1px solid rgba(2, 132, 199, 0.25);
+  padding: 2px 8px;
+  border-radius: 4px;
+  display: inline-block;
+  width: fit-content;
+}
+.cta-details strong {
+  font-size: 14.5px;
+  color: #0f172a;
+}
+.cta-details p {
+  font-size: 12.5px;
+  color: #475569;
+  margin: 0;
+}
+.cta-btn {
+  white-space: nowrap;
+  padding: 10px 20px;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
 .dep-config-options {
   display: flex;
   flex-direction: column;

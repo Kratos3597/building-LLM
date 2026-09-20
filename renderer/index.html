@@ -453,9 +453,53 @@
                 <option value="general">General Corpus</option>
               </select>
             </label>
-            <button id="upload-button" class="primary" type="submit" disabled>Process &amp; Ingest File <span>↑</span></button>
+            <div class="upload-btn-group">
+              <button id="import-txt-btn" class="secondary import-txt-btn" type="button" title="Browse local file system for .txt corpus">
+                <span>📁 Import .txt File</span>
+              </button>
+              <button id="upload-button" class="primary" type="submit" disabled>
+                <span>⚡ Ingest &amp; Tokenize (.TXT)</span> <span>↑</span>
+              </button>
+            </div>
           </div>
         </form>
+
+        <!-- REAL-TIME DATA INGESTION & TOKENIZER LOG CONSOLE -->
+        <div id="data-terminal-window" class="data-terminal-window embedded-terminal-window">
+          <div class="terminal-bar">
+            <div class="term-dots">
+              <span class="term-dot dot-red"></span>
+              <span class="term-dot dot-yellow"></span>
+              <span class="term-dot dot-green"></span>
+            </div>
+            <span class="term-title">✦ LLM TOKENIZER &amp; INGESTION PIPELINE (REAL-TIME CONSOLE)</span>
+            <div class="term-status-badge" id="data-terminal-status-badge">
+              <span class="pulse-dot idle" id="data-terminal-pulse"></span>
+              <span id="data-terminal-status-text">ENGINE READY</span>
+            </div>
+            <div class="terminal-actions">
+              <button type="button" class="btn-term-action" id="btn-copy-data-logs" title="Copy terminal logs to clipboard">Copy Logs</button>
+              <button type="button" class="btn-term-action" id="btn-clear-data-logs" title="Clear console output">Clear</button>
+            </div>
+          </div>
+          <div id="data-terminal-output" class="terminal-body data-terminal-body" role="log" aria-live="polite">
+[SYSTEM] Sovereign LLM Data Engine online.
+[READY] Awaiting text input. Click "📁 Import .txt File" or drop your text corpus above to start tokenization.</div>
+        </div>
+
+        <!-- INGESTION READY / DIRECT PRETRAIN LAUNCH CALLOUT -->
+        <div id="data-train-cta" class="data-train-cta hidden">
+          <div class="cta-left">
+            <span class="cta-badge">TOKENIZATION COMPLETE</span>
+            <div class="cta-details">
+              <strong id="cta-file-name">sovereign_ai_corpus.txt</strong>
+              <p id="cta-file-stats">Ready for Decoder-Only Transformer pretraining</p>
+            </div>
+          </div>
+          <button type="button" id="cta-launch-training-btn" class="primary cta-btn">
+            <span>⚡ Train LLM on this Dataset</span> →
+          </button>
+        </div>
 
         <div class="sample-dataset-strip">
           <div class="sample-info">

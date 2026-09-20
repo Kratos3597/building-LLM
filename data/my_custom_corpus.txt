@@ -1,0 +1,1 @@
+In the beginning was the token, and the token was with the Transformer. Self-attention layers compute Q, K, and V matrices to learn semantic relationships across deep neural representations.

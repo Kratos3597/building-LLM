@@ -1,0 +1,13 @@
+{
+  "name": "my_custom_corpus.txt",
+  "dataset_type": "pretrain",
+  "tokens": 72,
+  "chars": 190,
+  "lines": 1,
+  "words": 29,
+  "uniqueVocab": 36,
+  "compressionRatio": "2.64",
+  "trainTokens": 65,
+  "devTokens": 7,
+  "uploaded": 1789938876778
+}

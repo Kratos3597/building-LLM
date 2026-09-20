@@ -1,0 +1,13 @@
+{
+  "name": "sovereign_ai_corpus.txt",
+  "dataset_type": "pretrain",
+  "tokens": 738,
+  "chars": 1713,
+  "lines": 14,
+  "words": 212,
+  "uniqueVocab": 271,
+  "compressionRatio": "2.32",
+  "trainTokens": 664,
+  "devTokens": 74,
+  "uploaded": 1789938873886
+}

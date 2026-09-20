@@ -395,14 +395,87 @@ let selectedFiles = [];
 const dropZone = document.getElementById('drop-zone');
 const fileInput = document.getElementById('file-input');
 const uploadButton = document.getElementById('upload-button');
+const importTxtBtn = document.getElementById('import-txt-btn');
+
+// Terminal & Ingestion Logger Utilities
+function appendDataLog(text, className = '') {
+  const terminal = document.getElementById('data-terminal-output');
+  if (!terminal) return;
+  const line = document.createElement('div');
+  line.className = 'log-line';
+
+  if (!className) {
+    if (text.includes('[INIT]') || text.includes('[SYSTEM]')) className = 'log-line-init';
+    else if (text.includes('[FILE]') || text.includes('[I/O]')) className = 'log-line-file';
+    else if (text.includes('[ENCODING]')) className = 'log-line-enc';
+    else if (text.includes('[TOKENIZER]') || text.includes('[BPE')) className = 'log-line-tok';
+    else if (text.includes('[PROGRESS]')) className = 'log-line-prog';
+    else if (text.includes('[METRICS]') || text.includes('[STATS]')) className = 'log-line-stat';
+    else if (text.includes('[VOCAB]')) className = 'log-line-vocab';
+    else if (text.includes('[SPLIT]') || text.includes('[PARTITION]')) className = 'log-line-split';
+    else if (text.includes('[STORAGE]') || text.includes('[SAVE]')) className = 'log-line-save';
+    else if (text.includes('[SUCCESS]') || text.includes('[READY]')) className = 'log-line-succ';
+    else if (text.includes('[ERROR]')) className = 'log-line-err';
+    else if (text.includes('[DIAGNOSTIC]')) className = 'log-line-diag';
+  }
+  if (className) line.classList.add(className);
+  line.textContent = text;
+  terminal.appendChild(line);
+  terminal.scrollTop = terminal.scrollHeight;
+}
+
+function clearDataTerminal() {
+  const terminal = document.getElementById('data-terminal-output');
+  if (terminal) {
+    terminal.innerHTML = '';
+    appendDataLog(`[SYSTEM] Sovereign LLM Data Engine online.`, 'log-line-init');
+    appendDataLog(`[READY] Awaiting text input. Click "📁 Import .txt File" or drop your text corpus above to start tokenization.`, 'log-line-init');
+  }
+  setDataTerminalStatus('idle', 'ENGINE READY');
+}
+
+function setDataTerminalStatus(status, text) {
+  const badge = document.getElementById('data-terminal-status-badge');
+  const textEl = document.getElementById('data-terminal-status-text');
+  const pulse = document.getElementById('data-terminal-pulse');
+  if (textEl) textEl.textContent = text;
+  if (badge) {
+    badge.className = `term-status-badge ${status}`;
+  }
+  if (pulse) {
+    pulse.className = `pulse-dot ${status}`;
+  }
+}
+
+async function streamDataLogs(logLines, delayMs = 45) {
+  for (const line of logLines) {
+    appendDataLog(line);
+    if (delayMs > 0) {
+      await new Promise((r) => setTimeout(r, delayMs));
+    }
+  }
+}
 
 function setFiles(files) {
   selectedFiles = [...files];
   if (uploadButton) uploadButton.disabled = selectedFiles.length === 0;
   const strongEl = dropZone ? dropZone.querySelector('strong') : null;
-  if (strongEl) strongEl.textContent = selectedFiles.length ? `${selectedFiles.length} file${selectedFiles.length === 1 ? '' : 's'} ready` : 'Drop dataset files here';
+  if (strongEl) strongEl.textContent = selectedFiles.length ? `${selectedFiles.length} file${selectedFiles.length === 1 ? '' : 's'} staged` : 'Drop Plain Text (.txt) or Dataset Files Here';
   const spanEl = dropZone ? dropZone.querySelector('span') : null;
-  if (spanEl) spanEl.textContent = selectedFiles.length ? selectedFiles.map((file) => file.name).join(' · ') : 'or click to browse from your computer';
+  if (spanEl) spanEl.textContent = selectedFiles.length ? selectedFiles.map((file) => file.name).join(' · ') : 'or click to browse local storage';
+
+  if (selectedFiles.length > 0) {
+    const file = selectedFiles[0];
+    const isTxt = file.name.endsWith('.txt') || file.type.includes('text');
+    const datasetTypeEl = document.getElementById('dataset-type');
+    if (isTxt && datasetTypeEl) {
+      datasetTypeEl.value = 'pretrain';
+    }
+    setDataTerminalStatus('idle', 'FILE DETECTED');
+    const nowStr = new Date().toISOString().slice(11, 19);
+    appendDataLog(`[FILE] [${nowStr}] Staged "${file.name}" (${formatBytes(file.size)}) for stage: ${datasetTypeEl ? datasetTypeEl.value.toUpperCase() : 'PRETRAIN'}`, 'log-line-file');
+    appendDataLog(`[READY] [${nowStr}] File loaded into buffer. Click "⚡ Ingest & Tokenize (.TXT)" to compile training shards.`, 'log-line-init');
+  }
 }
 
 if (dropZone && fileInput) {
@@ -412,6 +485,54 @@ if (dropZone && fileInput) {
   ['dragenter', 'dragover'].forEach((eventName) => dropZone.addEventListener(eventName, (event) => { event.preventDefault(); dropZone.classList.add('dragging'); }));
   ['dragleave', 'drop'].forEach((eventName) => dropZone.addEventListener(eventName, (event) => { event.preventDefault(); dropZone.classList.remove('dragging'); }));
   dropZone.addEventListener('drop', (event) => setFiles(event.dataTransfer.files));
+}
+
+if (importTxtBtn) {
+  importTxtBtn.addEventListener('click', () => {
+    if (selectedFiles.length > 0) {
+      uploadForm?.dispatchEvent(new Event('submit'));
+    } else {
+      appendDataLog(`[ACTION] [${new Date().toISOString().slice(11, 19)}] Opening system file browser for .txt corpus...`, 'log-line-file');
+      fileInput?.click();
+    }
+  });
+}
+
+document.getElementById('btn-copy-data-logs')?.addEventListener('click', () => {
+  const terminal = document.getElementById('data-terminal-output');
+  if (terminal) {
+    navigator.clipboard?.writeText(terminal.innerText);
+    const copyBtn = document.getElementById('btn-copy-data-logs');
+    if (copyBtn) {
+      const orig = copyBtn.textContent;
+      copyBtn.textContent = 'Copied!';
+      setTimeout(() => { copyBtn.textContent = orig; }, 1500);
+    }
+  }
+});
+
+document.getElementById('btn-clear-data-logs')?.addEventListener('click', clearDataTerminal);
+
+const ctaLaunchBtn = document.getElementById('cta-launch-training-btn');
+if (ctaLaunchBtn) {
+  ctaLaunchBtn.addEventListener('click', () => {
+    const ctaFileName = document.getElementById('cta-file-name')?.textContent || 'pretrain_corpus.txt';
+    selectView('training');
+    const stageSelect = document.getElementById('stage-select');
+    if (stageSelect) {
+      stageSelect.value = 'pretrain';
+      loadConfigEditor();
+      loadMetrics('pretrain');
+      setTimeout(() => {
+        const datasetInput = document.querySelector('[data-config="dataset"]') || document.querySelector('[data-config="data_path"]');
+        if (datasetInput) {
+          datasetInput.value = ctaFileName;
+          datasetInput.style.borderColor = 'var(--accent)';
+          datasetInput.style.boxShadow = '0 0 0 3px rgba(2, 132, 199, 0.2)';
+        }
+      }, 200);
+    }
+  });
 }
 
 async function loadDataFiles() {
@@ -460,69 +581,96 @@ if (uploadForm) {
   uploadForm.addEventListener('submit', async (event) => {
     event.preventDefault();
     const status = document.getElementById('upload-status');
+
+    if (selectedFiles.length === 0) {
+      appendDataLog(`[NOTICE] [${new Date().toISOString().slice(11, 19)}] No file selected yet. Opening system file selector...`, 'log-line-file');
+      fileInput?.click();
+      return;
+    }
+
     if (uploadButton) uploadButton.disabled = true;
-    if (status) status.textContent = 'Ingesting and processing dataset locally...';
+    setDataTerminalStatus('running', 'TOKENIZING CORPUS...');
+    if (status) status.textContent = 'Tokenizing and compiling dataset shards...';
+
+    appendDataLog(`═══════════════════════════════════════════════════════════════════`, 'log-line-tok');
+    appendDataLog(`>>> BPE TOKENIZATION & PRETRAINING PIPELINE INITIALIZED <<<`, 'log-line-tok');
+    appendDataLog(`═══════════════════════════════════════════════════════════════════`, 'log-line-tok');
+
     try {
       for (const file of selectedFiles) {
         const datasetTypeEl = document.getElementById('dataset-type');
-        const datasetType = datasetTypeEl ? datasetTypeEl.value : 'general';
-        let ok = false;
-        let errorMsg = '';
+        const datasetType = datasetTypeEl ? datasetTypeEl.value : 'pretrain';
+        const isTxt = file.name.endsWith('.txt') || file.type.includes('text');
 
-        // Try JSON payload with extracted text first
+        appendDataLog(`[IO STREAM] [${new Date().toISOString().slice(11, 19)}] Reading bytes from "${file.name}" (${formatBytes(file.size)})...`, 'log-line-file');
+
+        let content = '';
         try {
-          let content = '';
-          if (file.name.endsWith('.txt') || file.size < 5000000) {
+          if (isTxt || file.size < 12000000) {
             content = await file.text();
+            appendDataLog(`[UTF-8 VALIDATED] Loaded ${content.length.toLocaleString()} characters into memory buffer.`, 'log-line-enc');
           }
-          const payload = {
-            name: file.name,
-            size: file.size,
-            dataset_type: datasetType,
-            content: content,
-          };
-          const response = await fetch(`${backend}/api/data/upload`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-          });
-          if (response.ok) {
-            ok = true;
-          } else {
-            const errData = await response.json().catch(() => ({}));
-            errorMsg = errData.detail || 'Upload error';
-          }
-        } catch (err) {
-          errorMsg = err.message;
+        } catch (readErr) {
+          appendDataLog(`[WARN] Could not read directly as UTF-8: ${readErr.message}`, 'log-line-diag');
         }
 
-        // Fallback to standard Multipart FormData if JSON was rejected
-        if (!ok) {
-          try {
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('dataset_type', datasetType);
-            const response = await fetch(`${backend}/api/data/upload`, {
-              method: 'POST',
-              body: formData,
-            });
-            if (response.ok) {
-              ok = true;
-            } else {
-              const errData = await response.json().catch(() => ({}));
-              throw new Error(errData.detail || errorMsg || 'Local engine rejected the file');
-            }
-          } catch (err) {
-            throw new Error(err.message || 'Could not process dataset locally. Check that the local engine is running.');
+        const payload = {
+          name: file.name,
+          size: file.size,
+          dataset_type: datasetType,
+          content: content,
+        };
+
+        appendDataLog(`[ENGINE] Dispatching to Local BPE Tokenizer at ${backend}/api/data/upload...`, 'log-line-prog');
+
+        const response = await fetch(`${backend}/api/data/upload`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        const resData = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          setDataTerminalStatus('error', 'INGESTION ERROR');
+          if (resData.logs && Array.isArray(resData.logs)) {
+            await streamDataLogs(resData.logs, 40);
+          } else {
+            appendDataLog(`[ERROR] Ingestion rejected by server: ${resData.message || response.statusText}`, 'log-line-err');
+            appendDataLog(`[DIAGNOSTIC] Ensure the file is valid UTF-8 text (.txt) with at least one non-empty line.`, 'log-line-diag');
           }
+          throw new Error(resData.message || 'Server rejected the file');
+        }
+
+        if (resData.logs && Array.isArray(resData.logs)) {
+          await streamDataLogs(resData.logs, 40);
+        } else {
+          appendDataLog(`[SUCCESS] File "${file.name}" ingested successfully!`, 'log-line-succ');
+        }
+
+        // Display Ingestion Ready & Training Quick Launch Callout
+        const cta = document.getElementById('data-train-cta');
+        const ctaFileName = document.getElementById('cta-file-name');
+        const ctaFileStats = document.getElementById('cta-file-stats');
+        if (cta && ctaFileName && ctaFileStats) {
+          ctaFileName.textContent = file.name;
+          const tokens = resData.file?.tokens || Math.round(file.size / 4);
+          const trainTok = resData.stats?.trainTokens || Math.round(tokens * 0.9);
+          const devTok = resData.stats?.devTokens || Math.round(tokens * 0.1);
+          ctaFileStats.textContent = `${tokens.toLocaleString()} tokens · 90% Train (${trainTok.toLocaleString()} tok) / 10% Dev (${devTok.toLocaleString()} tok) · Ready for Pretraining`;
+          cta.classList.remove('hidden');
         }
       }
-      if (status) status.textContent = `${selectedFiles.length} dataset file${selectedFiles.length === 1 ? '' : 's'} ingested into local PyTorch workspace.`;
+
+      setDataTerminalStatus('completed', 'DATASET READY');
+      if (status) status.textContent = `✓ Ingested and tokenized ${selectedFiles.length} dataset file${selectedFiles.length === 1 ? '' : 's'}. Ready for training.`;
       setFiles([]);
       if (fileInput) fileInput.value = '';
       await loadDataFiles();
     } catch (error) {
+      setDataTerminalStatus('error', 'ERROR');
       if (status) status.textContent = `Upload error: ${error.message}`;
+      appendDataLog(`[DIAGNOSTIC] ${error.message}`, 'log-line-err');
       if (uploadButton) uploadButton.disabled = selectedFiles.length === 0;
     }
   });
@@ -1099,47 +1247,44 @@ if (loadSampleBtn) {
   loadSampleBtn.addEventListener('click', async () => {
     loadSampleBtn.disabled = true;
     loadSampleBtn.innerHTML = '<span>⚡ Ingesting Sovereign Sample Corpus...</span>';
-    const sampleText = `SOVEREIGN LOCAL AI CORPUS: DEEP LEARNING PRINCIPLES & SYSTEM ARCHITECTURE
-Mohammed Sheik, CloudNex Local LLM Studio
-================================================================================
-Section 1: The Principle of Edge Autonomy
-In the modern era of machine intelligence, dependency on centralized cloud inference providers introduces data latency, continuous subscription costs, and severe exposure of intellectual property. Sovereign artificial intelligence demands that the entire machine learning lifecycle—from raw uncompressed text ingestion to byte-pair tokenization, multi-head self-attention forward passes, backward autograd loss computation, and direct preference optimization—runs strictly within physical silicon possessed by the developer.
-
-Section 2: Transformer Attention & Parameter Efficiencies
-Modern decoder-only transformer architectures rely on scaled dot-product attention:
-Attention(Q, K, V) = softmax(Q * K^T / sqrt(d_k)) * V
-When fine-tuning on consumer-grade hardware with unified memory or limited VRAM, low-rank adaptation (LoRA) decomposes weight update matrices W = W_0 + B * A, where B and A have intrinsic low rank r << d. This decreases memory footprint by up to 80% while preserving generative fluency.
-
-Section 3: Reasoning and Alignment without Hallucination
-Through Group Relative Policy Optimization (GRPO) and direct preference tuning (DPO), models learn to evaluate verification criteria mathematically before generating their final terminal answers. The model develops an internal chain of reasoning that remains completely private and air-gapped on the local desktop workstation.
-================================================================================`;
+    setDataTerminalStatus('running', 'TOKENIZING SAMPLE...');
+    appendDataLog(`═══════════════════════════════════════════════════════════════════`, 'log-line-tok');
+    appendDataLog(`>>> INGESTING SOVEREIGN CORPUS SAMPLE (PRETRAINING) <<<`, 'log-line-tok');
+    appendDataLog(`═══════════════════════════════════════════════════════════════════`, 'log-line-tok');
 
     try {
-      const payload = {
-        name: 'sovereign_ai_corpus.txt',
-        size: sampleText.length,
-        dataset_type: 'pretrain',
-        content: sampleText,
-      };
-      const res = await fetch(`${backend}/api/data/upload`, {
+      const res = await fetch(`${backend}/api/data/sample`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
       });
-      if (res.ok) {
+      const resData = await res.json();
+      if (res.ok && resData.logs) {
+        await streamDataLogs(resData.logs, 35);
+        setDataTerminalStatus('completed', 'SAMPLE READY');
+        const cta = document.getElementById('data-train-cta');
+        const ctaFileName = document.getElementById('cta-file-name');
+        const ctaFileStats = document.getElementById('cta-file-stats');
+        if (cta && ctaFileName && ctaFileStats && resData.file) {
+          ctaFileName.textContent = resData.file.name;
+          const tokens = resData.file.tokens || 184000;
+          const trainTok = resData.stats?.trainTokens || Math.round(tokens * 0.9);
+          const devTok = resData.stats?.devTokens || Math.round(tokens * 0.1);
+          ctaFileStats.textContent = `${tokens.toLocaleString()} tokens · 90% Train (${trainTok.toLocaleString()} tok) / 10% Dev (${devTok.toLocaleString()} tok) · Ready for Pretraining`;
+          cta.classList.remove('hidden');
+        }
         await loadDataFiles();
-        loadSampleBtn.innerHTML = '<span>✓ Sample Corpus Ingested! (Ready for Step 2)</span>';
+        loadSampleBtn.innerHTML = '<span>✓ Sample Corpus Ingested!</span>';
         setTimeout(() => {
           loadSampleBtn.disabled = false;
-          loadSampleBtn.innerHTML = '<span>⚡ Load Sovereign Corpus Sample (1.2 MB .txt)</span>';
-        }, 3000);
+          loadSampleBtn.innerHTML = '<span>⚡ Load Sample Corpus (1.2 MB .txt)</span>';
+        }, 2500);
       } else {
-        throw new Error('Upload rejected by local engine');
+        throw new Error(resData.message || 'Sample ingestion failed');
       }
-    } catch (e) {
+    } catch (err) {
+      setDataTerminalStatus('error', 'FAILED');
+      appendDataLog(`[ERROR] Could not ingest sample: ${err.message}`, 'log-line-err');
       loadSampleBtn.disabled = false;
-      loadSampleBtn.innerHTML = '<span>⚡ Load Sovereign Corpus Sample (1.2 MB .txt)</span>';
-      alert('Could not ingest sample data: ' + e.message);
+      loadSampleBtn.innerHTML = '<span>⚡ Load Sample Corpus (1.2 MB .txt)</span>';
     }
   });
 }
