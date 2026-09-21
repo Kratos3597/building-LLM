@@ -782,10 +782,16 @@
           </div>
         </div>
 
-        <h3 style="font-size: 13px; font-weight: 700; color: var(--muted); margin: 18px 0 10px; letter-spacing: 0.5px; text-transform: uppercase;">Available Checkpoints &amp; Weights</h3>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin: 18px 0 10px;">
+          <h3 style="font-size: 13px; font-weight: 700; color: var(--muted); margin: 0; letter-spacing: 0.5px; text-transform: uppercase;">Available Checkpoints &amp; Trained Weights</h3>
+          <button type="button" id="refresh-models-btn" class="secondary" style="font-size: 11.5px; padding: 4px 10px; cursor: pointer;">🔄 Refresh Checkpoints</button>
+        </div>
         <div id="model-list" class="job-list"></div>
 
-        <h3 style="font-size: 13px; font-weight: 700; color: var(--muted); margin: 28px 0 10px; letter-spacing: 0.5px; text-transform: uppercase;">Recent Training Runs</h3>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin: 28px 0 10px;">
+          <h3 style="font-size: 13px; font-weight: 700; color: var(--muted); margin: 0; letter-spacing: 0.5px; text-transform: uppercase;">Recent Training Runs</h3>
+          <button type="button" id="clear-failed-jobs-btn" class="secondary" style="font-size: 11.5px; padding: 4px 10px; color: #dc2626; cursor: pointer;">🗑️ Clear Run History</button>
+        </div>
         <div id="job-list" class="job-list"></div>
 
         <div class="step-navigation-footer">
@@ -816,11 +822,12 @@
         <div class="conversational-chat-container">
           <!-- Top Control Strip -->
           <div class="chat-control-strip">
-            <div class="chat-model-selector-group">
+            <div class="chat-model-selector-group" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
               <label for="model-select">Checkpoint:
                 <select id="model-select" class="chat-model-select"></select>
               </label>
               <span class="chat-model-meta-tag" id="chat-model-meta-tag">3.8 GB · Quantized</span>
+              <span class="chat-model-meta-tag" id="chat-trained-dataset-tag" style="background:rgba(16, 185, 129, 0.12); color:#059669; border:1px solid rgba(16, 185, 129, 0.25); font-weight:600;">📚 Trained on: domain_knowledge_manual.txt</span>
             </div>
 
             <div class="chat-hyperparams-group">

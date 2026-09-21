@@ -72,9 +72,45 @@ let dataFiles = [
 ];
 
 let models = [
-  { name: 'sft_final.pt', size_mb: 3820, path: 'checkpoints/sft_final.pt' },
-  { name: 'base_pretrained.pt', size_mb: 3650, path: 'checkpoints/base_pretrained.pt' },
-  { name: 'dpo_aligned_step300.pt', size_mb: 3820, path: 'checkpoints/dpo_aligned_step300.pt' },
+  {
+    name: 'sft_final.pt',
+    size_mb: 3820,
+    path: 'checkpoints/sft_final.pt',
+    format: 'pytorch',
+    stage: 'sft',
+    stage_label: 'Supervised Fine-Tuning',
+    dataset_name: 'domain_knowledge_manual.txt',
+    tokens: 300000,
+    loss: 0.812,
+    status: 'ready',
+    description: 'Trained on Domain Knowledge Manual · Instruction Aligned',
+  },
+  {
+    name: 'base_pretrained.pt',
+    size_mb: 3650,
+    path: 'checkpoints/base_pretrained.pt',
+    format: 'pytorch',
+    stage: 'pretrain',
+    stage_label: 'Base Pretraining',
+    dataset_name: 'sovereign_ai_corpus.txt',
+    tokens: 612500,
+    loss: 1.218,
+    status: 'ready',
+    description: 'Pretrained on Sovereign AI Corpus · Foundation Weights',
+  },
+  {
+    name: 'dpo_aligned_step300.pt',
+    size_mb: 3820,
+    path: 'checkpoints/dpo_aligned_step300.pt',
+    format: 'pytorch',
+    stage: 'dpo',
+    stage_label: 'Direct Preference Alignment',
+    dataset_name: 'dpo_hh_rlhf_pairs.jsonl',
+    tokens: 420000,
+    loss: 0.450,
+    status: 'ready',
+    description: 'Preference-aligned with RLHF pairs · Zero Hallucination',
+  },
 ];
 
 // Helper to send JSON
@@ -609,6 +645,12 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'GET') {
       return sendJson(res, 200, jobs);
     }
+    if (req.method === 'DELETE') {
+      const initialCount = jobs.length;
+      jobs = jobs.filter((j) => j.status !== 'failed');
+      const removed = initialCount - jobs.length;
+      return sendJson(res, 200, { status: 'ok', message: `Cleared ${removed} failed training runs`, jobs });
+    }
     if (req.method === 'POST') {
       const body = await parseBody(req);
       const stage = body.stage || 'pretrain';
@@ -635,6 +677,10 @@ const server = http.createServer(async (req, res) => {
         `[${timestamp()}] [TRAINING] Starting Step 1/${steps} · Batch size: ${batchSize} · Initial loss: 4.821`,
       ];
 
+      const cleanDatasetStem = (datasetName || 'dataset').replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 24);
+      const generatedCkptName = `${cleanDatasetStem}_${stage}_checkpoint.pt`;
+      const generatedCkptPath = `checkpoints/${generatedCkptName}`;
+
       const newJob = {
         job_id: `job-${Date.now().toString(36)}`,
         stage,
@@ -645,6 +691,8 @@ const server = http.createServer(async (req, res) => {
         dataset_tokens: tokenCount,
         batch_size: batchSize,
         total_steps: steps,
+        checkpoint: generatedCkptName,
+        checkpoint_path: generatedCkptPath,
         log_tail: initialSteps.join('\n'),
         initial_logs: initialSteps,
       };
@@ -657,19 +705,46 @@ const server = http.createServer(async (req, res) => {
           + `\n[${timestamp()}] [STEP ${Math.round(steps * 0.5)}/${steps}] loss: 1.942 · ppl: 6.97 · throughput: 1,480 tok/s`
           + `\n[${timestamp()}] [STEP ${Math.round(steps * 0.75)}/${steps}] loss: 1.218 · ppl: 3.38 · throughput: 1,510 tok/s`
           + `\n[${timestamp()}] [SUCCESS] Step ${steps}/${steps} completed successfully.`
-          + `\n[${timestamp()}] [METRICS] Final cross-entropy loss: 0.812 (Perplexity: 2.25)`
-          + `\n[${timestamp()}] [CHECKPOINT] Saved state checkpoint to checkpoints/${stage}_latest.pt`;
-        if (!models.some((m) => m.name === `${stage}_latest.pt`)) {
-          models.unshift({
-            name: `${stage}_latest.pt`,
-            size_mb: 3750,
-            path: `checkpoints/${stage}_latest.pt`,
-          });
-        }
-      }, 4500);
+          + `\n[${timestamp()}] [METRICS] Final cross-entropy loss: 0.784 (Perplexity: 2.19)`
+          + `\n[${timestamp()}] [CHECKPOINT] Saved state checkpoint to ${generatedCkptPath}`;
+
+        // Ensure physical checkpoint file exists on disk
+        try {
+          const ckptDir = path.join(ROOT_DIR, 'checkpoints');
+          if (!fs.existsSync(ckptDir)) fs.mkdirSync(ckptDir, { recursive: true });
+          fs.writeFileSync(path.join(ckptDir, generatedCkptName), Buffer.alloc(1024));
+          fs.writeFileSync(path.join(ckptDir, `${stage}_latest.pt`), Buffer.alloc(1024));
+        } catch (_) {}
+
+        // Add newly trained model to registry with high priority
+        const newModelEntry = {
+          name: generatedCkptName,
+          size_mb: 3750,
+          path: generatedCkptPath,
+          format: 'pytorch',
+          stage,
+          stage_label: stageInfo.title,
+          dataset_name: datasetName,
+          tokens: tokenCount,
+          loss: 0.784,
+          status: 'ready',
+          description: `Trained on ${datasetName} · ${tokenCount.toLocaleString()} tokens`,
+          created: Date.now(),
+        };
+
+        models = models.filter((m) => m.name !== generatedCkptName);
+        models.unshift(newModelEntry);
+      }, 3500);
 
       return sendJson(res, 200, newJob);
     }
+  }
+
+  const singleJobMatch = pathname.match(/^\/api\/jobs\/([^/]+)$/);
+  if (singleJobMatch && req.method === 'DELETE') {
+    const jId = decodeURIComponent(singleJobMatch[1]);
+    jobs = jobs.filter((j) => j.job_id !== jId);
+    return sendJson(res, 200, { status: 'ok', message: `Job ${jId} removed` });
   }
 
   if (pathname === '/api/data/files') {
@@ -871,6 +946,15 @@ Through Group Relative Policy Optimization (GRPO) and direct preference tuning (
     const systemPrompt = typeof body.system_prompt === 'string' ? body.system_prompt.trim() : '';
     const temperature = Number(body.temperature) || 0.7;
 
+    const baseModelName = path.basename(model);
+    const matchedModel = models.find(m => m.name === baseModelName || m.path === model || m.path.endsWith(baseModelName)) || {
+      name: baseModelName,
+      dataset_name: 'domain_knowledge_manual.txt',
+      tokens: 300000,
+      stage_label: 'Supervised Fine-Tuning',
+      loss: 0.812,
+    };
+
     // Determine user prompt from direct parameter or last message in thread
     let lastUserQuery = prompt;
     if (!lastUserQuery && messages.length > 0) {
@@ -896,7 +980,16 @@ Through Group Relative Policy Optimization (GRPO) and direct preference tuning (
     let responseContent = '';
 
     if (qLower.includes('hello') || qLower.includes('hi ') || qLower === 'hi') {
-      responseContent = `Hello! I'm your sovereign local model (${path.basename(model)}). I am running completely offline on your silicon. What would you like to explore or test today?`;
+      responseContent = `Hello! I'm your sovereign local model (**${baseModelName}**), trained on \`${matchedModel.dataset_name || 'domain_knowledge_manual.txt'}\`. I am running completely offline and private on your silicon. What would you like to explore or test today?`;
+    } else if (qLower.includes('dataset') || qLower.includes('trained on') || qLower.includes('training data') || qLower.includes('what data') || qLower.includes('what did you learn') || qLower.includes('your knowledge')) {
+      responseContent = `${prefix}### Checkpoint Training Profile
+- **Active Weights**: \`${baseModelName}\`
+- **Training Stage**: ${matchedModel.stage_label || 'Supervised Fine-Tuning (SFT)'}
+- **Dataset Ingested**: \`${matchedModel.dataset_name || 'domain_knowledge_manual.txt'}\`
+- **Tokens Ingested**: ${(matchedModel.tokens || 300000).toLocaleString()} tokens
+- **Final Validation Loss**: ${matchedModel.loss || '0.812'}
+
+I specialize in the domain concepts, technical patterns, and instruction sequences structured during this training run. You can test my answers, export dialogue to SFT pairs, or switch to other checkpoints in Step 3!`;
     } else if (qLower.includes('self-attention') || qLower.includes('transformer') || qLower.includes('attention')) {
       responseContent = `${prefix}In decoder-only autoregressive transformers (like GPT and LLaMA), self-attention works through Query (Q), Key (K), and Value (V) projections:
 
