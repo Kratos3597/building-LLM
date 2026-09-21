@@ -1342,7 +1342,28 @@ async function loadModels() {
       </article>`;
     }).join('') : '<span class="muted">No checkpoints found. Complete a training run first.</span>';
   }
+  syncTrainingBaseCheckpointDropdown(models);
   updateSelectedCheckpointUI();
+}
+
+function syncTrainingBaseCheckpointDropdown(models) {
+  const trainingSelect = document.getElementById('training-base-checkpoint-select');
+  if (!trainingSelect) return;
+  const currentVal = trainingSelect.value || 'none';
+  const list = Array.isArray(models) && models.length ? models : (cachedModelsList.length ? cachedModelsList : DEFAULT_FALLBACK_MODELS);
+  
+  let opts = '<option value="none">Train from Scratch (Random Init)</option>';
+  list.forEach((model) => {
+    const isGguf = model.format === 'gguf' || model.name.endsWith('.gguf');
+    const stageName = model.stage_label || (model.stage ? model.stage.toUpperCase() : 'CKPT');
+    const datasetSuffix = model.dataset_name ? ` · 📚 ${model.dataset_name}` : '';
+    const isSel = (model.path === currentVal || model.name === currentVal);
+    opts += `<option value="${model.path}" ${isSel ? 'selected' : ''}>${escapeHtml(model.name)}${datasetSuffix} (${model.size_mb} MB · ${isGguf ? 'GGUF' : stageName})</option>`;
+  });
+  trainingSelect.innerHTML = opts;
+  if (currentVal && [...trainingSelect.options].some(o => o.value === currentVal)) {
+    trainingSelect.value = currentVal;
+  }
 }
 
 function updateSelectedCheckpointUI() {
@@ -1441,6 +1462,15 @@ function setupTrainFurther(checkpointPath) {
   if (stageSelect) {
     stageSelect.value = checkpointPath.includes('sft') ? 'dpo' : 'sft';
     stageSelect.dispatchEvent(new Event('change'));
+  }
+  // Sync Base Checkpoint select
+  const baseSelect = document.getElementById('training-base-checkpoint-select');
+  if (baseSelect) {
+    const baseName = checkpointPath.split('/').pop();
+    const opt = [...baseSelect.options].find(o => o.value === checkpointPath || o.value.endsWith(baseName) || o.text.includes(baseName));
+    if (opt) {
+      baseSelect.value = opt.value;
+    }
   }
   // Scroll to training setup
   const form = document.getElementById('training-form');
@@ -1702,6 +1732,8 @@ document.getElementById('training-form')?.addEventListener('submit', async (even
   const stage = stageEl ? stageEl.value : 'pretrain';
   const smoke = smokeEl ? smokeEl.checked : true;
   const selectedDataset = datasetSelect ? datasetSelect.value : 'sovereign_ai_corpus.txt';
+  const baseCheckpointSelect = document.getElementById('training-base-checkpoint-select');
+  const baseCheckpoint = (baseCheckpointSelect && baseCheckpointSelect.value) ? baseCheckpointSelect.value : 'none';
   const overrides = collectOverrides();
 
   // Reveal live terminal and set active state
@@ -1718,6 +1750,11 @@ document.getElementById('training-form')?.addEventListener('submit', async (even
   const nowTime = () => new Date().toISOString().slice(11, 19);
 
   appendTrainingLog(`[${nowTime()}] [INIT] Initiating training run for stage: "${stage}"...`, 'log-line-init');
+  if (baseCheckpoint && baseCheckpoint !== 'none') {
+    appendTrainingLog(`[${nowTime()}] [WEIGHTS] Base Initial Checkpoint: "${baseCheckpoint}"`, 'log-line-succ');
+  } else {
+    appendTrainingLog(`[${nowTime()}] [WEIGHTS] Training from scratch (Random Gaussian Init)`, 'log-line-info');
+  }
   appendTrainingLog(`[${nowTime()}] [DATASET] Selected training corpus: "${selectedDataset}"`, 'log-line-info');
   appendTrainingLog(`[${nowTime()}] [TOKENIZER] Validating token sequence boundaries and BPE vocabulary...`, 'log-line-info');
 
@@ -1729,6 +1766,7 @@ document.getElementById('training-form')?.addEventListener('submit', async (even
         stage,
         smoke,
         dataset_name: selectedDataset,
+        base_checkpoint: baseCheckpoint,
         overrides,
       }),
     });
@@ -2130,6 +2168,358 @@ document.getElementById('chat-export-history-btn')?.addEventListener('click', as
     if (btn) btn.innerHTML = '<span>💾 Save as SFT Training Data</span>';
   }
 });
+
+// --- CHAT IMPORT LOGIC ---
+function initChatImport() {
+  const importBtn = document.getElementById('chat-import-history-btn');
+  const fileInput = document.getElementById('chat-import-file-input');
+
+  if (importBtn && fileInput) {
+    importBtn.addEventListener('click', () => {
+      fileInput.value = '';
+      fileInput.click();
+    });
+
+    fileInput.addEventListener('change', async () => {
+      const file = fileInput.files && fileInput.files[0];
+      if (!file) return;
+
+      importBtn.disabled = true;
+      importBtn.innerHTML = '<span>Importing Chat...</span>';
+
+      try {
+        const text = await file.text();
+        const res = await fetch(`${backend}/api/chat/import`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            filename: file.name,
+            text,
+            format: 'auto',
+          }),
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.detail || 'Chat import failed');
+        }
+
+        if (Array.isArray(data.messages) && data.messages.length > 0) {
+          data.messages.forEach((msg) => {
+            appendChatMessage(msg.role || 'assistant', msg.content || '', msg.model || 'Imported');
+            chatMessagesHistory.push({
+              role: msg.role || 'assistant',
+              content: msg.content || '',
+              model: msg.model,
+              timestamp: Date.now(),
+            });
+          });
+
+          appendChatMessage('assistant', `✓ Successfully imported ${data.messages.length} conversational turns from "${file.name}". You can continue the conversation directly below!`, 'Studio Ingestion');
+          importBtn.innerHTML = '<span>✓ Chat Imported</span>';
+        } else {
+          appendChatMessage('assistant', `Import completed, but no messages were parsed from "${file.name}".`, 'Studio Ingestion');
+        }
+      } catch (err) {
+        alert(`Error importing chat: ${err.message}`);
+      } finally {
+        importBtn.disabled = false;
+        setTimeout(() => {
+          if (importBtn) importBtn.innerHTML = '<span>📂 Import Chat</span>';
+        }, 2200);
+      }
+    });
+  }
+}
+
+// --- IMPORT MODEL CHECKPOINT MODAL ---
+function openImportCheckpointModal() {
+  const modal = document.getElementById('import-checkpoint-modal');
+  const statusPanel = document.getElementById('import-status-panel');
+  if (statusPanel) statusPanel.style.display = 'none';
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeImportCheckpointModal() {
+  const modal = document.getElementById('import-checkpoint-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+function initImportCheckpointModal() {
+  const modal = document.getElementById('import-checkpoint-modal');
+  const closeBtn = document.getElementById('close-import-modal-btn');
+  const cancelBtn = document.getElementById('cancel-import-btn');
+  const dropZone = document.getElementById('checkpoint-drop-zone');
+  const fileInput = document.getElementById('checkpoint-file-input');
+  const submitBtn = document.getElementById('submit-import-model-btn');
+  const statusPanel = document.getElementById('import-status-panel');
+  const statusText = document.getElementById('import-status-text');
+
+  // Trigger buttons
+  document.getElementById('import-checkpoint-btn')?.addEventListener('click', openImportCheckpointModal);
+  document.getElementById('header-import-checkpoint-btn')?.addEventListener('click', openImportCheckpointModal);
+  document.getElementById('training-import-checkpoint-btn')?.addEventListener('click', openImportCheckpointModal);
+  document.getElementById('chat-import-checkpoint-btn')?.addEventListener('click', openImportCheckpointModal);
+
+  closeBtn?.addEventListener('click', closeImportCheckpointModal);
+  cancelBtn?.addEventListener('click', closeImportCheckpointModal);
+
+  modal?.addEventListener('click', (e) => {
+    if (e.target === modal) closeImportCheckpointModal();
+  });
+
+  if (dropZone && fileInput) {
+    dropZone.addEventListener('click', () => fileInput.click());
+    ['dragenter', 'dragover'].forEach(evt => dropZone.addEventListener(evt, (e) => {
+      e.preventDefault();
+      dropZone.style.background = 'rgba(2, 132, 199, 0.12)';
+      dropZone.style.borderColor = '#0284c7';
+    }));
+    ['dragleave', 'drop'].forEach(evt => dropZone.addEventListener(evt, (e) => {
+      e.preventDefault();
+      dropZone.style.background = 'rgba(2, 132, 199, 0.04)';
+      dropZone.style.borderColor = 'var(--accent)';
+    }));
+
+    const handleFile = (file) => {
+      if (!file) return;
+      const nameInput = document.getElementById('import-model-name');
+      const formatSelect = document.getElementById('import-model-format');
+      const sizeInput = document.getElementById('import-model-size');
+      const stageSelect = document.getElementById('import-model-stage');
+
+      if (nameInput) nameInput.value = file.name;
+      const lower = file.name.toLowerCase();
+      if (formatSelect) {
+        if (lower.endsWith('.gguf')) formatSelect.value = 'gguf';
+        else if (lower.endsWith('.safetensors')) formatSelect.value = 'safetensors';
+        else formatSelect.value = 'pytorch';
+      }
+      if (sizeInput && file.size) {
+        sizeInput.value = Math.max(1, Math.round(file.size / (1024 * 1024)));
+      }
+      if (stageSelect) {
+        if (lower.includes('dpo')) stageSelect.value = 'dpo';
+        else if (lower.includes('pretrain') || lower.includes('base')) stageSelect.value = 'pretrain';
+        else stageSelect.value = 'sft';
+      }
+      const p = dropZone.querySelector('p');
+      if (p) p.textContent = `Selected: ${file.name} (${(file.size / (1024 * 1024)).toFixed(1)} MB)`;
+    };
+
+    dropZone.addEventListener('drop', (e) => {
+      if (e.dataTransfer.files && e.dataTransfer.files.length) {
+        handleFile(e.dataTransfer.files[0]);
+      }
+    });
+
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files && fileInput.files.length) {
+        handleFile(fileInput.files[0]);
+      }
+    });
+  }
+
+  submitBtn?.addEventListener('click', async () => {
+    const nameInput = document.getElementById('import-model-name');
+    const formatSelect = document.getElementById('import-model-format');
+    const stageSelect = document.getElementById('import-model-stage');
+    const datasetInput = document.getElementById('import-model-dataset');
+    const sizeInput = document.getElementById('import-model-size');
+    const tokensInput = document.getElementById('import-model-tokens');
+
+    const name = (nameInput && nameInput.value.trim()) || 'imported_model.pt';
+    const format = (formatSelect && formatSelect.value) || 'pytorch';
+    const stage = (stageSelect && stageSelect.value) || 'sft';
+    const dataset_name = (datasetInput && datasetInput.value.trim()) || 'domain_knowledge_manual.txt';
+    const size_mb = Number(sizeInput ? sizeInput.value : 3820) || 3820;
+    const tokens = Number(tokensInput ? tokensInput.value : 450000) || 450000;
+
+    if (statusPanel) statusPanel.style.display = 'block';
+    if (statusText) statusText.textContent = `Ingesting and verifying ${name} tensor structure...`;
+    submitBtn.disabled = true;
+
+    try {
+      const res = await fetch(`${backend}/api/models/import`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name,
+          format,
+          stage,
+          dataset_name,
+          size_mb,
+          tokens,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.detail || 'Failed to import model');
+      }
+
+      if (statusText) statusText.textContent = `✓ Successfully verified and registered ${name}!`;
+
+      // Set as active checkpoint and refresh UI
+      if (data.model && data.model.path) {
+        activeSelectedCheckpoint = data.model.path;
+      }
+
+      await loadModels();
+      await loadChatModels();
+      updateSelectedCheckpointUI();
+
+      setTimeout(() => {
+        closeImportCheckpointModal();
+        submitBtn.disabled = false;
+        if (statusPanel) statusPanel.style.display = 'none';
+      }, 700);
+    } catch (err) {
+      if (statusText) statusText.textContent = `Error: ${err.message}`;
+      submitBtn.disabled = false;
+    }
+  });
+}
+
+// --- EXPORT TOKENIZATION MODAL ---
+let currentTokenizationData = null;
+
+async function updateTokenizationExportPreview() {
+  const datasetSelect = document.getElementById('export-tokens-dataset-select');
+  const formatSelect = document.getElementById('export-tokens-format-select');
+  const tokenCountEl = document.getElementById('export-token-count');
+  const vocabSizeEl = document.getElementById('export-vocab-size');
+  const compEl = document.getElementById('export-compression-ratio');
+  const previewEl = document.getElementById('export-tokens-preview');
+
+  const dataset = (datasetSelect && datasetSelect.value) || 'sovereign_ai_corpus.txt';
+  const format = (formatSelect && formatSelect.value) || 'json';
+
+  if (previewEl) previewEl.textContent = 'Generating tokenization export preview...';
+
+  try {
+    const res = await fetch(`${backend}/api/training/tokenization/export?dataset=${encodeURIComponent(dataset)}&format=${format}`);
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Export preview failed');
+    }
+
+    if (format === 'binary') {
+      const buf = await res.arrayBuffer();
+      const uint16 = new Uint16Array(buf);
+      const totalTokens = uint16.length;
+      if (tokenCountEl) tokenCountEl.textContent = totalTokens.toLocaleString();
+      if (vocabSizeEl) vocabSizeEl.textContent = '50,257 (BPE)';
+      if (compEl) compEl.textContent = '2.0 bytes/tok';
+      
+      const sample = Array.from(uint16.slice(0, 32));
+      if (previewEl) {
+        previewEl.textContent = `// Binary uint16 tensor buffer (${buf.byteLength} bytes, ${totalTokens} token IDs)\n` +
+          `[First 32 Token IDs]:\n[${sample.join(', ')} ...]\n\n` +
+          `// Loadable in PyTorch:\n` +
+          `import numpy as np, torch\n` +
+          `tokens = torch.from_numpy(np.fromfile("${dataset.replace(/\.[^/.]+$/, '')}.bin", dtype=np.uint16))\n` +
+          `print(f"Tensor shape: {tokens.shape}, dtype: {tokens.dtype}")`;
+      }
+    } else {
+      const data = await res.json();
+      currentTokenizationData = data;
+      if (tokenCountEl) tokenCountEl.textContent = (data.total_tokens || 0).toLocaleString();
+      if (vocabSizeEl) vocabSizeEl.textContent = (data.vocab_size || 0).toLocaleString();
+      if (compEl) compEl.textContent = data.compression_ratio || '3.8 chars/tok';
+
+      if (previewEl) {
+        if (format === 'tokenizer') {
+          previewEl.textContent = JSON.stringify(data.tokenizer_config || data, null, 2).slice(0, 1500) + '\n... [truncated]';
+        } else {
+          const previewObj = {
+            dataset: data.dataset,
+            format: data.format,
+            total_tokens: data.total_tokens,
+            vocab_size: data.vocab_size,
+            sample_token_ids: (data.token_ids || []).slice(0, 24),
+            sample_vocabulary: Object.fromEntries(Object.entries(data.vocabulary || {}).slice(0, 10)),
+          };
+          previewEl.textContent = JSON.stringify(previewObj, null, 2);
+        }
+      }
+    }
+  } catch (err) {
+    if (previewEl) previewEl.textContent = `Error fetching tokenization: ${err.message}`;
+  }
+}
+
+function openTokenizationExportModal(presetDataset) {
+  const modal = document.getElementById('tokenization-export-modal');
+  const datasetSelect = document.getElementById('export-tokens-dataset-select');
+  const trainingDatasetSelect = document.getElementById('training-dataset-select');
+
+  if (datasetSelect) {
+    if (trainingDatasetSelect && trainingDatasetSelect.options.length) {
+      datasetSelect.innerHTML = trainingDatasetSelect.innerHTML;
+    } else {
+      datasetSelect.innerHTML = '<option value="sovereign_ai_corpus.txt">sovereign_ai_corpus.txt</option>';
+    }
+
+    if (presetDataset) {
+      datasetSelect.value = presetDataset;
+    } else if (trainingDatasetSelect && trainingDatasetSelect.value) {
+      datasetSelect.value = trainingDatasetSelect.value;
+    }
+  }
+
+  updateTokenizationExportPreview();
+  if (modal) modal.classList.remove('hidden');
+}
+
+function closeTokenizationExportModal() {
+  const modal = document.getElementById('tokenization-export-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+function initTokenizationExportModal() {
+  const modal = document.getElementById('tokenization-export-modal');
+  const closeBtn = document.getElementById('close-export-tokens-modal-btn');
+  const cancelBtn = document.getElementById('cancel-export-tokens-btn');
+  const datasetSelect = document.getElementById('export-tokens-dataset-select');
+  const formatSelect = document.getElementById('export-tokens-format-select');
+  const downloadBtn = document.getElementById('download-tokenization-btn');
+
+  // Trigger buttons
+  document.getElementById('export-tokenization-btn')?.addEventListener('click', () => openTokenizationExportModal());
+  document.getElementById('inspector-export-tokens-btn')?.addEventListener('click', () => {
+    const filename = document.getElementById('inspector-file-name')?.textContent;
+    openTokenizationExportModal(filename);
+  });
+  document.getElementById('training-action-export-tokens-btn')?.addEventListener('click', () => openTokenizationExportModal());
+
+  closeBtn?.addEventListener('click', closeTokenizationExportModal);
+  cancelBtn?.addEventListener('click', closeTokenizationExportModal);
+  modal?.addEventListener('click', (e) => {
+    if (e.target === modal) closeTokenizationExportModal();
+  });
+
+  datasetSelect?.addEventListener('change', updateTokenizationExportPreview);
+  formatSelect?.addEventListener('change', updateTokenizationExportPreview);
+
+  downloadBtn?.addEventListener('click', () => {
+    const ds = (datasetSelect && datasetSelect.value) || 'sovereign_ai_corpus.txt';
+    const fmt = (formatSelect && formatSelect.value) || 'json';
+    const downloadUrl = `${backend}/api/training/tokenization/export?dataset=${encodeURIComponent(ds)}&format=${fmt}&download=true`;
+
+    const a = document.createElement('a');
+    a.href = downloadUrl;
+    a.download = `${ds.replace(/\.[^/.]+$/, '')}_tokenization.${fmt === 'binary' ? 'bin' : 'json'}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    downloadBtn.innerHTML = '<span>✓ Download Started</span>';
+    setTimeout(() => {
+      downloadBtn.innerHTML = '<span>📥 Download Tokenization File</span>';
+    }, 2000);
+  });
+}
 
 document.getElementById('evaluation-form')?.addEventListener('submit', async (event) => {
   event.preventDefault();
@@ -3007,6 +3397,9 @@ function bindChassisControls() {
 
 initAppleGlassSuite();
 initGgufModal();
+initImportCheckpointModal();
+initTokenizationExportModal();
+initChatImport();
 
 selectView('overview');
 

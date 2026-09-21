@@ -634,6 +634,16 @@
                 <option value="">Loading datasets...</option>
               </select>
             </label>
+            <label for="training-base-checkpoint-select" class="checkpoint-select-label">Initial Weights / Checkpoint
+              <select id="training-base-checkpoint-select" class="training-checkpoint-dropdown">
+                <option value="none">Train from Scratch (Random Init)</option>
+              </select>
+            </label>
+            <div style="display:flex; align-items:flex-end;">
+              <button type="button" class="secondary" id="training-import-checkpoint-btn" style="padding: 7px 11px; font-size: 11.5px; white-space: nowrap; cursor: pointer;" title="Import external model checkpoint (.pt, .safetensors, .gguf) to fine-tune">
+                <span>📥 Import Weights</span>
+              </button>
+            </div>
             <label class="check-row">
               <input id="smoke-check" type="checkbox" checked>
               <span>Smoke Test Mode (Fast sanity check)</span>
@@ -650,6 +660,9 @@
               </div>
             </div>
             <div class="dataset-banner-actions">
+              <button type="button" class="secondary export-tokens-btn" id="export-tokenization-btn" title="Export token IDs array, vocabulary dictionary, and tensor shards">
+                <span>📥 Export Tokenization</span>
+              </button>
               <button type="button" class="secondary inspect-dataset-btn" id="open-preflight-inspector-btn" title="Run health checks, vocabulary space verification, and token split analysis">
                 🔍 Pre-Flight Inspector
               </button>
@@ -665,7 +678,12 @@
                 <strong id="inspector-file-name">sovereign_ai_corpus.txt</strong>
                 <span class="inspector-health-badge health-excellent" id="inspector-health-badge">Health Score: 98/100 (Pass)</span>
               </div>
-              <button type="button" class="close-inspector-btn" id="close-preflight-inspector-btn">✕ Close</button>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <button type="button" class="primary" id="inspector-export-tokens-btn" style="font-size: 11.5px; padding: 4px 10px; cursor: pointer;">
+                  <span>📥 Export Tokenization</span>
+                </button>
+                <button type="button" class="close-inspector-btn" id="close-preflight-inspector-btn">✕ Close</button>
+              </div>
             </div>
 
             <div class="inspector-body">
@@ -779,12 +797,18 @@
             <button type="button" class="secondary checkpoint-action-btn" id="train-further-btn">
               <span>⚡ Train Further (Fine-Tune / DPO)</span>
             </button>
+            <button type="button" class="secondary checkpoint-action-btn" id="import-checkpoint-btn" style="cursor: pointer;" title="Import external .pt, .gguf, or .safetensors model weights into studio">
+              <span>📥 Import Checkpoint / Weights</span>
+            </button>
           </div>
         </div>
 
         <div style="display:flex; justify-content:space-between; align-items:center; margin: 18px 0 10px;">
           <h3 style="font-size: 13px; font-weight: 700; color: var(--muted); margin: 0; letter-spacing: 0.5px; text-transform: uppercase;">Available Checkpoints &amp; Trained Weights</h3>
-          <button type="button" id="refresh-models-btn" class="secondary" style="font-size: 11.5px; padding: 4px 10px; cursor: pointer;">🔄 Refresh Checkpoints</button>
+          <div style="display:flex; gap:8px;">
+            <button type="button" id="header-import-checkpoint-btn" class="primary" style="font-size: 11.5px; padding: 4px 10px; cursor: pointer;">📥 Import Checkpoint</button>
+            <button type="button" id="refresh-models-btn" class="secondary" style="font-size: 11.5px; padding: 4px 10px; cursor: pointer;">🔄 Refresh Checkpoints</button>
+          </div>
         </div>
         <div id="model-list" class="job-list"></div>
 
@@ -810,12 +834,16 @@
             <p>Engage in multi-turn dialog with your local checkpoint. Responses run 100% private and air-gapped on your device.</p>
           </div>
           <div class="chat-header-actions">
+            <button type="button" class="secondary" id="chat-import-history-btn" title="Import chat conversation transcript or instruction pairs (.json / .txt)">
+              <span>📂 Import Chat</span>
+            </button>
             <button type="button" class="secondary" id="chat-export-history-btn" title="Export conversation as training pairs for fine-tuning">
               <span>💾 Save as SFT Training Data</span>
             </button>
             <button type="button" class="secondary" id="chat-train-model-btn" title="Jump to Step 2 to fine-tune this model further">
               <span>⚡ Fine-Tune This Checkpoint</span>
             </button>
+            <input type="file" id="chat-import-file-input" accept=".json,.jsonl,.txt" style="display: none;" />
           </div>
         </div>
 
@@ -826,6 +854,9 @@
               <label for="model-select">Checkpoint:
                 <select id="model-select" class="chat-model-select"></select>
               </label>
+              <button type="button" class="secondary" id="chat-import-checkpoint-btn" style="padding: 4px 10px; font-size: 11.5px; cursor: pointer;" title="Import external model checkpoint into chat session">
+                <span>📥 Import Weights</span>
+              </button>
               <span class="chat-model-meta-tag" id="chat-model-meta-tag">3.8 GB · Quantized</span>
               <span class="chat-model-meta-tag" id="chat-trained-dataset-tag" style="background:rgba(16, 185, 129, 0.12); color:#059669; border:1px solid rgba(16, 185, 129, 0.25); font-weight:600;">📚 Trained on: domain_knowledge_manual.txt</span>
             </div>
@@ -1436,6 +1467,147 @@ Copyright (c) 2026 Mohammed Sheik. All rights reserved.</pre>
           <button type="button" class="secondary" id="cancel-gguf-btn">Cancel</button>
           <button type="button" class="primary" id="start-gguf-convert-btn">
             <span>Start GGUF Conversion</span> &rarr;
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- IMPORT MODEL CHECKPOINT MODAL -->
+  <div id="import-checkpoint-modal" class="dialog-backdrop hidden">
+    <div class="custom-dialog-card" style="max-width: 580px;">
+      <div class="dialog-header">
+        <div class="dialog-title-group">
+          <span class="dialog-kicker">MODEL WEIGHT INGESTION</span>
+          <h3>Import Model Checkpoint</h3>
+        </div>
+        <button type="button" class="close-dialog-btn" id="close-import-modal-btn">✕</button>
+      </div>
+
+      <div class="dialog-content-body">
+        <!-- File Picker / Drag and Drop Box -->
+        <div class="hud-feature-card" id="checkpoint-drop-zone" style="border: 2px dashed var(--accent); background: rgba(2, 132, 199, 0.04); text-align: center; padding: 22px; cursor: pointer;">
+          <span style="font-size: 28px; display: block; margin-bottom: 6px;">📥</span>
+          <strong style="font-size: 13.5px; color: var(--ink-bright);">Choose Checkpoint File or Drag &amp; Drop</strong>
+          <p style="font-size: 11.5px; color: var(--muted); margin-top: 4px;">Supports PyTorch (.pt, .bin, .ckpt), GGUF (.gguf), and HuggingFace SafeTensors (.safetensors)</p>
+          <input type="file" id="checkpoint-file-input" accept=".pt,.bin,.safetensors,.gguf,.ckpt" style="display: none;" />
+          <button type="button" class="secondary" id="browse-checkpoint-file-btn" style="margin-top: 10px; font-size: 12px; padding: 6px 14px; pointer-events: none;">Browse Local Disk</button>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+          <div>
+            <label for="import-model-name" style="font-size: 12px; font-weight: 600; color: var(--ink-bright); display: block; margin-bottom: 4px;">Model / File Name</label>
+            <input type="text" id="import-model-name" placeholder="e.g. llama3-8b-custom.pt" style="width: 100%;" />
+          </div>
+          <div>
+            <label for="import-model-format" style="font-size: 12px; font-weight: 600; color: var(--ink-bright); display: block; margin-bottom: 4px;">Weight Format</label>
+            <select id="import-model-format" style="width: 100%;">
+              <option value="pytorch" selected>PyTorch (.pt / .bin)</option>
+              <option value="gguf">GGUF (llama.cpp / Ollama)</option>
+              <option value="safetensors">SafeTensors (.safetensors)</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+          <div>
+            <label for="import-model-stage" style="font-size: 12px; font-weight: 600; color: var(--ink-bright); display: block; margin-bottom: 4px;">Training Stage Profile</label>
+            <select id="import-model-stage" style="width: 100%;">
+              <option value="sft" selected>Supervised Fine-Tuned (SFT)</option>
+              <option value="pretrain">Base Pretrained Foundation</option>
+              <option value="dpo">Direct Preference Aligned (DPO)</option>
+              <option value="reward">Reward Model</option>
+              <option value="custom">Custom LoRA / Adapter</option>
+            </select>
+          </div>
+          <div>
+            <label for="import-model-dataset" style="font-size: 12px; font-weight: 600; color: var(--ink-bright); display: block; margin-bottom: 4px;">Trained Dataset Origin</label>
+            <input type="text" id="import-model-dataset" placeholder="e.g. domain_knowledge_manual.txt" style="width: 100%;" />
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+          <div>
+            <label for="import-model-size" style="font-size: 12px; font-weight: 600; color: var(--ink-bright); display: block; margin-bottom: 4px;">Approx. Size (MB)</label>
+            <input type="number" id="import-model-size" value="3820" style="width: 100%;" />
+          </div>
+          <div>
+            <label for="import-model-tokens" style="font-size: 12px; font-weight: 600; color: var(--ink-bright); display: block; margin-bottom: 4px;">Ingested Tokens Count</label>
+            <input type="number" id="import-model-tokens" value="450000" style="width: 100%;" />
+          </div>
+        </div>
+
+        <div id="import-status-panel" style="display: none; padding: 10px 12px; border-radius: 6px; font-size: 12px; font-family: monospace; background: #0f172a; color: #38bdf8; line-height: 1.4;">
+          <span id="import-status-text">Importing checkpoint into local studio...</span>
+        </div>
+
+        <div class="dialog-actions-footer">
+          <button type="button" class="secondary" id="cancel-import-btn">Cancel</button>
+          <button type="button" class="primary" id="submit-import-model-btn">
+            <span>Import &amp; Set Active Checkpoint</span> &rarr;
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EXPORT TOKENIZATION MODAL -->
+  <div id="tokenization-export-modal" class="dialog-backdrop hidden">
+    <div class="custom-dialog-card" style="max-width: 620px;">
+      <div class="dialog-header">
+        <div class="dialog-title-group">
+          <span class="dialog-kicker">DATASET PRE-PROCESSING &amp; SHARDING</span>
+          <h3>Export Training Tokenization</h3>
+        </div>
+        <button type="button" class="close-dialog-btn" id="close-export-tokens-modal-btn">✕</button>
+      </div>
+
+      <div class="dialog-content-body">
+        <p style="font-size: 12.5px; color: var(--muted); margin: 0;">
+          Export tokenized tensor arrays, vocabulary mappings, and special tokens from the training module. Use these exported shards directly in PyTorch MemoryMapped tensors, llama.cpp, or custom transformer training scripts.
+        </p>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+          <div>
+            <label for="export-tokens-dataset-select" style="font-size: 12px; font-weight: 600; color: var(--ink-bright); display: block; margin-bottom: 4px;">Target Training Dataset</label>
+            <select id="export-tokens-dataset-select" style="width: 100%;"></select>
+          </div>
+          <div>
+            <label for="export-tokens-format-select" style="font-size: 12px; font-weight: 600; color: var(--ink-bright); display: block; margin-bottom: 4px;">Export Format</label>
+            <select id="export-tokens-format-select" style="width: 100%;">
+              <option value="json" selected>Token IDs &amp; Vocab (.json)</option>
+              <option value="binary">Binary Dataloader Tensor (.bin · Uint16)</option>
+              <option value="tokenizer">HuggingFace Tokenizer (.json)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Tokenization Stats Preview -->
+        <div class="inspector-metrics-row" style="margin: 0;">
+          <div class="inspector-metric-card">
+            <span class="metric-label">Total Tokens</span>
+            <strong id="export-token-count">--</strong>
+          </div>
+          <div class="inspector-metric-card">
+            <span class="metric-label">Vocab Size</span>
+            <strong id="export-vocab-size">--</strong>
+          </div>
+          <div class="inspector-metric-card">
+            <span class="metric-label">Compression</span>
+            <strong id="export-compression-ratio">--</strong>
+          </div>
+        </div>
+
+        <!-- Sample Preview Box -->
+        <div class="inspector-sample-box">
+          <span class="sample-box-title">EXPORT PREVIEW:</span>
+          <pre id="export-tokens-preview" class="inspector-sample-preview" style="max-height: 140px;">Generating tokenization preview...</pre>
+        </div>
+
+        <div class="dialog-actions-footer">
+          <button type="button" class="secondary" id="cancel-export-tokens-btn">Close</button>
+          <button type="button" class="primary" id="download-tokenization-btn">
+            <span>📥 Download Tokenization File</span>
           </button>
         </div>
       </div>
