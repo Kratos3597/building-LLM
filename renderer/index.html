@@ -662,14 +662,40 @@
           <div>
             <span class="panel-kicker">CHECKPOINT REGISTRY</span>
             <h2>Model Checkpoints</h2>
-            <p>Saved local weights from training runs, ready for export or inference.</p>
+            <p>Select any checkpoint to test in conversational chat, export weights, convert to GGUF, or continue fine-tuning further.</p>
+          </div>
+          <div class="active-checkpoint-pill-banner" id="active-checkpoint-status">
+            <span class="pulse-dot"></span>
+            <span>Active Checkpoint: <strong id="active-checkpoint-name">sft_final.pt</strong></span>
           </div>
         </div>
-        <div id="job-list" class="job-list"></div>
+        
+        <!-- Quick Actions Toolbar for Selected Checkpoint -->
+        <div class="checkpoint-actions-toolbar" id="checkpoint-selected-toolbar">
+          <div class="selected-checkpoint-info">
+            <span class="selection-tag">SELECTED TARGET</span>
+            <strong id="selected-checkpoint-label">sft_final.pt</strong>
+            <span class="selected-checkpoint-meta" id="selected-checkpoint-meta">3.8 GB · Supervised Fine-Tuning</span>
+          </div>
+          <div class="checkpoint-action-buttons">
+            <button type="button" class="primary checkpoint-action-btn" id="use-in-chat-btn">
+              <span>💬 Test in Chat</span>
+            </button>
+            <button type="button" class="secondary checkpoint-action-btn" id="train-further-btn">
+              <span>⚡ Train Further (Fine-Tune / DPO)</span>
+            </button>
+          </div>
+        </div>
+
+        <h3 style="font-size: 13px; font-weight: 700; color: var(--muted); margin: 18px 0 10px; letter-spacing: 0.5px; text-transform: uppercase;">Available Checkpoints &amp; Weights</h3>
         <div id="model-list" class="job-list"></div>
+
+        <h3 style="font-size: 13px; font-weight: 700; color: var(--muted); margin: 28px 0 10px; letter-spacing: 0.5px; text-transform: uppercase;">Recent Training Runs</h3>
+        <div id="job-list" class="job-list"></div>
+
         <div class="step-navigation-footer">
           <button type="button" class="primary wizard-next-btn" data-view="chat">
-            <span>Open Chat</span> →
+            <span>Open Conversational Chat</span> →
           </button>
         </div>
       </div>
@@ -678,35 +704,98 @@
       <div id="chat-content" class="hidden training-content">
         <div class="section-title-row">
           <div>
-            <span class="panel-kicker">LOCAL INFERENCE</span>
-            <h2>Inference Chat</h2>
-            <p>Prompt your sovereign model locally with zero cloud transmission.</p>
+            <span class="panel-kicker">LOCAL INFERENCE STUDIO</span>
+            <h2>Conversational Chat</h2>
+            <p>Engage in multi-turn dialog with your local checkpoint. Responses run 100% private and air-gapped on your device.</p>
+          </div>
+          <div class="chat-header-actions">
+            <button type="button" class="secondary" id="chat-export-history-btn" title="Export conversation as training pairs for fine-tuning">
+              <span>💾 Save as SFT Training Data</span>
+            </button>
+            <button type="button" class="secondary" id="chat-train-model-btn" title="Jump to Step 2 to fine-tune this model further">
+              <span>⚡ Fine-Tune This Checkpoint</span>
+            </button>
           </div>
         </div>
-        <form id="chat-form">
-          <div class="chat-controls-row">
-            <label for="model-select">Active Checkpoint
-              <select id="model-select"></select>
-            </label>
-            <div class="chat-temp-slider">
-              <label for="chat-temp">Temperature: <span id="chat-temp-val">0.7</span></label>
-              <input type="range" id="chat-temp" min="0.1" max="1.5" step="0.1" value="0.7">
+
+        <div class="conversational-chat-container">
+          <!-- Top Control Strip -->
+          <div class="chat-control-strip">
+            <div class="chat-model-selector-group">
+              <label for="model-select">Checkpoint:
+                <select id="model-select" class="chat-model-select"></select>
+              </label>
+              <span class="chat-model-meta-tag" id="chat-model-meta-tag">3.8 GB · Quantized</span>
+            </div>
+
+            <div class="chat-hyperparams-group">
+              <div class="chat-param-item">
+                <label for="chat-temp">Temp: <span id="chat-temp-val">0.7</span></label>
+                <input type="range" id="chat-temp" min="0.1" max="1.5" step="0.1" value="0.7">
+              </div>
+              <div class="chat-param-item">
+                <label for="chat-system-preset">Persona:
+                  <select id="chat-system-preset" class="persona-select">
+                    <option value="helpful">Helpful Assistant</option>
+                    <option value="technical">Senior Systems &amp; Network Engineer</option>
+                    <option value="concise">Concise &amp; Direct</option>
+                    <option value="reasoning">Chain-of-Thought Reasoner</option>
+                  </select>
+                </label>
+              </div>
+              <button type="button" class="clear-convo-btn" id="clear-chat-btn" title="Start a fresh dialog">
+                <span>🔄 New Thread</span>
+              </button>
             </div>
           </div>
-          <label for="prompt-input">Prompt
-            <textarea id="prompt-input" rows="4" placeholder="Enter your prompt to test your model's knowledge or reasoning..."></textarea>
-          </label>
-          <div class="chat-action-row">
-            <button class="primary glow-btn" type="submit">Generate Local Response <span>→</span></button>
-            <button class="secondary" type="button" id="clear-chat-btn">Clear Output</button>
+
+          <!-- Conversational Message Thread -->
+          <div class="chat-messages-thread" id="chat-messages-thread" role="log" aria-live="polite">
+            <!-- Welcome Bot Greeting -->
+            <div class="chat-message-row assistant-message-row">
+              <div class="chat-avatar assistant-avatar">🤖</div>
+              <div class="chat-bubble assistant-bubble">
+                <div class="message-meta-header">
+                  <strong>Local Model</strong>
+                  <span class="message-time">Just now</span>
+                </div>
+                <div class="message-text-content">
+                  Hello! I am your locally fine-tuned language model running directly on your hardware with <strong>zero cloud transmission</strong>.
+                  <br><br>
+                  Ask me anything to test conversational fluency, technical knowledge, or reasoning. You can also save our dialog directly as supervised training data (SFT) to train me further!
+                </div>
+                <div class="message-quick-tags">
+                  <button type="button" class="quick-prompt-tag" data-prompt="Explain how decoder-only transformers use self-attention to generate text.">Explain Self-Attention</button>
+                  <button type="button" class="quick-prompt-tag" data-prompt="Write a Python script to monitor local GPU VRAM usage.">Monitor GPU VRAM</button>
+                  <button type="button" class="quick-prompt-tag" data-prompt="Summarize best practices for fine-tuning an LLM on domain documentation.">Fine-Tuning Guide</button>
+                </div>
+              </div>
+            </div>
           </div>
-        </form>
-        <div class="chat-output-card">
-          <div class="output-header">
-            <span>INFERENCE GENERATION BUFFER</span>
-            <span id="chat-tokens-stat">Standby</span>
+
+          <!-- Typing Indicator -->
+          <div class="chat-typing-row hidden" id="chat-typing-indicator">
+            <div class="chat-avatar assistant-avatar">🤖</div>
+            <div class="chat-typing-bubble">
+              <span class="typing-dot"></span>
+              <span class="typing-dot"></span>
+              <span class="typing-dot"></span>
+              <span class="typing-caption">Generating local token stream...</span>
+            </div>
           </div>
-          <pre id="chat-output" class="chat-output">Your local model response will stream here...</pre>
+
+          <!-- Input Bar with Send Button -->
+          <form id="chat-form" class="chat-input-form">
+            <div class="chat-input-wrapper">
+              <textarea id="prompt-input" rows="2" placeholder="Message your local model... (Press Enter to send, Shift+Enter for new line)"></textarea>
+              <div class="chat-input-actions">
+                <span class="chat-token-counter" id="chat-tokens-stat">Tokens: 0</span>
+                <button type="submit" id="chat-send-btn" class="primary chat-send-btn" title="Send message">
+                  <span>Send</span> ➔
+                </button>
+              </div>
+            </div>
+          </form>
         </div>
       </div>
 

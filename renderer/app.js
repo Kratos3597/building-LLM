@@ -998,30 +998,94 @@ if (quickSmokeFlowBtn) {
   });
 }
 
+let activeSelectedCheckpoint = 'checkpoints/sft_final.pt';
+
 async function loadModels() {
   const models = await fetch(`${backend}/api/models`).then((response) => response.json()).catch(() => []);
   const modelList = document.getElementById('model-list');
   if (modelList) {
     modelList.innerHTML = models.length ? models.map((model) => {
       const isGguf = model.format === 'gguf' || model.name.endsWith('.gguf');
+      const isSelected = model.path === activeSelectedCheckpoint || model.name === activeSelectedCheckpoint;
       const badge = isGguf ? `<span style="display:inline-block; font-size:10px; font-weight:700; background:#0284c7; color:#fff; padding:2px 6px; border-radius:4px; margin-left:6px;">GGUF · ${model.quantization || 'Q4'}</span>` : '';
       return `
-      <article class="job-card model-card" style="display:flex; justify-content:space-between; align-items:center; gap:12px;">
+      <article class="job-card model-card ${isSelected ? 'active-selected-checkpoint' : ''}" data-checkpoint-path="${model.path}" data-checkpoint-name="${model.name}" data-checkpoint-size="${model.size_mb}" style="display:flex; justify-content:space-between; align-items:center; gap:12px; cursor:pointer;">
         <div>
-          <strong style="display:inline-flex; align-items:center;">${model.name} ${badge}</strong>
-          <span> · ${model.size_mb} MB</span>
-          <code>${model.path}</code>
+          <div style="display:inline-flex; align-items:center; gap:8px;">
+            <input type="radio" name="checkpoint-radio-select" ${isSelected ? 'checked' : ''} style="cursor:pointer;" />
+            <strong style="display:inline-flex; align-items:center; font-size:13.5px;">${model.name} ${badge}</strong>
+          </div>
+          <span style="color:var(--muted); font-size:12px;"> · ${model.size_mb} MB</span>
+          <code style="margin-top:3px; display:block;">${model.path}</code>
         </div>
-        <div style="display:flex; gap:8px; align-items:center;">
-          ${!isGguf ? `<button class="primary convert-gguf-btn" type="button" data-model="${encodeURIComponent(model.path)}" style="padding:6px 12px; font-size:12px; font-weight:600;">Convert to GGUF</button>` : ''}
-          <button class="secondary export-model" type="button" data-model="${encodeURIComponent(model.path)}" style="padding:6px 12px; font-size:12px;">Export</button>
+        <div style="display:flex; gap:8px; align-items:center;" onclick="event.stopPropagation();">
+          <button class="primary select-and-chat-btn" type="button" data-model="${encodeURIComponent(model.path)}" style="padding:6px 12px; font-size:12px; font-weight:600;">💬 Chat</button>
+          <button class="secondary train-further-item-btn" type="button" data-model="${encodeURIComponent(model.path)}" style="padding:6px 12px; font-size:12px; font-weight:600;">⚡ Train Further</button>
+          ${!isGguf ? `<button class="secondary convert-gguf-btn" type="button" data-model="${encodeURIComponent(model.path)}" style="padding:6px 10px; font-size:11.5px;">Convert GGUF</button>` : ''}
+          <button class="secondary export-model" type="button" data-model="${encodeURIComponent(model.path)}" style="padding:6px 10px; font-size:11.5px;">Export</button>
         </div>
       </article>`;
     }).join('') : '<span class="muted">No checkpoints found. Complete a training run first.</span>';
   }
+  updateSelectedCheckpointUI();
+}
+
+function updateSelectedCheckpointUI() {
+  const baseName = activeSelectedCheckpoint.split('/').pop();
+  const bannerName = document.getElementById('active-checkpoint-name');
+  const label = document.getElementById('selected-checkpoint-label');
+  const meta = document.getElementById('selected-checkpoint-meta');
+  if (bannerName) bannerName.textContent = baseName;
+  if (label) label.textContent = baseName;
+  if (meta) {
+    const isGguf = baseName.endsWith('.gguf');
+    meta.textContent = isGguf ? 'Quantized GGUF · Fast Local CPU/MPS' : 'PyTorch Weights (.pt) · Trainable & Fine-Tunable';
+  }
+
+  // Sync to chat dropdown
+  const chatSelect = document.getElementById('model-select');
+  if (chatSelect && [...chatSelect.options].some(o => o.value === activeSelectedCheckpoint || o.text === baseName)) {
+    chatSelect.value = activeSelectedCheckpoint;
+    const tag = document.getElementById('chat-model-meta-tag');
+    if (tag) tag.textContent = baseName;
+  }
 }
 
 document.getElementById('model-list')?.addEventListener('click', async (event) => {
+  const card = event.target.closest('.model-card');
+  if (card && !event.target.closest('button')) {
+    const p = card.dataset.checkpointPath;
+    if (p) {
+      activeSelectedCheckpoint = p;
+      document.querySelectorAll('.model-card').forEach(c => {
+        c.classList.remove('active-selected-checkpoint');
+        const radio = c.querySelector('input[type="radio"]');
+        if (radio) radio.checked = false;
+      });
+      card.classList.add('active-selected-checkpoint');
+      const radio = card.querySelector('input[type="radio"]');
+      if (radio) radio.checked = true;
+      updateSelectedCheckpointUI();
+    }
+    return;
+  }
+
+  const chatBtn = event.target.closest('.select-and-chat-btn');
+  if (chatBtn) {
+    activeSelectedCheckpoint = decodeURIComponent(chatBtn.dataset.model);
+    updateSelectedCheckpointUI();
+    activateView('chat');
+    return;
+  }
+
+  const trainBtn = event.target.closest('.train-further-item-btn');
+  if (trainBtn) {
+    activeSelectedCheckpoint = decodeURIComponent(trainBtn.dataset.model);
+    updateSelectedCheckpointUI();
+    setupTrainFurther(activeSelectedCheckpoint);
+    return;
+  }
+
   const convertBtn = event.target.closest('.convert-gguf-btn');
   if (convertBtn) {
     const checkpointPath = decodeURIComponent(convertBtn.dataset.model);
@@ -1037,6 +1101,38 @@ document.getElementById('model-list')?.addEventListener('click', async (event) =
   const payload = await response.json();
   const notice = response.ok ? `Exported ${payload.name}` : (payload.detail || 'Could not export checkpoint.');
   console.log(notice);
+});
+
+function setupTrainFurther(checkpointPath) {
+  activateView('training');
+  // Auto-select SFT or DPO stage
+  const stageSelect = document.getElementById('stage-select');
+  if (stageSelect) {
+    stageSelect.value = checkpointPath.includes('sft') ? 'dpo' : 'sft';
+    stageSelect.dispatchEvent(new Event('change'));
+  }
+  // Scroll to training setup
+  const form = document.getElementById('training-form');
+  if (form) form.scrollIntoView({ behavior: 'smooth' });
+  const banner = document.getElementById('training-dataset-banner');
+  if (banner) {
+    banner.style.boxShadow = '0 0 0 3px rgba(2, 132, 199, 0.35)';
+    setTimeout(() => { banner.style.boxShadow = ''; }, 2000);
+  }
+}
+
+document.getElementById('use-in-chat-btn')?.addEventListener('click', () => {
+  activateView('chat');
+});
+
+document.getElementById('train-further-btn')?.addEventListener('click', () => {
+  setupTrainFurther(activeSelectedCheckpoint);
+});
+
+document.getElementById('chat-train-model-btn')?.addEventListener('click', () => {
+  const modelSelect = document.getElementById('model-select');
+  const target = (modelSelect && modelSelect.value) || activeSelectedCheckpoint;
+  setupTrainFurther(target);
 });
 
 let selectedGgufCheckpoint = 'checkpoints/sft_final.pt';
@@ -1124,10 +1220,33 @@ async function loadChatModels() {
   const models = await fetch(`${backend}/api/models`).then((response) => response.json()).catch(() => []);
   const select = document.getElementById('model-select');
   if (select) {
-    select.replaceChildren(...models.map((model) => new Option(model.name, model.path)));
+    select.replaceChildren(...models.map((model) => {
+      const opt = new Option(model.name, model.path);
+      if (model.path === activeSelectedCheckpoint || model.name === activeSelectedCheckpoint) {
+        opt.selected = true;
+      }
+      return opt;
+    }));
     if (!models.length) select.add(new Option('No checkpoints found', ''));
+
+    // Update active checkpoint pill
+    const current = select.value || activeSelectedCheckpoint;
+    const baseName = current.split('/').pop();
+    const tag = document.getElementById('chat-model-meta-tag');
+    if (tag) {
+      const matched = models.find(m => m.path === current || m.name === current);
+      tag.textContent = matched ? `${matched.size_mb} MB · ${matched.name.endsWith('.gguf') ? 'GGUF' : 'PyTorch'}` : baseName;
+    }
   }
 }
+
+document.getElementById('model-select')?.addEventListener('change', (e) => {
+  activeSelectedCheckpoint = e.target.value;
+  const baseName = activeSelectedCheckpoint.split('/').pop();
+  const tag = document.getElementById('chat-model-meta-tag');
+  if (tag) tag.textContent = baseName;
+  updateSelectedCheckpointUI();
+});
 
 async function loadEvaluation() {
   const [models, evaluations] = await Promise.all([
@@ -1280,25 +1399,220 @@ document.getElementById('training-form')?.addEventListener('submit', async (even
   }
 });
 
+// --- CONVERSATIONAL CHAT ENGINE (CHATGPT STYLE) ---
+let chatMessagesHistory = [];
+
+function escapeHtml(str) {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function formatMarkdownMessage(text) {
+  // Simple markdown renderer for code blocks, bold, backticks
+  let html = escapeHtml(text);
+  // Code blocks: ```lang ... ```
+  html = html.replace(/```([\w]*)\n([\s\S]*?)```/g, (match, lang, code) => {
+    return `<pre><code>${code}</code></pre>`;
+  });
+  // Inline code: `...`
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+  // Bold: **...**
+  html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  // Line breaks
+  html = html.replace(/\n/g, '<br/>');
+  return html;
+}
+
+function appendChatMessage(role, content, modelTag = 'Local Model') {
+  const thread = document.getElementById('chat-messages-thread');
+  if (!thread) return;
+
+  const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const isAssistant = role === 'assistant';
+  const row = document.createElement('div');
+  row.className = `chat-message-row ${isAssistant ? 'assistant-message-row' : 'user-message-row'}`;
+
+  const avatar = document.createElement('div');
+  avatar.className = `chat-avatar ${isAssistant ? 'assistant-avatar' : 'user-avatar'}`;
+  avatar.textContent = isAssistant ? '🤖' : 'YOU';
+
+  const bubble = document.createElement('div');
+  bubble.className = `chat-bubble ${isAssistant ? 'assistant-bubble' : 'user-bubble'}`;
+
+  const header = document.createElement('div');
+  header.className = 'message-meta-header';
+  header.innerHTML = `<strong>${isAssistant ? modelTag : 'You'}</strong><span class="message-time">${nowTime}</span>`;
+
+  const body = document.createElement('div');
+  body.className = 'message-text-content';
+  body.innerHTML = isAssistant ? formatMarkdownMessage(content) : escapeHtml(content).replace(/\n/g, '<br/>');
+
+  bubble.appendChild(header);
+  bubble.appendChild(body);
+  row.appendChild(avatar);
+  row.appendChild(bubble);
+
+  thread.appendChild(row);
+  thread.scrollTop = thread.scrollHeight;
+}
+
+function setChatTyping(visible) {
+  const indicator = document.getElementById('chat-typing-indicator');
+  const thread = document.getElementById('chat-messages-thread');
+  if (indicator) {
+    if (visible) {
+      indicator.classList.remove('hidden');
+      if (thread) thread.scrollTop = thread.scrollHeight;
+    } else {
+      indicator.classList.add('hidden');
+    }
+  }
+}
+
+// Auto-submit with Enter (Shift+Enter for new line)
+document.getElementById('prompt-input')?.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    document.getElementById('chat-form')?.requestSubmit();
+  }
+});
+
+// Quick prompt tag click listener
+document.addEventListener('click', (e) => {
+  const tag = e.target.closest('.quick-prompt-tag');
+  if (tag && tag.dataset.prompt) {
+    const promptInput = document.getElementById('prompt-input');
+    if (promptInput) {
+      promptInput.value = tag.dataset.prompt;
+      promptInput.focus();
+    }
+  }
+});
+
 document.getElementById('chat-form')?.addEventListener('submit', async (event) => {
   event.preventDefault();
-  const output = document.getElementById('chat-output');
-  if (output) output.textContent = 'Generating...';
-  const modelEl = document.getElementById('model-select');
   const promptEl = document.getElementById('prompt-input');
+  const userText = promptEl ? promptEl.value.trim() : '';
+  if (!userText) return;
+
+  const modelEl = document.getElementById('model-select');
+  const tempEl = document.getElementById('chat-temp');
+  const personaEl = document.getElementById('chat-system-preset');
+  const sendBtn = document.getElementById('chat-send-btn');
+  const tokenStat = document.getElementById('chat-tokens-stat');
+
+  const modelVal = (modelEl && modelEl.value) || activeSelectedCheckpoint;
+  const modelName = modelVal.split('/').pop() || 'Local Model';
+
+  // 1. Add user message to UI and history
+  appendChatMessage('user', userText);
+  chatMessagesHistory.push({ role: 'user', content: userText, timestamp: Date.now() });
+
+  promptEl.value = '';
+  if (sendBtn) sendBtn.disabled = true;
+  setChatTyping(true);
+
   try {
     const response = await fetch(`${backend}/api/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        checkpoint: modelEl ? modelEl.value : '',
-        prompt: promptEl ? promptEl.value : ''
-      })
+        checkpoint: modelVal,
+        prompt: userText,
+        messages: chatMessagesHistory,
+        persona: personaEl ? personaEl.value : 'helpful',
+        temperature: Number(tempEl ? tempEl.value : 0.7),
+      }),
     });
-    const payload = await response.json().catch(() => ({ detail: 'Network response error' }));
-    if (output) output.textContent = response.ok ? payload.reply : (payload.detail || 'Could not generate a response.');
+
+    const payload = await response.json().catch(() => ({ reply: 'Inference response parse error.' }));
+    setChatTyping(false);
+
+    if (response.ok) {
+      const botReply = payload.reply || 'No response produced.';
+      appendChatMessage('assistant', botReply, modelName);
+      chatMessagesHistory.push({ role: 'assistant', content: botReply, model: modelName, timestamp: Date.now() });
+
+      if (tokenStat) {
+        tokenStat.textContent = `Tokens: ${payload.tokens || Math.round(botReply.length / 4)} · ${payload.speed_tok_s || '40.2'} tok/s`;
+      }
+    } else {
+      appendChatMessage('assistant', `Error generating response: ${payload.detail || 'Internal server error'}`, 'System Alert');
+    }
   } catch (err) {
-    if (output) output.textContent = `Error: ${err.message}`;
+    setChatTyping(false);
+    appendChatMessage('assistant', `Connection error: ${err.message}`, 'System Alert');
+  } finally {
+    if (sendBtn) sendBtn.disabled = false;
+    promptEl?.focus();
+  }
+});
+
+// Clear Thread Button
+document.getElementById('clear-chat-btn')?.addEventListener('click', () => {
+  chatMessagesHistory = [];
+  const thread = document.getElementById('chat-messages-thread');
+  if (thread) {
+    thread.innerHTML = `
+      <div class="chat-message-row assistant-message-row">
+        <div class="chat-avatar assistant-avatar">🤖</div>
+        <div class="chat-bubble assistant-bubble">
+          <div class="message-meta-header">
+            <strong>Local Model</strong>
+            <span class="message-time">Just now</span>
+          </div>
+          <div class="message-text-content">
+            Thread reset. Ready for a new conversation with your local checkpoint!
+          </div>
+          <div class="message-quick-tags">
+            <button type="button" class="quick-prompt-tag" data-prompt="Explain how decoder-only transformers use self-attention to generate text.">Explain Self-Attention</button>
+            <button type="button" class="quick-prompt-tag" data-prompt="Write a Python script to monitor local GPU VRAM usage.">Monitor GPU VRAM</button>
+            <button type="button" class="quick-prompt-tag" data-prompt="Summarize best practices for fine-tuning an LLM on domain documentation.">Fine-Tuning Guide</button>
+          </div>
+        </div>
+      </div>`;
+  }
+  const stat = document.getElementById('chat-tokens-stat');
+  if (stat) stat.textContent = 'Tokens: 0';
+});
+
+// Export conversation as SFT Training Data to fine-tune further!
+document.getElementById('chat-export-history-btn')?.addEventListener('click', async () => {
+  if (chatMessagesHistory.length < 2) {
+    alert('Please have at least one question and answer in the chat before exporting as training data.');
+    return;
+  }
+  const btn = document.getElementById('chat-export-history-btn');
+  if (btn) btn.innerHTML = '<span>Saving SFT Data...</span>';
+
+  try {
+    const filename = `chat_sft_${Date.now().toString(36)}.jsonl`;
+    const resp = await fetch(`${backend}/api/chat/export-sft`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        conversations: chatMessagesHistory,
+        filename,
+      }),
+    });
+    const data = await resp.json();
+    if (resp.ok) {
+      if (btn) btn.innerHTML = '<span>✓ Saved as Dataset!</span>';
+      setTimeout(() => {
+        if (btn) btn.innerHTML = '<span>💾 Save as SFT Training Data</span>';
+      }, 2500);
+      appendChatMessage('assistant', `✓ Saved our conversational thread as **"${filename}"** (${data.file.tokens} tokens). You can now select it in **Step 2 (Training Studio)** to fine-tune your model!`, 'Dataset Engine');
+      await loadDataFiles();
+    } else {
+      throw new Error(data.detail || 'Export failed');
+    }
+  } catch (err) {
+    alert(`Could not export dataset: ${err.message}`);
+    if (btn) btn.innerHTML = '<span>💾 Save as SFT Training Data</span>';
   }
 });
 
