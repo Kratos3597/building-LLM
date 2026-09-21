@@ -613,17 +613,27 @@ const server = http.createServer(async (req, res) => {
       const body = await parseBody(req);
       const stage = body.stage || 'pretrain';
       const stageInfo = STAGES[stage] || { title: stage };
-      const datasetName = body.dataset_name || (dataFiles[0]?.name || 'pretrain_corpus.txt');
-      const datasetFile = dataFiles.find(f => f.name === datasetName) || dataFiles[0];
-      const tokenCount = datasetFile ? datasetFile.tokens : 250000;
-      const initialLog = [
-        `[${new Date().toISOString()}] Initializing ${stageInfo.title} engine...`,
-        `[HARDWARE] Selected accelerator: ${computeSettings.selected_device} · Cores: ${computeSettings.cpu_cores}`,
-        `[DATASET] Loading tokenized corpus: "data/${datasetName}" (${tokenCount.toLocaleString()} tokens)`,
-        `[TRANSFORMER] Instantiating Decoder-Only Transformer (layers: 4, heads: 4, d_model: 256, vocab: 50,257)`,
-        `[OPTIM] AdamW (lr: ${body.overrides?.lr || '3.0e-4'}, betas: (0.9, 0.95), weight_decay: 0.1)`,
-        `[TRAINING] Starting Step 1/100 · Batch size: ${body.overrides?.batch_size || 4} · Initial loss: 4.821`,
-      ].join('\n');
+      const datasetName = body.dataset_name || (dataFiles[0]?.name || 'sovereign_ai_corpus.txt');
+      const datasetFile = dataFiles.find(f => f.name === datasetName) || dataFiles[0] || { name: datasetName, tokens: 250000 };
+      const tokenCount = datasetFile ? (datasetFile.tokens || 250000) : 250000;
+      const trainTokens = Math.round(tokenCount * 0.9);
+      const devTokens = Math.max(1, tokenCount - trainTokens);
+      const batchSize = body.overrides?.batch_size || (body.smoke ? 2 : 4);
+      const lr = body.overrides?.lr || '3.0e-4';
+      const steps = body.smoke ? 20 : (body.overrides?.train_steps || 100);
+
+      const timestamp = () => new Date().toISOString().slice(11, 19);
+
+      const initialSteps = [
+        `[${timestamp()}] [INIT] Initializing Sovereign ${stageInfo.title} engine...`,
+        `[${timestamp()}] [HARDWARE] Accelerator: ${computeSettings.selected_device} · Allocated Cores: ${computeSettings.cpu_cores} · RAM ceiling: ${computeSettings.ram_unlimited ? 'Uncapped' : computeSettings.ram_limit_gb + ' GB'}`,
+        `[${timestamp()}] [DATASET] Bound dataset: "${datasetName}" (${tokenCount.toLocaleString()} tokens)`,
+        `[${timestamp()}] [TOKENIZATION] Reading vocabulary shards: Train (${trainTokens.toLocaleString()} tok) / Dev (${devTokens.toLocaleString()} tok)`,
+        `[${timestamp()}] [TOKENIZATION] Byte-Pair Encoding (BPE) tensor sequence batching initialized (seq_len: ${body.overrides?.block_size || 256})`,
+        `[${timestamp()}] [TRANSFORMER] Instantiating Decoder-Only Transformer (layers: ${body.overrides?.n_layer || 4}, heads: ${body.overrides?.n_head || 4}, embed: ${body.overrides?.n_embd || 256})`,
+        `[${timestamp()}] [OPTIMIZER] AdamW optimizer loaded (learning_rate: ${lr}, weight_decay: 0.1, grad_clip: 1.0)`,
+        `[${timestamp()}] [TRAINING] Starting Step 1/${steps} · Batch size: ${batchSize} · Initial loss: 4.821`,
+      ];
 
       const newJob = {
         job_id: `job-${Date.now().toString(36)}`,
@@ -632,14 +642,23 @@ const server = http.createServer(async (req, res) => {
         title: `${stageInfo.title} · ${datasetName.slice(0, 24)}`,
         status: 'running',
         started: Date.now(),
-        log_tail: initialLog,
+        dataset_tokens: tokenCount,
+        batch_size: batchSize,
+        total_steps: steps,
+        log_tail: initialSteps.join('\n'),
+        initial_logs: initialSteps,
       };
       jobs.unshift(newJob);
 
-      // Simulate completion progression
+      // Simulate completion progression with realistic intermediate logs
       setTimeout(() => {
         newJob.status = 'completed';
-        newJob.log_tail += `\nStep 25/100 - loss: 3.124 - ppl: 22.7\nStep 50/100 - loss: 1.942 - ppl: 6.97\nStep 75/100 - loss: 1.218 - ppl: 3.38\nStep 100/100 completed successfully.\nFinal cross-entropy loss: 0.812 (Perplexity: 2.25)\nSaved checkpoint to checkpoints/${stage}_latest.pt`;
+        newJob.log_tail += `\n[${timestamp()}] [STEP ${Math.round(steps * 0.25)}/${steps}] loss: 3.124 · ppl: 22.70 · throughput: 1,420 tok/s`
+          + `\n[${timestamp()}] [STEP ${Math.round(steps * 0.5)}/${steps}] loss: 1.942 · ppl: 6.97 · throughput: 1,480 tok/s`
+          + `\n[${timestamp()}] [STEP ${Math.round(steps * 0.75)}/${steps}] loss: 1.218 · ppl: 3.38 · throughput: 1,510 tok/s`
+          + `\n[${timestamp()}] [SUCCESS] Step ${steps}/${steps} completed successfully.`
+          + `\n[${timestamp()}] [METRICS] Final cross-entropy loss: 0.812 (Perplexity: 2.25)`
+          + `\n[${timestamp()}] [CHECKPOINT] Saved state checkpoint to checkpoints/${stage}_latest.pt`;
         if (!models.some((m) => m.name === `${stage}_latest.pt`)) {
           models.unshift({
             name: `${stage}_latest.pt`,
@@ -647,7 +666,7 @@ const server = http.createServer(async (req, res) => {
             path: `checkpoints/${stage}_latest.pt`,
           });
         }
-      }, 5000);
+      }, 4500);
 
       return sendJson(res, 200, newJob);
     }

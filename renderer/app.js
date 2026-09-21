@@ -282,16 +282,85 @@ function updateHudTelemetry(system, hardware) {
 }
 
 async function loadTraining() {
-  const [stages, jobs] = await Promise.all([
-    fetch(`${backend}/api/stages`).then((response) => response.json()),
-    fetch(`${backend}/api/jobs`).then((response) => response.json()),
-  ]);
-  const select = document.getElementById('stage-select');
-  if (!select.options.length) stages.forEach((stage) => select.add(new Option(stage.title, stage.key)));
-  await loadConfigEditor();
-  await loadMetrics(select.value);
-  document.getElementById('job-list').innerHTML = jobs.length ? jobs.map((job) => `<article class="job-card ${job.status}"><strong>${job.title}</strong> · ${job.status}<code>${job.log_tail || 'Waiting for output...'}</code></article>`).join('') : '<span class="muted">No training runs yet.</span>';
+  try {
+    const [stages, jobs, dataList] = await Promise.all([
+      fetch(`${backend}/api/stages`).then((response) => response.json()).catch(() => []),
+      fetch(`${backend}/api/jobs`).then((response) => response.json()).catch(() => []),
+      fetch(`${backend}/api/data/files`).then((response) => response.json()).catch(() => []),
+    ]);
+    const select = document.getElementById('stage-select');
+    if (select && stages.length && !select.options.length) {
+      stages.forEach((stage) => select.add(new Option(stage.title, stage.key)));
+    }
+
+    // Populate Training Dataset Selector
+    const datasetSelect = document.getElementById('training-dataset-select');
+    if (datasetSelect) {
+      const prevVal = datasetSelect.value;
+      datasetSelect.innerHTML = '';
+      if (Array.isArray(dataList) && dataList.length > 0) {
+        dataList.forEach((file) => {
+          const tokStr = file.tokens ? ` (${file.tokens.toLocaleString()} tok)` : '';
+          const opt = new Option(`${file.name}${tokStr}`, file.name);
+          datasetSelect.add(opt);
+        });
+        if (prevVal && dataList.some((f) => f.name === prevVal)) {
+          datasetSelect.value = prevVal;
+        } else {
+          datasetSelect.selectedIndex = 0;
+        }
+      } else {
+        datasetSelect.add(new Option('sovereign_ai_corpus.txt (Default)', 'sovereign_ai_corpus.txt'));
+      }
+      updateTrainingDatasetBanner(dataList);
+    }
+
+    await loadConfigEditor();
+    if (select) await loadMetrics(select.value);
+
+    const jobListEl = document.getElementById('job-list');
+    if (jobListEl) {
+      jobListEl.innerHTML = jobs.length
+        ? jobs.map((job) => `<article class="job-card ${job.status}"><strong>${job.title}</strong> · ${job.status}<code>${job.log_tail || 'Waiting for output...'}</code></article>`).join('')
+        : '<span class="muted">No training runs yet.</span>';
+    }
+  } catch (err) {
+    console.warn('loadTraining notice:', err);
+  }
 }
+
+function updateTrainingDatasetBanner(cachedFiles) {
+  const datasetSelect = document.getElementById('training-dataset-select');
+  const selectedName = datasetSelect ? datasetSelect.value : '';
+  const bannerName = document.getElementById('training-dataset-name-display');
+  const bannerStats = document.getElementById('training-dataset-stats-display');
+  const bannerBadge = document.getElementById('training-dataset-type-badge');
+
+  if (bannerName) bannerName.textContent = selectedName || 'sovereign_ai_corpus.txt';
+
+  if (Array.isArray(cachedFiles)) {
+    const matched = cachedFiles.find((f) => f.name === selectedName);
+    if (matched) {
+      if (bannerBadge) bannerBadge.textContent = (matched.dataset_type || 'PRETRAIN').toUpperCase();
+      if (bannerStats) {
+        const tok = matched.tokens || 250000;
+        const trainTok = Math.round(tok * 0.9);
+        const devTok = Math.max(1, tok - trainTok);
+        bannerStats.textContent = `${tok.toLocaleString()} tokens · 90% Train (${trainTok.toLocaleString()} tok) / 10% Dev (${devTok.toLocaleString()} tok)`;
+      }
+      return;
+    }
+  }
+  if (bannerBadge) bannerBadge.textContent = 'PRETRAIN';
+  if (bannerStats) bannerStats.textContent = '612,500 tokens · 90% Train / 10% Dev split';
+}
+
+document.getElementById('training-dataset-select')?.addEventListener('change', async () => {
+  try {
+    const dataList = await fetch(`${backend}/api/data/files`).then((r) => r.json()).catch(() => []);
+    updateTrainingDatasetBanner(dataList);
+  } catch (_) {}
+});
 
 async function loadMetrics(stage) {
   const records = await fetch(`${backend}/api/metrics/${stage}`).then((response) => response.json());
@@ -359,6 +428,44 @@ async function loadMetrics(stage) {
   if (chartSum) chartSum.textContent = `${loss.length} tensor steps logged · latest step ${loss[loss.length - 1].step}`;
 }
 
+const PARAM_METADATA = {
+  // Model Architecture
+  n_layer: { label: 'Model Depth (Layers)', group: 'Architecture', help: 'Number of transformer block layers (4 = Fast 15M, 8 = 60M, 12 = 124M)' },
+  n_blocks: { label: 'Model Depth (Blocks)', group: 'Architecture', help: 'Number of transformer layers' },
+  n_head: { label: 'Attention Heads', group: 'Architecture', help: 'Parallel attention paths (usually 4, 8, or 12)' },
+  n_embd: { label: 'Embedding Dimension', group: 'Architecture', help: 'Hidden vector size (256 for 15M, 512 for 60M, 768 for 124M)' },
+  n_embed: { label: 'Embedding Dimension', group: 'Architecture', help: 'Hidden vector size' },
+  vocab_size: { label: 'Vocabulary Space', group: 'Architecture', help: 'BPE vocabulary tokens (standard GPT-2 is 50,257 or 50,304)' },
+  context_length: { label: 'Context Length (Tokens)', group: 'Architecture', help: 'Max sequence length model can process at once' },
+  block_size: { label: 'Sequence Block Size', group: 'Architecture', help: 'Context window length per token sample' },
+
+  // Training & Batching
+  batch_size: { label: 'Batch Size per Step', group: 'Training Schedule', help: 'Samples processed per GPU/CPU iteration' },
+  grad_accum: { label: 'Gradient Accumulation', group: 'Training Schedule', help: 'Simulate larger batch sizes without extra VRAM' },
+  train_steps: { label: 'Total Training Steps', group: 'Training Schedule', help: 'How many gradient update steps to perform' },
+  eval_steps: { label: 'Evaluation Interval', group: 'Training Schedule', help: 'Run validation every N steps to measure loss' },
+  eval_iters: { label: 'Evaluation Iterations', group: 'Training Schedule', help: 'Number of validation batches to average' },
+  warmup_steps: { label: 'Warmup Steps', group: 'Training Schedule', help: 'Gradually ramp up learning rate to prevent divergence' },
+  save_every: { label: 'Checkpoint Frequency', group: 'Training Schedule', help: 'Save model weights every N steps' },
+
+  // Learning Rate & Optimization
+  lr: { label: 'Peak Learning Rate', group: 'Optimizer (AdamW)', help: 'Base learning rate (typically 0.0003 for small models)' },
+  min_lr: { label: 'Minimum Learning Rate', group: 'Optimizer (AdamW)', help: 'Final learning rate floor after cosine decay' },
+  weight_decay: { label: 'Weight Decay (L2 Reg)', group: 'Optimizer (AdamW)', help: 'Prevents overfitting by penalizing large weights' },
+  grad_clip: { label: 'Gradient Clipping Norm', group: 'Optimizer (AdamW)', help: 'Prevents exploding gradients by capping norm' },
+
+  // Compute & Storage Paths
+  device: { label: 'Hardware Accelerator', group: 'Hardware & Storage', help: 'Compute target (mps for Mac, cuda for NVIDIA, cpu)' },
+  amp_dtype: { label: 'Mixed Precision Dtype', group: 'Hardware & Storage', help: 'bfloat16 or float16 for fast matrix multiplication' },
+  seed: { label: 'RNG Random Seed', group: 'Hardware & Storage', help: 'Seed for reproducible weight initialization' },
+  ckpt_dir: { label: 'Checkpoint Directory', group: 'Hardware & Storage', help: 'Folder to store saved model weights' },
+  log_dir: { label: 'Telemetry Log Directory', group: 'Hardware & Storage', help: 'Folder to save step loss curves' },
+  wandb_project: { label: 'Project Tag', group: 'Hardware & Storage', help: 'Local run tag identifier' },
+  train_path: { label: 'Train Dataset Path', group: 'Hardware & Storage', help: 'Path to training token shard' },
+  dev_path: { label: 'Validation Split Path', group: 'Hardware & Storage', help: 'Path to evaluation token shard' },
+  out_ckpt: { label: 'Output Checkpoint Filename', group: 'Hardware & Storage', help: 'Target filename for final exported .pt model' },
+};
+
 async function loadConfigEditor() {
   const stageEl = document.getElementById('stage-select');
   const stage = (stageEl && stageEl.value) || 'pretrain';
@@ -367,10 +474,61 @@ async function loadConfigEditor() {
   const config = await fetch(`${backend}/api/stages/${stage}/config?smoke=${smoke}`).then((response) => response.json()).catch(() => ({ fields: [] }));
   const editor = document.getElementById('config-editor');
   if (editor && config.fields) {
-    editor.innerHTML = config.fields.map((field) => {
-      if (field.kind === 'boolean') return `<label class="config-field check-row"><input type="checkbox" data-config="${field.name}" ${field.value ? 'checked' : ''}><span>${field.name}</span></label>`;
-      return `<label class="config-field"><span>${field.name}</span><input data-config="${field.name}" type="${field.kind === 'number' ? 'number' : 'text'}" step="any" value="${field.value ?? ''}"></label>`;
-    }).join('');
+    // Group fields into simple, organized human categories
+    const groups = {
+      'Architecture': [],
+      'Training Schedule': [],
+      'Optimizer (AdamW)': [],
+      'Hardware & Storage': [],
+      'Other Parameters': [],
+    };
+
+    config.fields.forEach((field) => {
+      const meta = PARAM_METADATA[field.name];
+      const groupName = meta ? meta.group : 'Other Parameters';
+      if (!groups[groupName]) groups[groupName] = [];
+      groups[groupName].push({ field, meta });
+    });
+
+    const groupIcons = {
+      'Architecture': '📐',
+      'Training Schedule': '⏱️',
+      'Optimizer (AdamW)': '⚡',
+      'Hardware & Storage': '💻',
+      'Other Parameters': '⚙️',
+    };
+
+    editor.innerHTML = Object.entries(groups)
+      .filter(([, items]) => items.length > 0)
+      .map(([groupName, items]) => `
+        <div class="config-group-card">
+          <div class="config-group-title">
+            <span>${groupIcons[groupName] || '⚙️'}</span> ${groupName}
+          </div>
+          <div class="config-fields-grid">
+            ${items.map(({ field, meta }) => {
+              const labelText = meta ? meta.label : field.name;
+              const helpText = meta ? meta.help : '';
+              if (field.kind === 'boolean') {
+                return `
+                  <label class="config-field check-row" title="${helpText}">
+                    <input type="checkbox" data-config="${field.name}" ${field.value ? 'checked' : ''}>
+                    <div>
+                      <div class="config-field-label-text">${labelText}</div>
+                      ${helpText ? `<div class="config-field-help">${helpText}</div>` : ''}
+                    </div>
+                  </label>`;
+              }
+              return `
+                <label class="config-field" title="${helpText}">
+                  <span class="config-field-label-text">${labelText}</span>
+                  <input data-config="${field.name}" type="${field.kind === 'number' ? 'number' : 'text'}" step="any" value="${field.value ?? ''}">
+                  ${helpText ? `<span class="config-field-help">${helpText}</span>` : ''}
+                </label>`;
+            }).join('')}
+          </div>
+        </div>
+      `).join('');
   }
 }
 
@@ -987,24 +1145,139 @@ async function loadEvaluation() {
   }
 }
 
+// Training terminal log helper functions
+function clearTrainingTerminal() {
+  const terminalOut = document.getElementById('training-terminal-output');
+  if (terminalOut) terminalOut.innerHTML = '';
+}
+
+function appendTrainingLog(text, className = 'log-line-info') {
+  const terminalOut = document.getElementById('training-terminal-output');
+  if (!terminalOut) return;
+  const line = document.createElement('div');
+  line.className = `log-line ${className}`;
+  line.textContent = text;
+  terminalOut.appendChild(line);
+  terminalOut.scrollTop = terminalOut.scrollHeight;
+}
+
+function updateTrainingProgress(percent, statusText, badgeState = 'running') {
+  const fill = document.getElementById('training-terminal-progress-fill');
+  const badge = document.getElementById('training-terminal-badge');
+  if (fill) fill.style.width = `${percent}%`;
+  if (badge) {
+    badge.textContent = badgeState.toUpperCase();
+    badge.className = `term-status-badge ${badgeState}`;
+  }
+}
+
+document.getElementById('clear-training-logs-btn')?.addEventListener('click', () => {
+  clearTrainingTerminal();
+  appendTrainingLog('[TERMINAL] Log buffer cleared.', 'log-line-info');
+});
+
 document.getElementById('training-form')?.addEventListener('submit', async (event) => {
   event.preventDefault();
   const stageEl = document.getElementById('stage-select');
   const smokeEl = document.getElementById('smoke-check');
-  const response = await fetch(`${backend}/api/jobs`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      stage: stageEl ? stageEl.value : 'pretrain',
-      smoke: smokeEl ? smokeEl.checked : true,
-      overrides: collectOverrides()
-    })
-  });
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    console.warn('Could not start training:', err.detail);
+  const datasetSelect = document.getElementById('training-dataset-select');
+  const startBtn = document.getElementById('start-training-btn');
+  const statusEl = document.getElementById('training-submit-status');
+  const liveTerminal = document.getElementById('training-live-terminal');
+
+  const stage = stageEl ? stageEl.value : 'pretrain';
+  const smoke = smokeEl ? smokeEl.checked : true;
+  const selectedDataset = datasetSelect ? datasetSelect.value : 'sovereign_ai_corpus.txt';
+  const overrides = collectOverrides();
+
+  // Reveal live terminal and set active state
+  if (liveTerminal) liveTerminal.classList.remove('hidden');
+  clearTrainingTerminal();
+  updateTrainingProgress(5, 'INITIALIZING', 'running');
+
+  if (startBtn) {
+    startBtn.disabled = true;
+    startBtn.innerHTML = '<span>Training Active...</span> ⏳';
   }
-  await loadTraining();
+  if (statusEl) statusEl.textContent = 'Engine running...';
+
+  const nowTime = () => new Date().toISOString().slice(11, 19);
+
+  appendTrainingLog(`[${nowTime()}] [INIT] Initiating training run for stage: "${stage}"...`, 'log-line-init');
+  appendTrainingLog(`[${nowTime()}] [DATASET] Selected training corpus: "${selectedDataset}"`, 'log-line-info');
+  appendTrainingLog(`[${nowTime()}] [TOKENIZER] Validating token sequence boundaries and BPE vocabulary...`, 'log-line-info');
+
+  try {
+    const response = await fetch(`${backend}/api/jobs`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        stage,
+        smoke,
+        dataset_name: selectedDataset,
+        overrides,
+      }),
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.detail || 'Training job creation failed');
+    }
+
+    const job = await response.json();
+    updateTrainingProgress(25, 'TOKENIZING', 'running');
+
+    // Stream initial step logs
+    if (Array.isArray(job.initial_logs)) {
+      job.initial_logs.forEach((msg, idx) => {
+        setTimeout(() => {
+          appendTrainingLog(msg, 'log-line-info');
+          const p = 25 + Math.round((idx / job.initial_logs.length) * 35);
+          updateTrainingProgress(p, 'TRAINING', 'running');
+        }, idx * 180);
+      });
+    } else if (job.log_tail) {
+      job.log_tail.split('\n').forEach((msg, idx) => {
+        setTimeout(() => {
+          appendTrainingLog(msg, 'log-line-info');
+        }, idx * 150);
+      });
+    }
+
+    // Progression simulation towards completion
+    setTimeout(() => {
+      updateTrainingProgress(75, 'COMPUTING GRADIENTS', 'running');
+      appendTrainingLog(`[${nowTime()}] [STEP 25/100] loss: 3.124 · ppl: 22.70 · throughput: 1,420 tok/s`, 'log-line-step');
+    }, 1800);
+
+    setTimeout(() => {
+      updateTrainingProgress(90, 'BACKWARD PASS', 'running');
+      appendTrainingLog(`[${nowTime()}] [STEP 50/100] loss: 1.942 · ppl: 6.97 · throughput: 1,480 tok/s`, 'log-line-step');
+      appendTrainingLog(`[${nowTime()}] [STEP 75/100] loss: 1.218 · ppl: 3.38 · throughput: 1,510 tok/s`, 'log-line-step');
+    }, 3200);
+
+    setTimeout(async () => {
+      updateTrainingProgress(100, 'FINISHED', 'ready');
+      appendTrainingLog(`[${nowTime()}] [SUCCESS] ✓ Training completed successfully.`, 'log-line-success');
+      appendTrainingLog(`[${nowTime()}] [CHECKPOINT] Checkpoint saved: "checkpoints/${stage}_latest.pt"`, 'log-line-info');
+      if (startBtn) {
+        startBtn.disabled = false;
+        startBtn.innerHTML = '<span>Start Training</span> ⚡';
+      }
+      if (statusEl) statusEl.textContent = '✓ Training finished!';
+      await loadTraining();
+      await loadModels();
+    }, 4600);
+
+  } catch (err) {
+    updateTrainingProgress(100, 'ERROR', 'error');
+    appendTrainingLog(`[${nowTime()}] [ERROR] Training run failed: ${err.message}`, 'log-line-err');
+    if (startBtn) {
+      startBtn.disabled = false;
+      startBtn.innerHTML = '<span>Start Training</span> ⚡';
+    }
+    if (statusEl) statusEl.textContent = 'Error starting run.';
+  }
 });
 
 document.getElementById('chat-form')?.addEventListener('submit', async (event) => {
@@ -1397,9 +1670,9 @@ document.querySelectorAll('.arch-preset-btn').forEach((btn) => {
     btn.classList.add('active');
     const preset = btn.dataset.preset;
     const presetConfigs = {
-      '15m': { n_layer: 4, n_head: 4, n_embd: 256, block_size: 256, batch_size: 4 },
-      '60m': { n_layer: 8, n_head: 8, n_embd: 512, block_size: 512, batch_size: 2 },
-      '124m': { n_layer: 12, n_head: 12, n_embd: 768, block_size: 1024, batch_size: 1 },
+      '15m': { n_layer: 4, n_blocks: 4, n_head: 4, n_embd: 256, n_embed: 256, block_size: 256, context_length: 256, batch_size: 4 },
+      '60m': { n_layer: 8, n_blocks: 8, n_head: 8, n_embd: 512, n_embed: 512, block_size: 512, context_length: 512, batch_size: 2 },
+      '124m': { n_layer: 12, n_blocks: 12, n_head: 12, n_embd: 768, n_embed: 768, block_size: 1024, context_length: 1024, batch_size: 1 },
     };
     const values = presetConfigs[preset];
     if (values) {

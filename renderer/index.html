@@ -585,17 +585,61 @@
                 <option value="grpo">GRPO (Reasoning Verification)</option>
               </select>
             </label>
+            <label for="training-dataset-select" class="dataset-select-label">Select Dataset
+              <select id="training-dataset-select" class="training-dataset-dropdown">
+                <option value="">Loading datasets...</option>
+              </select>
+            </label>
             <label class="check-row">
               <input id="smoke-check" type="checkbox" checked>
-              <span>Smoke Test Mode (Fast sanity check before full epoch run)</span>
+              <span>Smoke Test Mode (Fast sanity check)</span>
             </label>
           </div>
+
+          <!-- Active Dataset Summary Banner -->
+          <div id="training-dataset-banner" class="training-dataset-banner">
+            <div class="dataset-banner-info">
+              <span class="dataset-banner-badge" id="training-dataset-type-badge">PRETRAIN</span>
+              <div>
+                <strong id="training-dataset-name-display">sovereign_ai_corpus.txt</strong>
+                <span id="training-dataset-stats-display" class="dataset-banner-sub">612,500 tokens · 90% Train / 10% Dev split</span>
+              </div>
+            </div>
+            <button type="button" class="secondary switch-dataset-btn" data-view="data">Manage Datasets 🗂️</button>
+          </div>
+
+          <!-- Configuration Editor with Category Grouping & Human Labels -->
           <div id="config-editor" class="config-editor"></div>
+
           <div class="training-action-row">
             <button class="secondary" type="button" data-view="data">← Datasets</button>
+            <div class="training-action-status" id="training-submit-status"></div>
             <button class="primary glow-btn" type="submit" id="start-training-btn"><span>Start Training</span> ⚡</button>
           </div>
         </form>
+
+        <!-- Real-Time Tokenization & Training Console Logs Terminal -->
+        <div id="training-live-terminal" class="training-live-terminal hidden">
+          <div class="terminal-bar">
+            <div class="term-dots">
+              <span class="term-dot dot-red"></span>
+              <span class="term-dot dot-yellow"></span>
+              <span class="term-dot dot-green"></span>
+            </div>
+            <span class="term-title">TRAINING &amp; TOKENIZATION ENGINE LOGS</span>
+            <span class="term-status-badge running" id="training-terminal-badge">ACTIVE</span>
+            <button type="button" class="btn-term-action" id="clear-training-logs-btn">Clear</button>
+          </div>
+          <!-- Terminal Progress Bar -->
+          <div class="terminal-progress-track">
+            <div id="training-terminal-progress-fill" class="terminal-progress-fill running" style="width: 0%;">
+              <div class="progress-fill-sheen"></div>
+            </div>
+          </div>
+          <div id="training-terminal-output" class="data-terminal-body training-terminal-body">
+            <div class="log-line log-line-init">[STANDBY] Awaiting training run initiation...</div>
+          </div>
+        </div>
 
         <div class="chart-panel">
           <div class="chart-heading">

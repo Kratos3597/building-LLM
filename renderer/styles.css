@@ -4180,3 +4180,130 @@ input:checked + .slider-round:before {
   margin-top: 18px;
   flex-wrap: wrap;
 }
+
+/* --- TRAINING STUDIO ENHANCEMENTS --- */
+.dataset-select-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #334155;
+}
+
+.training-dataset-dropdown {
+  padding: 6px 12px;
+  border: 1px solid var(--line-light);
+  border-radius: 6px;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 500;
+  min-width: 220px;
+}
+.training-dataset-dropdown:focus {
+  border-color: var(--accent);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+}
+
+.training-dataset-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: #f0f9ff;
+  border: 1px solid rgba(2, 132, 199, 0.25);
+  border-radius: 8px;
+  margin-top: 12px;
+  gap: 14px;
+}
+.dataset-banner-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.dataset-banner-badge {
+  font: 700 10px monospace;
+  padding: 3px 8px;
+  background: #0284c7;
+  color: #ffffff;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
+.dataset-banner-sub {
+  display: block;
+  font-size: 11.5px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.switch-dataset-btn {
+  padding: 5px 12px;
+  font-size: 12px;
+}
+
+/* Config Editor Human Grouping */
+.config-group-card {
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
+}
+.config-group-title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--ink-bright);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-transform: uppercase;
+}
+.config-fields-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 12px;
+}
+.config-field-label-text {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1e293b;
+}
+.config-field-help {
+  font-size: 11px;
+  color: var(--muted);
+  font-weight: 400;
+  line-height: 1.3;
+}
+
+/* Training Live Terminal */
+.training-live-terminal {
+  margin-top: 18px;
+  background: #090d16;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+.training-live-terminal.hidden {
+  display: none;
+}
+.training-terminal-body {
+  max-height: 260px;
+  min-height: 140px;
+  overflow-y: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  padding: 14px;
+  color: #94a3b8;
+}
+.training-action-status {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 500;
+}
+

@@ -7,7 +7,7 @@ on:
       - "v*"
 
 permissions:
-  contents: read
+  contents: write
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -53,8 +53,9 @@ jobs:
           BUILD_DESKTOP: "true"
           ELECTRON_BUILDER_CACHE: ${{ runner.temp }}/electron-builder-cache
 
-      - name: Upload installer
+      - name: Upload installer artifact
         uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: cloudnex-${{ matrix.name }}
           path: |
@@ -63,4 +64,16 @@ jobs:
             dist/*.AppImage
             dist/*.zip
           if-no-files-found: error
-          retention-days: 3
+          retention-days: 1
+
+      - name: Publish to GitHub Release (bypasses Artifact quota)
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            dist/*.exe
+            dist/*.dmg
+            dist/*.AppImage
+            dist/*.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
