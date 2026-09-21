@@ -4811,4 +4811,295 @@ input:checked + .slider-round:before {
   border-radius: 6px;
 }
 
+/* --- HARDWARE AUTO-TUNER BANNER --- */
+.auto-tune-btn {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  color: #166534 !important;
+  border-color: #86efac !important;
+  font-weight: 700;
+}
+.auto-tune-btn:hover {
+  background: #bbf7d0 !important;
+  color: #14532d !important;
+}
+.hardware-auto-tune-banner {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 2px 8px rgba(22, 101, 52, 0.06);
+  animation: slideDown 0.2s ease-out;
+}
+.auto-tune-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.auto-tune-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.auto-tune-chip {
+  font: 700 10px monospace;
+  background: #166534;
+  color: #ffffff;
+  padding: 2px 7px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
+.auto-tune-badge {
+  font-size: 12px;
+  font-weight: 600;
+  background: #dcfce7;
+  color: #15803d;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  border: 1px solid #86efac;
+}
+.close-auto-tune-btn {
+  background: transparent;
+  border: none;
+  color: #15803d;
+  font-size: 15px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.close-auto-tune-btn:hover {
+  background: #dcfce7;
+}
+.auto-tune-analysis {
+  font-size: 13px;
+  color: #166534;
+  line-height: 1.45;
+}
+.auto-tune-specs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+}
+.auto-tune-spec-card {
+  background: #ffffff;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.spec-card-label {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 0.5px;
+}
+.auto-tune-spec-card strong {
+  font-size: 14px;
+  color: #0f172a;
+  font-family: monospace;
+}
+.auto-tune-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  border-top: 1px dashed #bbf7d0;
+  padding-top: 8px;
+}
+.auto-tune-note {
+  font-size: 11.5px;
+  color: #15803d;
+}
+.auto-tune-apply-btn {
+  background: #ffffff;
+  border: 1px solid #86efac;
+  color: #166534;
+  font-size: 12px;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.auto-tune-apply-btn:hover {
+  background: #dcfce7;
+}
+
+/* --- PRE-FLIGHT DATASET INSPECTOR --- */
+.dataset-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.inspect-dataset-btn {
+  background: #ffffff;
+  border: 1px solid #0284c7;
+  color: #0369a1;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.inspect-dataset-btn:hover {
+  background: #f0f9ff;
+}
+.preflight-inspector-panel {
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
+  animation: slideDown 0.2s ease-out;
+}
+.inspector-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+.inspector-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.inspector-badge {
+  font: 700 10px monospace;
+  background: #0284c7;
+  color: #ffffff;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+.inspector-health-badge {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 9999px;
+}
+.inspector-health-badge.health-excellent {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #86efac;
+}
+.inspector-health-badge.health-warn {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fcd34d;
+}
+.close-inspector-btn {
+  background: #ffffff;
+  border: 1px solid var(--line);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #475569;
+  cursor: pointer;
+}
+.close-inspector-btn:hover {
+  background: #f1f5f9;
+}
+.inspector-metrics-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.inspector-metric-card {
+  background: #ffffff;
+  border: 1px solid var(--line-light);
+  border-radius: 8px;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.metric-label {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 700;
+}
+.inspector-metric-card strong {
+  font-size: 13.5px;
+  color: #0f172a;
+}
+.inspector-checks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.inspector-check-row {
+  background: #ffffff;
+  border: 1px solid var(--line-light);
+  border-radius: 6px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.check-name-block {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #1e293b;
+}
+.check-status-pill {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+.check-status-pill.pass {
+  background: #dcfce7;
+  color: #15803d;
+}
+.check-status-pill.warn {
+  background: #fef3c7;
+  color: #b45309;
+}
+.check-detail-text {
+  font-size: 12px;
+  color: var(--muted);
+}
+.inspector-sample-box {
+  background: #0f172a;
+  border-radius: 8px;
+  padding: 12px;
+  color: #e2e8f0;
+}
+.sample-box-title {
+  font: 700 10.5px monospace;
+  color: #94a3b8;
+  display: block;
+  margin-bottom: 6px;
+  letter-spacing: 0.5px;
+}
+.inspector-sample-preview {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #38bdf8;
+  white-space: pre-wrap;
+  margin: 0;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+
+
 

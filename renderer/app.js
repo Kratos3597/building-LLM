@@ -114,7 +114,9 @@ function selectView(view) {
   if (view === 'training') loadTraining();
   if (view === 'data') loadDataFiles();
   if (view === 'models') loadModels();
-  if (view === 'chat') loadChatModels();
+  if (view === 'chat') {
+    loadChatModels();
+  }
   if (view === 'evaluation') loadEvaluation();
   if (view === 'settings') loadSettings();
   if (view === 'terms') loadLicenseDocs();
@@ -317,6 +319,7 @@ async function loadTraining() {
 
     await loadConfigEditor();
     if (select) await loadMetrics(select.value);
+    await checkHardwareAutoTune();
 
     const jobListEl = document.getElementById('job-list');
     if (jobListEl) {
@@ -542,10 +545,216 @@ function collectOverrides() {
   return values;
 }
 
+// --- WORKFLOW AUTOMATION: HARDWARE AUTO-TUNER & DATASET INSPECTOR ---
+
+let latestAutoTuneConfig = null;
+
+async function checkHardwareAutoTune(targetPreset) {
+  const banner = document.getElementById('hardware-auto-tune-banner') || document.getElementById('auto-tuner-banner');
+  const stageSelect = document.getElementById('stage-select');
+  const stage = (stageSelect && stageSelect.value) || 'pretrain';
+  const preset = targetPreset || (document.querySelector('.arch-preset-btn.active')?.dataset.preset) || '60m';
+
+  try {
+    const res = await fetch(`${backend}/api/hardware/auto-tune?stage=${stage}&model_preset=${preset}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ stage, model_preset: preset }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      latestAutoTuneConfig = data;
+
+      const deviceLabel = document.getElementById('auto-tune-device-name') || document.getElementById('auto-tune-detected-device');
+      const vramBadge = document.getElementById('auto-tune-vram-badge');
+      const analysisEl = document.getElementById('auto-tune-analysis-text') || document.getElementById('auto-tune-rec-summary');
+      
+      const specBatch = document.getElementById('tune-spec-batch');
+      const specAccum = document.getElementById('tune-spec-accum');
+      const specBlock = document.getElementById('tune-spec-block');
+      const specArch = document.getElementById('tune-spec-arch');
+      const specLr = document.getElementById('tune-spec-lr');
+
+      if (deviceLabel) {
+        deviceLabel.textContent = `${data.hardware.accelerator.toUpperCase()} · ${data.hardware.total_ram_gb} GB RAM`;
+      }
+      if (vramBadge && data.recommendations) {
+        vramBadge.textContent = `Estimated VRAM: ${data.recommendations.estimated_vram_gb} GB (${data.recommendations.amp_dtype})`;
+      }
+      if (analysisEl && data.recommendations) {
+        analysisEl.textContent = data.recommendations.bottleneck_analysis;
+      }
+
+      if (data.recommendations) {
+        const r = data.recommendations;
+        if (specBatch) specBatch.textContent = r.batch_size;
+        if (specAccum) specAccum.textContent = r.grad_accum;
+        if (specBlock) specBlock.textContent = r.block_size;
+        if (specArch) specArch.textContent = `${r.n_layer}L · ${r.n_head}H · ${r.n_embd}D`;
+        if (specLr) specLr.textContent = r.suggested_lr || '3.0e-4';
+      }
+
+      if (banner) banner.classList.remove('hidden');
+    }
+  } catch (err) {
+    console.warn('Auto-tune query notice:', err);
+  }
+}
+
+function applyHardwareAutoTune() {
+  if (!latestAutoTuneConfig || !latestAutoTuneConfig.recommendations) return;
+  const r = latestAutoTuneConfig.recommendations;
+
+  const mapping = {
+    batch_size: r.batch_size,
+    grad_accum: r.grad_accum,
+    block_size: r.block_size,
+    context_length: r.block_size,
+    n_layer: r.n_layer,
+    n_blocks: r.n_layer,
+    n_head: r.n_head,
+    n_embd: r.n_embd,
+    n_embed: r.n_embd,
+    amp_dtype: r.amp_dtype,
+    lr: r.suggested_lr || 0.0003,
+  };
+
+  Object.entries(mapping).forEach(([key, val]) => {
+    const input = document.querySelector(`[data-config="${key}"]`);
+    if (input) {
+      if (input.type === 'checkbox') {
+        input.checked = Boolean(val);
+      } else {
+        input.value = val;
+      }
+      input.style.borderColor = '#10b981';
+      input.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.25)';
+      setTimeout(() => {
+        input.style.borderColor = '';
+        input.style.boxShadow = '';
+      }, 2500);
+    }
+  });
+
+  const applyBtn = document.getElementById('reapply-auto-tune-btn') || document.getElementById('apply-auto-tune-btn');
+  const appliedNote = document.getElementById('auto-tune-applied-note');
+  if (applyBtn) {
+    const orig = applyBtn.textContent;
+    applyBtn.textContent = '✓ Hyperparameters Tuned & Applied!';
+    if (appliedNote) appliedNote.textContent = 'Tuned settings are currently active in the hyperparameters form below.';
+    setTimeout(() => { applyBtn.textContent = orig; }, 2500);
+  }
+}
+
+document.getElementById('reapply-auto-tune-btn')?.addEventListener('click', applyHardwareAutoTune);
+document.getElementById('apply-auto-tune-btn')?.addEventListener('click', applyHardwareAutoTune);
+
+document.getElementById('trigger-auto-tune-btn')?.addEventListener('click', () => {
+  checkHardwareAutoTune();
+  setTimeout(applyHardwareAutoTune, 300);
+});
+
+document.getElementById('dismiss-auto-tune-btn')?.addEventListener('click', () => {
+  const banner = document.getElementById('hardware-auto-tune-banner') || document.getElementById('auto-tuner-banner');
+  if (banner) banner.classList.add('hidden');
+});
+
+// Architecture Preset Buttons (15M, 60M, 124M)
+document.querySelectorAll('.arch-preset-btn[data-preset]').forEach((btn) => {
+  btn.addEventListener('click', async () => {
+    document.querySelectorAll('.arch-preset-btn[data-preset]').forEach((b) => b.classList.remove('active'));
+    btn.classList.add('active');
+    const preset = btn.dataset.preset;
+    await checkHardwareAutoTune(preset);
+    applyHardwareAutoTune();
+  });
+});
+
+// PRE-FLIGHT DATASET INSPECTOR
+async function inspectDataset(filename) {
+  const panel = document.getElementById('preflight-inspector-panel') || document.getElementById('dataset-inspector-panel');
+  const inspectBtn = document.getElementById('open-preflight-inspector-btn') || document.getElementById('inspect-dataset-btn');
+  if (inspectBtn) inspectBtn.textContent = 'Inspecting...';
+
+  try {
+    const targetFile = filename || (document.getElementById('training-dataset-select')?.value) || 'sovereign_ai_corpus.txt';
+    const res = await fetch(`${backend}/api/data/inspect?filename=${encodeURIComponent(targetFile)}`);
+    if (res.ok) {
+      const data = await res.json();
+      renderDatasetInspection(data);
+      if (panel) panel.classList.remove('hidden');
+    }
+  } catch (err) {
+    console.warn('Dataset inspector failed:', err);
+  } finally {
+    if (inspectBtn) inspectBtn.textContent = '🔍 Pre-Flight Inspector';
+  }
+}
+
+function renderDatasetInspection(data) {
+  const filenameEl = document.getElementById('inspector-file-name') || document.getElementById('inspector-filename');
+  const healthBadge = document.getElementById('inspector-health-badge');
+  const inspectTokens = document.getElementById('inspect-tokens');
+  const inspectSplit = document.getElementById('inspect-split');
+  const inspectVocab = document.getElementById('inspect-vocab');
+  const inspectSamples = document.getElementById('inspect-samples');
+  const inspectCompression = document.getElementById('inspect-compression');
+  const checksList = document.getElementById('inspector-checks-list');
+  const samplePreview = document.getElementById('inspector-sample-preview');
+
+  if (filenameEl) filenameEl.textContent = data.filename;
+  if (healthBadge) {
+    healthBadge.textContent = `Health Score: ${data.health_score}/100 (${data.health_score >= 80 ? 'Pass' : 'Review'})`;
+    healthBadge.className = `inspector-health-badge ${data.health_score >= 80 ? 'health-excellent' : 'health-warning'}`;
+  }
+
+  if (data.metrics) {
+    const m = data.metrics;
+    if (inspectTokens) inspectTokens.textContent = m.total_tokens.toLocaleString();
+    if (inspectSplit) inspectSplit.textContent = `${(m.train_tokens / 1000).toFixed(0)}k / ${(m.dev_tokens / 1000).toFixed(0)}k tok`;
+    if (inspectVocab) inspectVocab.textContent = `${m.unique_vocabulary.toLocaleString()} tokens`;
+    if (inspectSamples) inspectSamples.textContent = `${m.lines.toLocaleString()} lines`;
+    if (inspectCompression) inspectCompression.textContent = m.compression_ratio || '3.8 chars/tok';
+  }
+
+  if (checksList && Array.isArray(data.checks)) {
+    checksList.innerHTML = data.checks.map((chk) => `
+      <div class="check-card ${chk.passed ? 'check-pass' : 'check-fail'}" style="display:flex; justify-content:space-between; align-items:center; padding:8px 12px; margin-bottom:6px; background:rgba(0,0,0,0.03); border-radius:6px; font-size:12px;">
+        <div>
+          <strong>${chk.passed ? '✓' : '⚠️'} ${chk.name}</strong>
+          <div style="font-size:11px; color:var(--muted);">${chk.detail || ''}</div>
+        </div>
+        <span style="font-weight:700; color:${chk.passed ? '#10b981' : '#f59e0b'};">${chk.passed ? 'PASSED' : 'CHECK'}</span>
+      </div>
+    `).join('');
+  }
+
+  if (samplePreview && Array.isArray(data.sample_preview)) {
+    samplePreview.textContent = data.sample_preview.join('\n');
+  }
+}
+
+document.getElementById('open-preflight-inspector-btn')?.addEventListener('click', () => {
+  inspectDataset();
+});
+document.getElementById('inspect-dataset-btn')?.addEventListener('click', () => {
+  inspectDataset();
+});
+
+document.getElementById('close-preflight-inspector-btn')?.addEventListener('click', () => {
+  const panel = document.getElementById('preflight-inspector-panel') || document.getElementById('dataset-inspector-panel');
+  if (panel) panel.classList.add('hidden');
+});
+document.getElementById('close-inspector-btn')?.addEventListener('click', () => {
+  const panel = document.getElementById('preflight-inspector-panel') || document.getElementById('dataset-inspector-panel');
+  if (panel) panel.classList.add('hidden');
+});
+
 document.getElementById('stage-select')?.addEventListener('change', () => {
   loadConfigEditor();
   const select = document.getElementById('stage-select');
   if (select) loadMetrics(select.value);
+  checkHardwareAutoTune();
 });
 document.getElementById('smoke-check')?.addEventListener('change', loadConfigEditor);
 

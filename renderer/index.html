@@ -570,7 +570,51 @@
               <button type="button" class="arch-preset-btn active" data-preset="15m" title="4 layers · 4 heads · 256 embedding">⚡ Fast 15M (CPU/Mac)</button>
               <button type="button" class="arch-preset-btn" data-preset="60m" title="8 layers · 8 heads · 512 embedding">🎯 Balanced 60M</button>
               <button type="button" class="arch-preset-btn" data-preset="124m" title="12 layers · 12 heads · 768 embedding">🧠 GPT-2 124M</button>
+              <button type="button" class="arch-preset-btn auto-tune-btn" id="trigger-auto-tune-btn" title="Detect silicon & calculate optimal batch size, VRAM budget and gradient accumulation">⚡ Auto-Tune Silicon</button>
             </div>
+          </div>
+        </div>
+
+        <!-- Hardware Auto-Tuner Recommendation Banner -->
+        <div id="hardware-auto-tune-banner" class="hardware-auto-tune-banner hidden">
+          <div class="auto-tune-header">
+            <div class="auto-tune-title">
+              <span class="auto-tune-chip">HARDWARE AUTO-TUNER</span>
+              <strong id="auto-tune-device-name">Apple Silicon / Local Host</strong>
+              <span class="auto-tune-badge" id="auto-tune-vram-badge">Estimated VRAM: 2.4 GB</span>
+            </div>
+            <button type="button" class="close-auto-tune-btn" id="dismiss-auto-tune-btn" title="Dismiss">✕</button>
+          </div>
+          <div class="auto-tune-body">
+            <div class="auto-tune-analysis" id="auto-tune-analysis-text">
+              Silicon scanned: Auto-tuned batch size, gradient accumulation, and context window for zero Out-Of-Memory (OOM) risk.
+            </div>
+            <div class="auto-tune-specs-grid" id="auto-tune-specs-grid">
+              <div class="auto-tune-spec-card">
+                <span class="spec-card-label">Batch Size</span>
+                <strong id="tune-spec-batch">4</strong>
+              </div>
+              <div class="auto-tune-spec-card">
+                <span class="spec-card-label">Grad Accum</span>
+                <strong id="tune-spec-accum">4</strong>
+              </div>
+              <div class="auto-tune-spec-card">
+                <span class="spec-card-label">Block Size</span>
+                <strong id="tune-spec-block">512</strong>
+              </div>
+              <div class="auto-tune-spec-card">
+                <span class="spec-card-label">Architecture</span>
+                <strong id="tune-spec-arch">6L · 6H · 384D</strong>
+              </div>
+              <div class="auto-tune-spec-card">
+                <span class="spec-card-label">Learning Rate</span>
+                <strong id="tune-spec-lr">3.0e-4</strong>
+              </div>
+            </div>
+          </div>
+          <div class="auto-tune-footer">
+            <span class="auto-tune-note" id="auto-tune-applied-note">These optimal parameters have been applied to the configuration editor below.</span>
+            <button type="button" class="secondary auto-tune-apply-btn" id="reapply-auto-tune-btn">Re-Apply Suggested Settings</button>
           </div>
         </div>
 
@@ -596,7 +640,7 @@
             </label>
           </div>
 
-          <!-- Active Dataset Summary Banner -->
+          <!-- Active Dataset Summary Banner & Pre-Flight Inspector Trigger -->
           <div id="training-dataset-banner" class="training-dataset-banner">
             <div class="dataset-banner-info">
               <span class="dataset-banner-badge" id="training-dataset-type-badge">PRETRAIN</span>
@@ -605,7 +649,58 @@
                 <span id="training-dataset-stats-display" class="dataset-banner-sub">612,500 tokens · 90% Train / 10% Dev split</span>
               </div>
             </div>
-            <button type="button" class="secondary switch-dataset-btn" data-view="data">Manage Datasets 🗂️</button>
+            <div class="dataset-banner-actions">
+              <button type="button" class="secondary inspect-dataset-btn" id="open-preflight-inspector-btn" title="Run health checks, vocabulary space verification, and token split analysis">
+                🔍 Pre-Flight Inspector
+              </button>
+              <button type="button" class="secondary switch-dataset-btn" data-view="data">Manage Datasets 🗂️</button>
+            </div>
+          </div>
+
+          <!-- Pre-Flight Dataset Inspector Drawer / Panel -->
+          <div id="preflight-inspector-panel" class="preflight-inspector-panel hidden">
+            <div class="inspector-header">
+              <div class="inspector-title">
+                <span class="inspector-badge">PRE-FLIGHT DATASET INSPECTION</span>
+                <strong id="inspector-file-name">sovereign_ai_corpus.txt</strong>
+                <span class="inspector-health-badge health-excellent" id="inspector-health-badge">Health Score: 98/100 (Pass)</span>
+              </div>
+              <button type="button" class="close-inspector-btn" id="close-preflight-inspector-btn">✕ Close</button>
+            </div>
+
+            <div class="inspector-body">
+              <div class="inspector-metrics-row" id="inspector-metrics-row">
+                <div class="inspector-metric-card">
+                  <span class="metric-label">Total Tokens</span>
+                  <strong id="inspect-tokens">612,500</strong>
+                </div>
+                <div class="inspector-metric-card">
+                  <span class="metric-label">Train / Dev Split</span>
+                  <strong id="inspect-split">551k / 61k tok</strong>
+                </div>
+                <div class="inspector-metric-card">
+                  <span class="metric-label">Unique Vocabulary</span>
+                  <strong id="inspect-vocab">41,200 tokens</strong>
+                </div>
+                <div class="inspector-metric-card">
+                  <span class="metric-label">Lines / Samples</span>
+                  <strong id="inspect-samples">21,800 lines</strong>
+                </div>
+                <div class="inspector-metric-card">
+                  <span class="metric-label">Compression Ratio</span>
+                  <strong id="inspect-compression">3.8 chars/tok</strong>
+                </div>
+              </div>
+
+              <!-- Automated Pre-Flight Integrity Checks -->
+              <div class="inspector-checks-list" id="inspector-checks-list"></div>
+
+              <!-- Sample token preview -->
+              <div class="inspector-sample-box">
+                <span class="sample-box-title">TOKENIZATION SAMPLE PREVIEW:</span>
+                <pre id="inspector-sample-preview" class="inspector-sample-preview">Loading sample text...</pre>
+              </div>
+            </div>
           </div>
 
           <!-- Configuration Editor with Category Grouping & Human Labels -->
@@ -749,7 +844,7 @@
                 <span>⚙️ System Prompt</span>
               </button>
               <button type="button" class="clear-convo-btn" id="clear-chat-btn" title="Start a fresh dialog">
-                <span>🔄 New Thread</span>
+                <span>🔄 Clear Thread</span>
               </button>
             </div>
           </div>
