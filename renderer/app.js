@@ -1401,6 +1401,117 @@ document.getElementById('training-form')?.addEventListener('submit', async (even
 
 // --- CONVERSATIONAL CHAT ENGINE (CHATGPT STYLE) ---
 let chatMessagesHistory = [];
+let activeSystemPrompt = '';
+
+function getEffectiveSystemPrompt() {
+  const customInput = document.getElementById('chat-system-prompt');
+  const presetEl = document.getElementById('chat-system-preset');
+  if (customInput && customInput.value.trim()) {
+    return customInput.value.trim();
+  }
+  if (presetEl) {
+    if (presetEl.value === 'coding') {
+      return 'Act as an expert coding assistant and senior software engineer. Write clean, bug-free, and well-typed code with clear explanations.';
+    }
+    if (presetEl.value === 'technical') {
+      return 'Act as a Senior Systems and Linux Infrastructure Engineer. Focus on performance, system architecture, and exact command syntax.';
+    }
+    if (presetEl.value === 'concise') {
+      return 'Be extremely concise, direct, and factual. Avoid conversational filler.';
+    }
+    if (presetEl.value === 'reasoning') {
+      return 'Decompose every question step by step using first-principles reasoning and verify all edge cases before answering.';
+    }
+  }
+  return '';
+}
+
+function updateSystemPromptStatusDisplay() {
+  const preview = document.getElementById('active-system-prompt-preview');
+  const customInput = document.getElementById('chat-system-prompt');
+  const presetEl = document.getElementById('chat-system-preset');
+  if (!preview) return;
+
+  if (customInput && customInput.value.trim()) {
+    const val = customInput.value.trim();
+    preview.textContent = val.length > 50 ? `${val.substring(0, 47)}...` : val;
+    preview.title = val;
+  } else if (presetEl) {
+    const text = presetEl.options[presetEl.selectedIndex]?.text || 'Helpful Assistant';
+    preview.textContent = text;
+    preview.title = text;
+  }
+}
+
+// System prompt drawer toggle
+document.getElementById('chat-instructions-toggle-btn')?.addEventListener('click', () => {
+  const drawer = document.getElementById('chat-system-drawer');
+  const btn = document.getElementById('chat-instructions-toggle-btn');
+  if (drawer) {
+    drawer.classList.toggle('collapsed');
+    if (btn) {
+      btn.classList.toggle('active', !drawer.classList.contains('collapsed'));
+    }
+  }
+});
+
+// Preset selector changed
+document.getElementById('chat-system-preset')?.addEventListener('change', (e) => {
+  const drawer = document.getElementById('chat-system-drawer');
+  const customInput = document.getElementById('chat-system-prompt');
+  const toggleBtn = document.getElementById('chat-instructions-toggle-btn');
+  const val = e.target.value;
+
+  if (val === 'custom') {
+    if (drawer) drawer.classList.remove('collapsed');
+    if (toggleBtn) toggleBtn.classList.add('active');
+    if (customInput) customInput.focus();
+  } else if (val === 'coding') {
+    if (customInput) customInput.value = 'Act as an expert coding and software engineering assistant. Write elegant, production-ready code with complete error handling.';
+  } else if (val === 'technical') {
+    if (customInput) customInput.value = 'Act as a Senior Systems and Linux Infrastructure Engineer. Focus on architecture, hardware constraints, and exact CLI operations.';
+  } else if (val === 'reasoning') {
+    if (customInput) customInput.value = 'Apply structured chain-of-thought analysis. Break down assumptions and provide step-by-step mathematical reasoning.';
+  } else if (val === 'concise') {
+    if (customInput) customInput.value = 'Be direct, highly concise, and factual without superfluous introductory filler.';
+  } else {
+    if (customInput) customInput.value = '';
+  }
+  updateSystemPromptStatusDisplay();
+});
+
+// Apply system prompt button
+document.getElementById('apply-system-prompt-btn')?.addEventListener('click', () => {
+  const customInput = document.getElementById('chat-system-prompt');
+  const promptVal = customInput ? customInput.value.trim() : '';
+  activeSystemPrompt = promptVal;
+  updateSystemPromptStatusDisplay();
+
+  const applyBtn = document.getElementById('apply-system-prompt-btn');
+  if (applyBtn) {
+    applyBtn.textContent = '✓ Applied!';
+    setTimeout(() => { applyBtn.textContent = 'Apply'; }, 1500);
+  }
+
+  appendChatMessage('assistant', promptVal ? `System instructions active: "${promptVal}"` : 'System instructions reset to Default Helpful Assistant.', 'System Directive');
+});
+
+// Preset chips in drawer
+document.addEventListener('click', (e) => {
+  const chip = e.target.closest('.system-preset-chip');
+  if (chip && chip.dataset.preset) {
+    const customInput = document.getElementById('chat-system-prompt');
+    const presetSelect = document.getElementById('chat-system-preset');
+    if (customInput) {
+      customInput.value = chip.dataset.preset;
+      customInput.focus();
+    }
+    if (presetSelect) {
+      presetSelect.value = 'custom';
+    }
+    updateSystemPromptStatusDisplay();
+  }
+});
 
 function escapeHtml(str) {
   return str
@@ -1517,6 +1628,7 @@ document.getElementById('chat-form')?.addEventListener('submit', async (event) =
   setChatTyping(true);
 
   try {
+    const effectiveSystemPrompt = getEffectiveSystemPrompt();
     const response = await fetch(`${backend}/api/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1525,6 +1637,7 @@ document.getElementById('chat-form')?.addEventListener('submit', async (event) =
         prompt: userText,
         messages: chatMessagesHistory,
         persona: personaEl ? personaEl.value : 'helpful',
+        system_prompt: effectiveSystemPrompt,
         temperature: Number(tempEl ? tempEl.value : 0.7),
       }),
     });
@@ -1556,6 +1669,11 @@ document.getElementById('chat-form')?.addEventListener('submit', async (event) =
 document.getElementById('clear-chat-btn')?.addEventListener('click', () => {
   chatMessagesHistory = [];
   const thread = document.getElementById('chat-messages-thread');
+  const systemPromptDesc = getEffectiveSystemPrompt();
+  const promptNotice = systemPromptDesc
+    ? `<div style="margin-top:10px; padding:8px 12px; background:rgba(2,132,199,0.08); border-radius:6px; font-size:12px; color:#0369a1;"><strong>⚙️ System Prompt Active:</strong> "${escapeHtml(systemPromptDesc)}"</div>`
+    : '';
+
   if (thread) {
     thread.innerHTML = `
       <div class="chat-message-row assistant-message-row">
@@ -1567,8 +1685,10 @@ document.getElementById('clear-chat-btn')?.addEventListener('click', () => {
           </div>
           <div class="message-text-content">
             Thread reset. Ready for a new conversation with your local checkpoint!
+            ${promptNotice}
           </div>
           <div class="message-quick-tags">
+            <button type="button" class="quick-prompt-tag" data-prompt="Write a Python function to validate token sequence limits.">Coding Test</button>
             <button type="button" class="quick-prompt-tag" data-prompt="Explain how decoder-only transformers use self-attention to generate text.">Explain Self-Attention</button>
             <button type="button" class="quick-prompt-tag" data-prompt="Write a Python script to monitor local GPU VRAM usage.">Monitor GPU VRAM</button>
             <button type="button" class="quick-prompt-tag" data-prompt="Summarize best practices for fine-tuning an LLM on domain documentation.">Fine-Tuning Guide</button>

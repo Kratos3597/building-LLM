@@ -868,6 +868,7 @@ Through Group Relative Policy Optimization (GRPO) and direct preference tuning (
     const messages = Array.isArray(body.messages) ? body.messages : [];
     const model = body.checkpoint || 'sft_final.pt';
     const persona = body.persona || 'helpful';
+    const systemPrompt = typeof body.system_prompt === 'string' ? body.system_prompt.trim() : '';
     const temperature = Number(body.temperature) || 0.7;
 
     // Determine user prompt from direct parameter or last message in thread
@@ -878,9 +879,13 @@ Through Group Relative Policy Optimization (GRPO) and direct preference tuning (
     }
     const qLower = (lastUserQuery || '').toLowerCase();
 
-    // Contextual persona style
+    // Contextual persona style & custom system instructions
     let prefix = '';
-    if (persona === 'technical') {
+    if (systemPrompt) {
+      prefix = `[System Directive: ${systemPrompt}]\n\n`;
+    } else if (persona === 'coding') {
+      prefix = `[Persona: Expert Coding & Software Assistant]\n`;
+    } else if (persona === 'technical') {
       prefix = 'System Architecture & Engineering Perspective:\n';
     } else if (persona === 'reasoning') {
       prefix = '<thought>\nDecomposing the problem into first-principles invariants, hardware constraints, and verify accuracy.\n</thought>\n\n';
