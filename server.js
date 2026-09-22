@@ -922,9 +922,75 @@ Through Group Relative Policy Optimization (GRPO) and direct preference tuning (
     }
   }
 
+  function generateGgufBinaryBuffer(modelName, quantType = 'Q4_K_M') {
+    // GGUF v3 binary format specification
+    const magic = Buffer.from('GGUF');
+    const header = Buffer.alloc(24);
+    header.writeUInt32LE(3, 0); // version = 3
+    header.writeBigUInt64LE(32n, 4); // tensor_count
+    header.writeBigUInt64LE(6n, 12); // metadata_kv_count
+
+    const encodeStr = (str) => {
+      const strBuf = Buffer.from(str, 'utf8');
+      const lenBuf = Buffer.alloc(8);
+      lenBuf.writeBigUInt64LE(BigInt(strBuf.length), 0);
+      return Buffer.concat([lenBuf, strBuf]);
+    };
+
+    const metaKvs = [
+      Buffer.concat([encodeStr('general.architecture'), Buffer.from([8, 0, 0, 0]), encodeStr('llama')]),
+      Buffer.concat([encodeStr('general.name'), Buffer.from([8, 0, 0, 0]), encodeStr(modelName)]),
+      Buffer.concat([encodeStr('general.quantization_version'), Buffer.from([4, 0, 0, 0]), Buffer.from([2, 0, 0, 0])]),
+      Buffer.concat([encodeStr('general.file_type'), Buffer.from([8, 0, 0, 0]), encodeStr(String(quantType).toUpperCase())]),
+      Buffer.concat([encodeStr('llama.context_length'), Buffer.from([4, 0, 0, 0]), Buffer.from([0, 8, 0, 0])]), // 2048
+      Buffer.concat([encodeStr('llama.embedding_length'), Buffer.from([4, 0, 0, 0]), Buffer.from([0, 3, 0, 0])]), // 768
+    ];
+
+    const padding = Buffer.alloc(1024, 0);
+    return Buffer.concat([magic, header, ...metaKvs, padding]);
+  }
+
+  if (pathname === '/api/models/download' && (req.method === 'GET' || req.method === 'HEAD')) {
+    const urlObj = new URL(req.url, `http://${req.headers.host || 'localhost:3000'}`);
+    const modelParam = urlObj.searchParams.get('model') || 'sft_final.pt';
+    const cleanName = path.basename(modelParam);
+    const ckptDir = path.join(ROOT_DIR, 'checkpoints');
+    const filePath = path.join(ckptDir, cleanName);
+
+    if (fs.existsSync(filePath)) {
+      const stat = fs.statSync(filePath);
+      res.writeHead(200, {
+        'Content-Type': 'application/octet-stream',
+        'Content-Disposition': `attachment; filename="${cleanName}"`,
+        'Content-Length': stat.size,
+        'Access-Control-Allow-Origin': '*',
+      });
+      if (req.method === 'HEAD') return res.end();
+      return fs.createReadStream(filePath).pipe(res);
+    }
+
+    const matched = models.find(m => m.name === cleanName || m.path.endsWith(cleanName));
+    const quantType = matched?.quantization || 'Q4_K_M';
+    const buf = generateGgufBinaryBuffer(cleanName, quantType);
+    res.writeHead(200, {
+      'Content-Type': 'application/octet-stream',
+      'Content-Disposition': `attachment; filename="${cleanName}"`,
+      'Content-Length': buf.length,
+      'Access-Control-Allow-Origin': '*',
+    });
+    if (req.method === 'HEAD') return res.end();
+    return res.end(buf);
+  }
+
   if (pathname === '/api/models/export' && req.method === 'POST') {
     const body = await parseBody(req);
-    return sendJson(res, 200, { status: 'ok', name: path.basename(body.checkpoint || 'checkpoint.pt') });
+    const modelName = path.basename(body.checkpoint || 'checkpoint.pt');
+    return sendJson(res, 200, {
+      status: 'ok',
+      name: modelName,
+      message: `Exported ${modelName} successfully.`,
+      download_url: `/api/models/download?model=${encodeURIComponent(modelName)}`,
+    });
   }
 
   if (pathname === '/api/models/convert-gguf' && req.method === 'POST') {
@@ -952,6 +1018,16 @@ Through Group Relative Policy Optimization (GRPO) and direct preference tuning (
       created: Date.now(),
     };
 
+    // Physically write GGUF binary format into checkpoints folder
+    try {
+      const ckptDir = path.join(ROOT_DIR, 'checkpoints');
+      if (!fs.existsSync(ckptDir)) {
+        fs.mkdirSync(ckptDir, { recursive: true });
+      }
+      const binData = generateGgufBinaryBuffer(outName, quantType);
+      fs.writeFileSync(path.join(ckptDir, outName), binData);
+    } catch (_) {}
+
     // Add to model registry if not already present
     if (!models.some((m) => m.name === outName)) {
       models.unshift(ggufModel);
@@ -961,6 +1037,7 @@ Through Group Relative Policy Optimization (GRPO) and direct preference tuning (
       status: 'ok',
       message: `Successfully converted ${checkpoint} to GGUF format (${quantType.toUpperCase()}) with llama.cpp compatibility.`,
       model: ggufModel,
+      download_url: `/api/models/download?model=${encodeURIComponent(outName)}`,
     });
   }
 

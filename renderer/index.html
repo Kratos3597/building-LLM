@@ -834,6 +834,12 @@
             <p>Engage in multi-turn dialog with your local checkpoint. Responses run 100% private and air-gapped on your device.</p>
           </div>
           <div class="chat-header-actions">
+            <button type="button" class="secondary" id="chat-header-import-checkpoint-btn" title="Import model checkpoint (.pt, .safetensors, .gguf) to use in this chat">
+              <span>📥 Import Checkpoint</span>
+            </button>
+            <button type="button" class="secondary glow-border-btn" id="chat-header-export-gguf-btn" title="Convert and export active checkpoint to GGUF format for llama.cpp and Ollama">
+              <span>⚡ Convert &amp; Export GGUF</span>
+            </button>
             <button type="button" class="secondary" id="chat-import-history-btn" title="Import chat conversation transcript or instruction pairs (.json / .txt)">
               <span>📂 Import Chat</span>
             </button>
@@ -844,6 +850,7 @@
               <span>⚡ Fine-Tune This Checkpoint</span>
             </button>
             <input type="file" id="chat-import-file-input" accept=".json,.jsonl,.txt" style="display: none;" />
+            <input type="file" id="chat-direct-checkpoint-file-input" accept=".pt,.bin,.safetensors,.gguf,.ckpt" style="display: none;" />
           </div>
         </div>
 
@@ -851,11 +858,15 @@
           <!-- Top Control Strip -->
           <div class="chat-control-strip">
             <div class="chat-model-selector-group" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-              <label for="model-select">Checkpoint:
-                <select id="model-select" class="chat-model-select"></select>
+              <label for="model-select" style="font-weight:600; display:inline-flex; align-items:center; gap:6px;">
+                <span>Active Model:</span>
+                <select id="model-select" class="chat-model-select" style="min-width: 260px; font-weight: 600;"></select>
               </label>
-              <button type="button" class="secondary" id="chat-import-checkpoint-btn" style="padding: 4px 10px; font-size: 11.5px; cursor: pointer;" title="Import external model checkpoint into chat session">
-                <span>📥 Import Weights</span>
+              <button type="button" class="secondary" id="chat-import-checkpoint-btn" style="padding: 5px 12px; font-size: 12px; font-weight: 600; cursor: pointer;" title="Import external model checkpoint into chat session">
+                <span>📥 Import Checkpoint</span>
+              </button>
+              <button type="button" class="secondary chat-gguf-action-btn" id="chat-export-gguf-strip-btn" style="padding: 5px 12px; font-size: 12px; font-weight: 600; cursor: pointer; color: #0284c7; border-color: rgba(2, 132, 199, 0.4); background: rgba(2, 132, 199, 0.05);" title="Convert selected checkpoint to GGUF or download existing GGUF weights">
+                <span>⚡ Export to GGUF</span>
               </button>
               <span class="chat-model-meta-tag" id="chat-model-meta-tag">3.8 GB · Quantized</span>
               <span class="chat-model-meta-tag" id="chat-trained-dataset-tag" style="background:rgba(16, 185, 129, 0.12); color:#059669; border:1px solid rgba(16, 185, 129, 0.25); font-weight:600;">📚 Trained on: domain_knowledge_manual.txt</span>
@@ -1465,6 +1476,9 @@ Copyright (c) 2026 Mohammed Sheik. All rights reserved.</pre>
 
         <div class="dialog-actions-footer">
           <button type="button" class="secondary" id="cancel-gguf-btn">Cancel</button>
+          <button type="button" class="secondary hidden" id="download-gguf-modal-btn" style="background:#0284c7; color:#fff; border-color:#0284c7; font-weight:600;">
+            <span>📥 Download .GGUF File</span>
+          </button>
           <button type="button" class="primary" id="start-gguf-convert-btn">
             <span>Start GGUF Conversion</span> &rarr;
           </button>

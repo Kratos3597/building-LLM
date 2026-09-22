@@ -1568,9 +1568,11 @@ function initGgufModal() {
   const outNameInput = document.getElementById('gguf-out-name');
   const statusPanel = document.getElementById('gguf-status-panel');
   const statusText = document.getElementById('gguf-status-text');
+  const downloadBtn = document.getElementById('download-gguf-modal-btn');
 
   const hideModal = () => {
     if (modal) modal.classList.add('hidden');
+    if (downloadBtn) downloadBtn.classList.add('hidden');
   };
 
   closeBtn?.addEventListener('click', hideModal);
@@ -1586,7 +1588,7 @@ function initGgufModal() {
     convertBtn.disabled = true;
     convertBtn.textContent = 'Quantizing weights...';
     if (statusPanel) statusPanel.style.display = 'block';
-    if (statusText) statusText.innerHTML = `[llama.cpp Engine] Parsing ${selectedGgufCheckpoint}...<br/>Generating Q4_K_M quant tensors...`;
+    if (statusText) statusText.innerHTML = `[llama.cpp Engine] Parsing ${selectedGgufCheckpoint}...<br/>Generating ${quantSelect?.value?.toUpperCase() || 'Q4_K_M'} quant tensors...`;
 
     try {
       const resp = await fetch(`${backend}/api/models/convert-gguf`, {
@@ -1601,13 +1603,44 @@ function initGgufModal() {
       const data = await resp.json();
       if (resp.ok) {
         if (statusText) statusText.innerHTML = `<strong>Conversion Complete!</strong><br/>Saved: ${data.model.name} (${data.model.size_mb} MB)<br/>Llama.cpp &amp; Ollama compatible.`;
+        
+        // Show download button
+        if (downloadBtn) {
+          downloadBtn.classList.remove('hidden');
+          downloadBtn.onclick = () => {
+            const a = document.createElement('a');
+            a.href = `${backend}/api/models/download?model=${encodeURIComponent(data.model.name)}`;
+            a.download = data.model.name;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+          };
+        }
+
+        // Set newly converted GGUF model as the active checkpoint in Chat
+        if (data.model && data.model.path) {
+          activeSelectedCheckpoint = data.model.path;
+        }
+
+        await loadModels();
+        await loadChatModels();
+        updateSelectedCheckpointUI();
+
+        // Broadcast to chat thread
+        const chatThread = document.getElementById('chat-messages-thread');
+        if (chatThread && data.model) {
+          const badge = document.createElement('div');
+          badge.className = 'chat-checkpoint-switch-badge';
+          badge.innerHTML = `<span>⚡ Converted to GGUF: <strong>${escapeHtml(data.model.name)}</strong> (${data.model.size_mb} MB · ${data.model.quantization}) — Set as active chat model!</span>`;
+          chatThread.appendChild(badge);
+          chatThread.scrollTop = chatThread.scrollHeight;
+        }
+
         setTimeout(async () => {
           hideModal();
           convertBtn.disabled = false;
           convertBtn.textContent = 'Start GGUF Conversion →';
-          await loadModels();
-          await loadChatModels();
-        }, 1200);
+        }, 1600);
       } else {
         if (statusText) statusText.textContent = `Error: ${data.detail || 'Conversion failed'}`;
         convertBtn.disabled = false;
@@ -1619,6 +1652,42 @@ function initGgufModal() {
       convertBtn.textContent = 'Start GGUF Conversion →';
     }
   });
+
+  // Wire Chat GGUF Export Buttons
+  const handleChatExportGguf = () => {
+    const select = document.getElementById('model-select');
+    const current = select?.value || activeSelectedCheckpoint || 'checkpoints/sft_final.pt';
+    const baseName = current.split('/').pop();
+    const isGguf = baseName.endsWith('.gguf');
+
+    if (isGguf) {
+      // If already GGUF, ask user whether to download or re-quantize
+      const shouldDownload = confirm(`"${baseName}" is already in GGUF format.\n\nClick OK to download the .gguf binary file directly, or Cancel to re-quantize with different bit-depth options.`);
+      if (shouldDownload) {
+        const a = document.createElement('a');
+        a.href = `${backend}/api/models/download?model=${encodeURIComponent(baseName)}`;
+        a.download = baseName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        const chatThread = document.getElementById('chat-messages-thread');
+        if (chatThread) {
+          const badge = document.createElement('div');
+          badge.className = 'chat-checkpoint-switch-badge';
+          badge.innerHTML = `<span>📦 Downloaded GGUF weights: <strong>${escapeHtml(baseName)}</strong></span>`;
+          chatThread.appendChild(badge);
+          chatThread.scrollTop = chatThread.scrollHeight;
+        }
+        return;
+      }
+    }
+
+    openGgufModal(current);
+  };
+
+  document.getElementById('chat-export-gguf-strip-btn')?.addEventListener('click', handleChatExportGguf);
+  document.getElementById('chat-header-export-gguf-btn')?.addEventListener('click', handleChatExportGguf);
 }
 
 async function loadChatModels() {
@@ -1650,17 +1719,25 @@ async function loadChatModels() {
     }));
     if (!models.length) select.add(new Option('No checkpoints found', ''));
 
-    // Update active checkpoint pill
+    // Update active checkpoint tags and GGUF button text
     const current = select.value || activeSelectedCheckpoint;
     const baseName = current.split('/').pop();
     const tag = document.getElementById('chat-model-meta-tag');
     const matched = models.find(m => m.path === current || m.name === baseName || m.path.endsWith(baseName));
     if (tag) {
-      tag.textContent = matched ? `${matched.size_mb} MB · ${matched.name.endsWith('.gguf') ? 'GGUF' : 'PyTorch'}` : baseName;
+      tag.textContent = matched ? `${matched.size_mb} MB · ${matched.name.endsWith('.gguf') ? 'GGUF' : (matched.format || 'PyTorch')}` : baseName;
     }
     const datasetTag = document.getElementById('chat-trained-dataset-tag');
     if (datasetTag) {
       datasetTag.textContent = `📚 Trained on: ${matched?.dataset_name || 'Corpus'}`;
+    }
+
+    // Adapt the GGUF strip button label
+    const ggufBtn = document.getElementById('chat-export-gguf-strip-btn');
+    if (ggufBtn) {
+      const isGguf = baseName.endsWith('.gguf');
+      ggufBtn.innerHTML = isGguf ? '<span>📦 Download GGUF</span>' : '<span>⚡ Export to GGUF</span>';
+      ggufBtn.title = isGguf ? 'Download GGUF single-file weights for Ollama / llama.cpp' : 'Convert active checkpoint to GGUF format for llama.cpp / Ollama';
     }
   }
 }
@@ -1668,8 +1745,36 @@ async function loadChatModels() {
 document.getElementById('model-select')?.addEventListener('change', (e) => {
   activeSelectedCheckpoint = e.target.value;
   const baseName = activeSelectedCheckpoint.split('/').pop();
+  const matched = (cachedModelsList || []).find(m => m.path === activeSelectedCheckpoint || m.name === baseName || m.path.endsWith(baseName));
+  
   const tag = document.getElementById('chat-model-meta-tag');
-  if (tag) tag.textContent = baseName;
+  if (tag) {
+    tag.textContent = matched ? `${matched.size_mb} MB · ${matched.name.endsWith('.gguf') ? 'GGUF' : (matched.format || 'PyTorch')}` : baseName;
+  }
+  const datasetTag = document.getElementById('chat-trained-dataset-tag');
+  if (datasetTag) {
+    datasetTag.textContent = `📚 Trained on: ${matched?.dataset_name || 'Corpus'}`;
+  }
+
+  // Update GGUF strip button
+  const ggufBtn = document.getElementById('chat-export-gguf-strip-btn');
+  if (ggufBtn) {
+    const isGguf = baseName.endsWith('.gguf');
+    ggufBtn.innerHTML = isGguf ? '<span>📦 Download GGUF</span>' : '<span>⚡ Export to GGUF</span>';
+    ggufBtn.title = isGguf ? 'Download GGUF single-file weights for Ollama / llama.cpp' : 'Convert active checkpoint to GGUF format for llama.cpp / Ollama';
+  }
+
+  // Add notification badge in chat thread
+  const thread = document.getElementById('chat-messages-thread');
+  if (thread) {
+    const badge = document.createElement('div');
+    badge.className = 'chat-checkpoint-switch-badge';
+    const formatLabel = matched?.name?.endsWith('.gguf') ? `GGUF · ${matched.quantization || 'Q4'}` : (matched?.format?.toUpperCase() || 'PyTorch .pt');
+    badge.innerHTML = `<span>🔄 Active Checkpoint: <strong>${escapeHtml(matched?.name || baseName)}</strong> (${matched?.size_mb || 3820} MB · ${formatLabel})</span>`;
+    thread.appendChild(badge);
+    thread.scrollTop = thread.scrollHeight;
+  }
+
   updateSelectedCheckpointUI();
 });
 
@@ -2260,6 +2365,7 @@ function initImportCheckpointModal() {
   document.getElementById('header-import-checkpoint-btn')?.addEventListener('click', openImportCheckpointModal);
   document.getElementById('training-import-checkpoint-btn')?.addEventListener('click', openImportCheckpointModal);
   document.getElementById('chat-import-checkpoint-btn')?.addEventListener('click', openImportCheckpointModal);
+  document.getElementById('chat-header-import-checkpoint-btn')?.addEventListener('click', openImportCheckpointModal);
 
   closeBtn?.addEventListener('click', closeImportCheckpointModal);
   cancelBtn?.addEventListener('click', closeImportCheckpointModal);
@@ -2267,6 +2373,8 @@ function initImportCheckpointModal() {
   modal?.addEventListener('click', (e) => {
     if (e.target === modal) closeImportCheckpointModal();
   });
+
+  const chatDirectInput = document.getElementById('chat-direct-checkpoint-file-input');
 
   if (dropZone && fileInput) {
     dropZone.addEventListener('click', () => fileInput.click());
@@ -2316,6 +2424,14 @@ function initImportCheckpointModal() {
     fileInput.addEventListener('change', () => {
       if (fileInput.files && fileInput.files.length) {
         handleFile(fileInput.files[0]);
+      }
+    });
+
+    chatDirectInput?.addEventListener('change', () => {
+      if (chatDirectInput.files && chatDirectInput.files.length) {
+        const f = chatDirectInput.files[0];
+        openImportCheckpointModal();
+        handleFile(f);
       }
     });
   }
@@ -2368,6 +2484,16 @@ function initImportCheckpointModal() {
       await loadModels();
       await loadChatModels();
       updateSelectedCheckpointUI();
+
+      // Broadcast to chat messages thread
+      const chatThread = document.getElementById('chat-messages-thread');
+      if (chatThread && data.model) {
+        const badge = document.createElement('div');
+        badge.className = 'chat-checkpoint-switch-badge';
+        badge.innerHTML = `<span>📥 Imported Checkpoint: <strong>${escapeHtml(data.model.name)}</strong> (${data.model.size_mb} MB · ${data.model.format?.toUpperCase() || 'PyTorch'}) — Set as active chat model!</span>`;
+        chatThread.appendChild(badge);
+        chatThread.scrollTop = chatThread.scrollHeight;
+      }
 
       setTimeout(() => {
         closeImportCheckpointModal();
